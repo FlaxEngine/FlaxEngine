@@ -69,7 +69,7 @@ public:
 /// <summary>
 /// Allocator that uses pages for stack-based allocs without freeing memory during it's lifetime. Thread-safe to allocate memory from multiple threads at once.
 /// </summary>
-class ConcurrentArenaAllocator
+class FLAXENGINE_API ConcurrentArenaAllocator
 {
 private:
     struct Page

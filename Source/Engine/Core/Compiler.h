@@ -121,3 +121,11 @@
 #else
 #define IF_CONSTEXPR
 #endif
+
+// Custom attribute for Clang on PS4
+#if PLATFORM_PS4
+#undef DLLEXPORT
+#undef DEPRECATED
+#define DLLEXPORT __declspec(dllexport)
+#define DEPRECATED(...)
+#endif

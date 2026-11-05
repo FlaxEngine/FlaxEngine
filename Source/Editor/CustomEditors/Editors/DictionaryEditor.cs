@@ -386,9 +386,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             var dictionary = Values[0] as IDictionary;
             var oldSize = dictionary?.Count ?? 0;
-
             if (oldSize == newSize)
                 return;
+            Profiler.BeginEvent("DictionaryEditor.Resize");
 
             // Allocate new collection
             var type = Values.Type;
@@ -412,12 +412,21 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Insert new items (find unique keys)
             int newItemsLeft = newSize - oldSize;
+            long lastAddedKey = 0;
             while (newItemsLeft-- > 0)
             {
                 object newKey = null;
-                if (keyType.IsPrimitive)
+                if (keyType == typeof(int))
                 {
-                    long uniqueKey = 0;
+                    int uniqueKey = (int)lastAddedKey;
+                    while (newValues.Contains(uniqueKey))
+                        uniqueKey++;
+                    lastAddedKey = uniqueKey;
+                    newKey = Convert.ChangeType(uniqueKey, keyType);
+                }
+                else if (keyType.IsPrimitive)
+                {
+                    long uniqueKey = lastAddedKey;
                     bool isUnique;
                     do
                     {
@@ -433,6 +442,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             }
                         }
                     } while (!isUnique);
+                    lastAddedKey = uniqueKey;
                     newKey = Convert.ChangeType(uniqueKey, keyType);
                 }
                 else if (keyType.IsEnum)
@@ -480,6 +490,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 newValues[newKey] = TypeUtils.GetDefaultValue(new ScriptType(valueType));
             }
+
+            Profiler.EndEvent();
 
             SetValue(newValues);
         }

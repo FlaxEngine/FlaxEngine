@@ -1,10 +1,12 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderList.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Graphics/Materials/IMaterial.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
@@ -12,13 +14,12 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/PostProcessEffect.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
-#include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Half.h"
-#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
+#include "Engine/Engine/Units.h"
 
 static_assert(sizeof(DrawCall) <= 288, "Too big draw call data size.");
 static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Terrain), "Wrong draw call data size.");
@@ -47,10 +48,9 @@ namespace
     }
 }
 
-void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, float lodDitherFactor)
+void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, int8 lodDitherFactor, uint32 skinningOffset, int16 skinningPrevOffset)
 {
-    Half4 lightmapUVsAreaPacked(*(Float4*)&lightmapUVsArea);
-    Float2 lightmapUVsAreaPackedAliased = *(Float2*)&lightmapUVsAreaPacked;
+    Float2 lightmapUVsAreaPackedAliased = *(Float2*)&lightmapUVsArea;
     Raw[0] = Float4(worldMatrix.M11, worldMatrix.M12, worldMatrix.M13, worldMatrix.M41);
     Raw[1] = Float4(worldMatrix.M21, worldMatrix.M22, worldMatrix.M23, worldMatrix.M42);
     Raw[2] = Float4(worldMatrix.M31, worldMatrix.M32, worldMatrix.M33, worldMatrix.M43);
@@ -58,11 +58,15 @@ void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldM
     Raw[4] = Float4(prevWorldMatrix.M21, prevWorldMatrix.M22, prevWorldMatrix.M23, prevWorldMatrix.M42);
     Raw[5] = Float4(prevWorldMatrix.M31, prevWorldMatrix.M32, prevWorldMatrix.M33, prevWorldMatrix.M43);
     Raw[6] = Float4(geometrySize, perInstanceRandom);
-    Raw[7] = Float4(worldDeterminantSign, lodDitherFactor, lightmapUVsAreaPackedAliased.X, lightmapUVsAreaPackedAliased.Y);
-    // TODO: pack WorldDeterminantSign and LODDitherFactor
+    // 0-7 bits: LOD Dither Factor (0-1 range mapped to 0-255) with separate sign at 7th bit
+    // 8 bit: World Determinant Sign (0 for normal or 1 for inversed)
+    // 9-15 bits: unused
+    // 16-31 bits: Offset in Skinning Bones buffer for previous frame bones (can be negative)
+    uint32 packed7x = (uint32)Math::Abs(lodDitherFactor) + (lodDitherFactor < 0 ? 128 : 0) + (worldDeterminantSign < 0 ? 256 : 0) + ((skinningPrevOffset + 32760) << 16);
+    Raw[7] = Float4(*(float*)&packed7x, *(float*)&skinningOffset, lightmapUVsAreaPackedAliased.X, lightmapUVsAreaPackedAliased.Y);
 }
 
-void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectangle& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const
+void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, int8& lodDitherFactor, uint32& skinningOffset, int16& skinningPrevOffset) const
 {
     worldMatrix.SetRow1(Float4(Float3(Raw[0]), 0.0f));
     worldMatrix.SetRow2(Float4(Float3(Raw[1]), 0.0f));
@@ -74,11 +78,13 @@ void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectan
     prevWorldMatrix.SetRow4(Float4(Raw[3].W, Raw[4].W, Raw[5].W, 1.0f));
     geometrySize = Float3(Raw[6]);
     perInstanceRandom = Raw[6].W;
-    worldDeterminantSign = Raw[7].X;
-    lodDitherFactor = Raw[7].Y;
+    uint32 packed7x = *(uint32*)&Raw[7].X;
+    lodDitherFactor = (packed7x & 127) * ((packed7x & 128) == 128 ? -1 : 1);
+    worldDeterminantSign = (packed7x & 256) == 256 ? -1.0f : 1.0f;
+    skinningOffset = *(uint32*)&Raw[7].Y;
+    skinningPrevOffset = (packed7x >> 16) - 32760;
     Float2 lightmapUVsAreaPackedAliased(Raw[7].Z, Raw[7].W);
-    Half4 lightmapUVsAreaPacked(*(Half4*)&lightmapUVsAreaPackedAliased);
-    *(Float4*)&lightmapUVsArea = lightmapUVsAreaPacked.ToFloat4();
+    lightmapUVsArea = *(Half4*)&lightmapUVsAreaPackedAliased;
 }
 
 bool RenderLightData::CanRenderShadow(const RenderView& view) const
@@ -99,11 +105,23 @@ bool RenderLightData::CanRenderShadow(const RenderView& view) const
     return result && ShadowsStrength > ZeroTolerance;
 }
 
+#if !BUILD_RELEASE
+
+#include "Engine/Level/Actors/Light.h"
+#include "Engine/Scripting/Scripting.h"
+
+Light* RenderLightData::GetActor() const
+{
+    return Scripting::TryFindObject<Light>(ID);
+}
+
+#endif
+
 void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
 {
     data.SpotAngles.X = -2.0f;
     data.SpotAngles.Y = 1.0f;
-    data.SourceRadius = 0;
+    data.SourceRadius = SourceAngle;
     data.SourceLength = 0;
     data.Color = Color;
     data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
@@ -119,10 +137,10 @@ void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useSh
 bool RenderLocalLightData::CanRenderShadow(const RenderView& view) const
 {
     // Fade shadow on distance
-    const float fadeDistance = Math::Max(ShadowsFadeDistance, 0.1f);
+    const float fadeDistance = Math::Max(ShadowsFadeDistance, 0.01f);
     const float dstLightToView = Float3::Distance(Position, view.Position);
     const float fade = 1 - Math::Saturate((dstLightToView - Radius - ShadowsDistance + fadeDistance) / fadeDistance);
-    return fade > ZeroTolerance && Radius > 10 && RenderLightData::CanRenderShadow(view);
+    return fade > ZeroTolerance && Radius > METERS_TO_UNITS(0.1f) && RenderLightData::CanRenderShadow(view);
 }
 
 void RenderSpotLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
@@ -164,7 +182,7 @@ void RenderSkyLightData::SetShaderData(ShaderLightData& data, bool useShadow) co
     data.SpotAngles.X = AdditiveColor.X;
     data.SpotAngles.Y = AdditiveColor.Y;
     data.SourceRadius = AdditiveColor.Z;
-    data.SourceLength = Image ? Image->StreamingTexture()->TotalMipLevels() - 2.0f : 0.0f;
+    data.SourceLength = CubemapImageMip;
     data.Color = Color;
     data.MinRoughness = MIN_ROUGHNESS;
     data.Position = Position;
@@ -210,7 +228,7 @@ void RenderFogData::Init(const RenderView& view, IFogRenderer* renderer)
 {
     Renderer = renderer;
     renderer->GetExponentialHeightFogData(view, ExponentialHeightFogData);
-    renderer->GetVolumetricFogOptions(VolumetricFog);
+    renderer->GetVolumetricFogOptions(view, VolumetricFog);
     if (!VolumetricFog.UseVolumetricFog())
     {
         ExponentialHeightFogData.VolumetricFogMaxDistance = -1;
@@ -279,6 +297,11 @@ void RenderList::CleanupCache()
     // Don't call it during rendering (data may be already in use)
     ASSERT(GPUDevice::Instance == nullptr || GPUDevice::Instance->CurrentTask == nullptr);
 
+    // Free extensions
+    for (IExtension* e : GetExtensions())
+        e->Dispose();
+
+    // Free pooled memory
     MemPoolLocker.Lock();
     FreeRenderList.ClearDelete();
     for (auto& e : MemPool)
@@ -614,22 +637,31 @@ void RenderList::Clear()
 PACK_STRUCT(struct PackedSortKey
 {
     uint32 DistanceKey;
-    uint8 DrawKey;
-    uint16 BatchKey;
+    uint8 GeoKey;
+    uint16 MaterialKey;
     uint8 SortKey;
 });
+static_assert(sizeof(PackedSortKey) == sizeof(uint64), "Invalid sort key size");
 
 // Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
-PACK_STRUCT(struct PackedSortKeyDistance
+PACK_STRUCT(struct PackedSortKeyForward
 {
-    uint8 DrawKey;
-    uint16 BatchKey;
+    uint8 GeoKey;
+    uint16 MaterialKey;
     uint32 DistanceKey;
     uint8 SortKey;
 });
+static_assert(sizeof(PackedSortKeyForward) == sizeof(uint64), "Invalid sort key size");
 
-static_assert(sizeof(PackedSortKey) == sizeof(uint64), "Invalid sort key size");
-static_assert(sizeof(PackedSortKeyDistance) == sizeof(uint64), "Invalid sort key size");
+// Sorting order: By Material -> By Geometry -> By Distance
+PACK_STRUCT(struct PackedSortKeyDepth
+{
+    uint32 DistanceKey;
+    uint8 Dummy;
+    uint8 GeoKey;
+    uint16 MaterialKey;
+});
+static_assert(sizeof(PackedSortKeyDepth) == sizeof(uint64), "Invalid sort key size");
 
 FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int8 sortOrder)
 {
@@ -637,21 +669,21 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
     const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
     uint32 distanceKey = RenderTools::ComputeDistanceSortKey(distance);
-    uint32 batchKey = GetHash(drawCall.Material);
+    uint32 material = GetHash(drawCall.Material);
     IMaterial::InstancingHandler handler;
-    if (drawCall.Material->CanUseInstancing(handler))
-        handler.GetHash(drawCall, batchKey);
-    batchKey = (batchKey * 397) ^ drawCall.StencilValue;
-    uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminant);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
-    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
+    if (drawCall.Material->CanUseInstancing(renderContext, handler))
+        handler.GetHash(drawCall, material);
+    material = (material * 397) ^ drawCall.StencilValue;
+    uint32 geoKey = (uint32)(471 * drawCall.WorldDeterminant);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
+    geoKey = (geoKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
 
     PackedSortKey key;
-    key.BatchKey = (uint16)batchKey;
+    key.MaterialKey = (uint16)material;
     key.DistanceKey = distanceKey;
-    key.DrawKey = (uint8)drawKey;
+    key.GeoKey = (uint8)geoKey;
     key.SortKey = (uint8)(sortOrder - MIN_int8);
     drawCall.SortKey = *(uint64*)&key;
 }
@@ -670,6 +702,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
 
     // Append draw call data
     const int32 index = DrawCalls.Add(drawCall);
+    _objectsBufferDirty = true;
 
     // Add draw call to proper draw lists
     if ((drawModes & DrawPass::Depth) != DrawPass::None)
@@ -691,7 +724,9 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     {
         DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
     }
-    if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && (staticFlags & StaticFlags::Transform) == StaticFlags::None)
+    if ((drawModes & DrawPass::MotionVectors) != DrawPass::None &&
+        (staticFlags & StaticFlags::Transform) == StaticFlags::None &&
+        RenderTools::ComputeBoundsScreenRadiusSquared(drawCall.ObjectPosition, drawCall.ObjectRadius, renderContext.View) > Math::Square(Graphics::MotionVectors::MinObjectScreenSize))
     {
         DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
     }
@@ -712,11 +747,12 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
 
     // Append draw call data
     const int32 index = DrawCalls.Add(drawCall);
+    _objectsBufferDirty = true;
 
     // Add draw call to proper draw lists
     DrawPass modes = drawModes & mainRenderContext.View.GetShadowsDrawPassMask(shadowsMode);
     drawModes = modes & mainRenderContext.View.Pass;
-    if (drawModes != DrawPass::None && mainRenderContext.View.CullingFrustum.Intersects(bounds))
+    if (drawModes != DrawPass::None && (mainRenderContext.View.IsCullingDisabled || mainRenderContext.View.CullingFrustum.Intersects(bounds)))
     {
         if ((drawModes & DrawPass::Depth) != DrawPass::None)
         {
@@ -737,7 +773,9 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
         {
             DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
         }
-        if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && (staticFlags & StaticFlags::Transform) == StaticFlags::None)
+        if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && 
+            (staticFlags & StaticFlags::Transform) == StaticFlags::None &&
+            RenderTools::ComputeBoundsScreenRadiusSquared(bounds.Center, (float)bounds.Radius, mainRenderContext.View) > Math::Square(Graphics::MotionVectors::MinObjectScreenSize))
         {
             DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
         }
@@ -764,6 +802,7 @@ void RenderList::BuildObjectsBuffer()
     for (const auto& e : BatchedDrawCalls)
         count += e.Instances.Count();
     ObjectBuffer.Clear();
+    _objectsBufferDirty = false;
     if (count == 0)
         return;
     PROFILE_CPU();
@@ -812,10 +851,10 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
             {
                 const DrawCall& drawCall = drawCallsData[listData[i]];
                 PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
-                PackedSortKeyDistance forwardKey;
-                forwardKey.BatchKey = key.BatchKey;
+                PackedSortKeyForward forwardKey;
+                forwardKey.MaterialKey = key.MaterialKey;
                 forwardKey.DistanceKey = key.DistanceKey ^ MAX_uint32; // Reverse depth
-                forwardKey.DrawKey = key.DrawKey;
+                forwardKey.GeoKey = key.GeoKey;
                 forwardKey.SortKey = key.SortKey ^ MAX_uint8; // Reverse sort order
                 sortedKeys[i] = *(uint64*)&forwardKey;
             }
@@ -834,8 +873,27 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     }
     else
     {
-        for (int32 i = 0; i < listSize; i++)
-            sortedKeys[i] = drawCallsData[listData[i]].SortKey;
+        if (listType == DrawCallsListType::Depth)
+        {
+            // Reorder keys and drop sort order for better batching/instancing in depth/shadow passes
+            PackedSortKeyDepth depthKey;
+            depthKey.Dummy = 0;
+            for (int32 i = 0; i < listSize; i++)
+            {
+                const DrawCall& drawCall = drawCallsData[listData[i]];
+                PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
+                depthKey.DistanceKey = key.DistanceKey;
+                depthKey.GeoKey = key.GeoKey;
+                depthKey.MaterialKey = key.MaterialKey;
+                sortedKeys[i] = *(uint64*)&depthKey;
+            }
+        }
+        else
+        {
+            // Copy keys as-is
+            for (int32 i = 0; i < listSize; i++)
+                sortedKeys[i] = drawCallsData[listData[i]].SortKey;
+        }
     }
 
     // Sort draw calls indices
@@ -852,18 +910,17 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         int32 batchSize = 1;
         int32 instanceCount = drawCall.InstanceCount;
         IMaterial::InstancingHandler drawCallHandler, otherHandler;
-        if (instanceCount != 0 && drawCall.Material->CanUseInstancing(drawCallHandler))
+        if (instanceCount != 0 && drawCall.Material->CanUseInstancing(renderContext, drawCallHandler))
         {
             // Check the following draw calls sequence to merge them
             for (int32 j = i + 1; j < listSize; j++)
             {
                 const DrawCall& other = drawCallsData[listData[j]];
                 const bool canBatch =
-                        other.Material->CanUseInstancing(otherHandler) &&
+                        other.Material->CanUseInstancing(renderContext, otherHandler) &&
                         other.InstanceCount != 0 &&
                         drawCallHandler.CanBatch == otherHandler.CanBatch &&
                         drawCallHandler.CanBatch(drawCall, other, pass) &&
-                        drawCall.WorldDeterminant == other.WorldDeterminant &&
                         drawCall.StencilValue == other.StencilValue;
                 if (!canBatch)
                     break;
@@ -894,7 +951,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)
 {
-    return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
+    return pass == DrawPass::GBuffer || pass == DrawPass::Depth || pass == DrawPass::MotionVectors;
 }
 
 FORCE_INLINE bool DrawsEqual(const DrawCall* a, const DrawCall* b)
@@ -925,8 +982,8 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     bool useInstancing = list.CanUseInstancing && CanUseInstancing(renderContext.View.Pass) && GPUDevice::Instance->Limits.HasInstancing;
     TaaJitterRemoveContext taaJitterRemove(renderContext.View);
 
-    // Lazy-init objects buffer (if user didn't do it)
-    if (drawCallsList->ObjectBuffer.Data.IsEmpty())
+    // Lazy-init objects buffer (if caller didn't do it)
+    if (drawCallsList->ObjectBuffer.Data.IsEmpty() || drawCallsList->_objectsBufferDirty)
     {
         drawCallsList->BuildObjectsBuffer();
         drawCallsList->ObjectBuffer.Flush(context);
@@ -1018,7 +1075,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             uint32 drawCallIndex = listData[batch.StartIndex];
             const DrawCall& drawCall = drawCallsData[drawCallIndex];
 
-            bindParams.Instanced = batch.BatchSize != 1;
+            bindParams.Instanced = batch.BatchSize > 1;
             bindParams.DrawCall = &drawCall;
             bindParams.DrawCall->Material->Bind(bindParams);
 
@@ -1174,25 +1231,30 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 
 void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
 {
-    batchKey = (batchKey * 397) ^ ::GetHash(drawCall.Surface.Lightmap);
+    if (drawCall.Surface.Lightmap)
+        CombineHash(batchKey, 1313);
+    CombineHash(batchKey, (byte)drawCall.Surface.Skinning);
 }
 
 bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass)
 {
     // TODO: find reason why batching static meshes with lightmap causes problems with sampling in shader (flickering when meshes in batch order gets changes due to async draw calls collection)
     if (a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
-        a.Surface.Skinning == nullptr && b.Surface.Skinning == nullptr)
+        a.Surface.Skinning == b.Surface.Skinning)
     {
+        auto& materialInfo = a.Material->GetInfo();
         if (a.Material != b.Material)
         {
             // Batch simple materials during depth-only drawing (when using default vertex shader and no pixel shader)
             if (pass == DrawPass::Depth)
             {
-                return IsSimpleMaterial(a.Material->GetInfo()) && IsSimpleMaterial(b.Material->GetInfo());
+                return IsSimpleMaterial(materialInfo) && IsSimpleMaterial(b.Material->GetInfo());
             }
             return false;
         }
-        return true;
+
+        // World determinant flips the culling mode
+        return (materialInfo.CullMode == CullMode::TwoSided || a.WorldDeterminant == b.WorldDeterminant);
     }
     return false;
 }

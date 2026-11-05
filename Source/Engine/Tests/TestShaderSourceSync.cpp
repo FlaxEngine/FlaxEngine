@@ -12,8 +12,8 @@
 
 TEST_CASE("Shader source asset synchronization ignores timestamps")
 {
-    const String sourcePath = Globals::StartupFolder / TEXT("Source/Shaders/VolumetricFog.shader");
-    const String assetPath = Globals::EngineContentFolder / TEXT("Shaders/VolumetricFog.flax");
+    const String sourcePath = Globals::StartupFolder / TEXT("Source/Shaders/Lighting/VolumetricFog.shader");
+    const String assetPath = Globals::EngineContentFolder / TEXT("Shaders/Lighting/VolumetricFog.flax");
     REQUIRE(FileSystem::FileExists(sourcePath));
     REQUIRE(FileSystem::FileExists(assetPath));
     CHECK(ShadersCompilation::IsShaderSourceAssetUpToDate(sourcePath, assetPath));

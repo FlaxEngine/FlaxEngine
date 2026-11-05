@@ -461,7 +461,7 @@ bool ShadowsOfMordor::Builder::initResources()
     _task->Resize(HEMISPHERES_RESOLUTION, HEMISPHERES_RESOLUTION);
 
     // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/BakeLightmap"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/BakeLightmap"));
     if (_shader == nullptr)
         return true;
     if (_shader->WaitForLoaded())
@@ -470,19 +470,19 @@ bool ShadowsOfMordor::Builder::initResources()
     _psRenderCacheModel = GPUDevice::Instance->CreatePipelineState();
     GPUPipelineState::Description desc = GPUPipelineState::Description::DefaultNoDepth;
     desc.CullMode = CullMode::TwoSided;
-    desc.VS = _shader->GetShader()->GetVS("VS_RenderCacheModel");
-    desc.PS = _shader->GetShader()->GetPS("PS_RenderCache");
+    desc.VS = _shader->GPU->GetVS("VS_RenderCacheModel");
+    desc.PS = _shader->GPU->GetPS("PS_RenderCache");
     if (_psRenderCacheModel->Init(desc))
         return true;
 
     _psRenderCacheTerrain = GPUDevice::Instance->CreatePipelineState();
-    desc.VS = _shader->GetShader()->GetVS("VS_RenderCacheTerrain");
+    desc.VS = _shader->GPU->GetVS("VS_RenderCacheTerrain");
     if (_psRenderCacheTerrain->Init(desc))
         return true;
 
     _psBlurCache = GPUDevice::Instance->CreatePipelineState();
     desc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    desc.PS = _shader->GetShader()->GetPS("PS_BlurCache");
+    desc.PS = _shader->GPU->GetPS("PS_BlurCache");
     if (_psBlurCache->Init(desc))
         return true;
 

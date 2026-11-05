@@ -27,6 +27,17 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API SceneReference
     {
         return ID != other.ID;
     }
+
+    FORCE_INLINE SceneReference& operator=(const Guid& id)
+    {
+        ID = id;
+        return *this;
+    }
+
+    FORCE_INLINE operator Guid() const
+    {
+        return ID;
+    }
 };
 
 template<>

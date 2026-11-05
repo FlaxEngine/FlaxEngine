@@ -77,6 +77,13 @@ namespace FlaxEditor.GUI
         /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
         private class Contents : ContainerControl
         {
+            private enum SelectionMode
+            {
+                Replace,
+                Add,
+                Remove,
+            }
+
             private readonly KeyframesEditor _editor;
             internal bool _leftMouseDown;
             private bool _rightMouseDown;
@@ -108,14 +115,39 @@ namespace FlaxEditor.GUI
                     UpdateSelection(ref selectionRect);
             }
 
+            private SelectionMode GetSelectionMode()
+            {
+                if (Root.GetKey(KeyboardKeys.Alt))
+                    return SelectionMode.Remove;
+                if (Root.GetKey(KeyboardKeys.Shift))
+                    return SelectionMode.Add;
+                return SelectionMode.Replace;
+            }
+
             internal void UpdateSelection(ref Rectangle selectionRect)
             {
+                var mode = GetSelectionMode();
+
                 // Find controls to select
                 for (int i = 0; i < Children.Count; i++)
                 {
                     if (Children[i] is KeyframePoint p)
                     {
-                        p.IsSelected = p.Bounds.Intersects(ref selectionRect);
+                        var intersects = p.Bounds.Intersects(ref selectionRect);
+                        switch (mode)
+                        {
+                        case SelectionMode.Replace:
+                            p.IsSelected = intersects;
+                            break;
+                        case SelectionMode.Add:
+                            if (intersects)
+                                p.IsSelected = true;
+                            break;
+                        case SelectionMode.Remove:
+                            if (intersects)
+                                p.IsSelected = false;
+                            break;
+                        }
                     }
                 }
             }
@@ -138,6 +170,7 @@ namespace FlaxEditor.GUI
             {
                 var viewRect = _editor._mainPanel.GetClientArea();
                 var locationKeyframes = PointToKeyframes(location, ref viewRect);
+                var moved = false;
                 for (var i = 0; i < _editor._points.Count; i++)
                 {
                     var p = _editor._points[i];
@@ -160,7 +193,12 @@ namespace FlaxEditor.GUI
                         // TODO: snapping keyframes to grid when moving
 
                         _editor._keyframes[p.Index] = k;
+                        moved = true;
                     }
+                }
+
+                if (moved)
+                {
                     _editor.UpdateKeyframes();
                     if (_editor.EnablePanning)
                     {
@@ -351,10 +389,13 @@ namespace FlaxEditor.GUI
                     {
                         // Start selecting
                         StartMouseCapture();
-                        if (_editor.KeyframesEditorContext != null)
-                            _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
-                        else
-                            _editor.ClearSelection();
+                        if (GetSelectionMode() == SelectionMode.Replace)
+                        {
+                            if (_editor.KeyframesEditorContext != null)
+                                _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                            else
+                                _editor.ClearSelection();
+                        }
                         Focus();
                         return true;
                     }

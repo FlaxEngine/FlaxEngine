@@ -28,7 +28,7 @@ float4 ToColour(uint v)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS(float4 svPos : SV_POSITION) : SV_Target
 {
-    uint2 quad = svPos.xy * 0.5;
+    uint2 quad = (uint2)(svPos.xy * 0.5);
     uint overdraw = overdrawSRV[quad];
     return ToColour(overdraw);
 }

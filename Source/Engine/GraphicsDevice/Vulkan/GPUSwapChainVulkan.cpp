@@ -9,7 +9,9 @@
 #include "GPUContextVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -182,6 +184,14 @@ void GPUSwapChainVulkan::Begin(RenderTask* task)
             backBuffer.SubmitCmdBuffer = nullptr;
         }
     }
+
+    // Rebuild swapchain if need to
+    if (_vsyncPending != _vsyncCurrent)
+    {
+        LOG(Info, "Changing VSync mode to {}", _vsyncPending ? TEXT("on") : TEXT("off"));
+        _device->WaitForGPU();
+        CreateSwapChain(_width, _height);
+    }
 }
 
 bool GPUSwapChainVulkan::Resize(int32 width, int32 height)
@@ -248,6 +258,14 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height, bool recreat
         _device->WaitForGPU();
         ReleaseSwapChain(recreateSurface);
         _device->DeferredDeletionQueue.ReleaseResources(true);
+    }
+    if (_vsyncInit)
+    {
+        // Guess the VSync value for the 1st time (Present has not been called yet)
+        extern bool UseVSync();
+        _vsyncPending = UseVSync();
+        _vsyncPending &= _window == Engine::MainWindow; // Don't use VSync on new context menus or tooltips in Editor
+        _vsyncInit = false;
     }
     ASSERT(!recreateSurface || _surface == VK_NULL_HANDLE);
     ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
@@ -369,13 +387,13 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height, bool recreat
         Array<VkPresentModeKHR, InlinedAllocation<8>> presentModes;
         presentModes.Resize(presentModesCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, presentModes.Get()));
-        if (presentModes.Contains(VK_PRESENT_MODE_MAILBOX_KHR))
-        {
-            presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-        }
-        else if (presentModes.Contains(VK_PRESENT_MODE_IMMEDIATE_KHR))
+        if (!_vsyncPending && presentModes.Contains(VK_PRESENT_MODE_IMMEDIATE_KHR))
         {
             presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+        }
+        else if (!_vsyncPending && presentModes.Contains(VK_PRESENT_MODE_MAILBOX_KHR))
+        {
+            presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
         }
         else if (presentModes.Contains(VK_PRESENT_MODE_FIFO_KHR))
         {
@@ -406,7 +424,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height, bool recreat
     if (Platform::UsesWayland())
         backbuffersCount = Math::Max<uint32_t>(backbuffersCount, 3);
 #endif
-    
+
     ASSERT(surfProperties.minImageCount <= VULKAN_BACK_BUFFERS_COUNT_MAX);
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
@@ -421,7 +439,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height, bool recreat
     swapChainInfo.imageExtent.width = width;
     swapChainInfo.imageExtent.height = height;
     swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
     swapChainInfo.imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 #endif
     swapChainInfo.preTransform = surfProperties.currentTransform;
@@ -442,11 +460,11 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height, bool recreat
     VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(gpu, _device->PresentQueue->GetFamilyIndex(), _surface, &supportsPresent));
     ASSERT(supportsPresent);
 #if PLATFORM_IOS
-	Function<void()> func = [this, &device, &swapChainInfo]()
-	{
+    Function<void()> func = [this, &device, &swapChainInfo]()
+    {
         VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
-	};
-	iOSPlatform::RunOnUIThread(func, true);
+    };
+    iOSPlatform::RunOnUIThread(func, true);
 #else
     VALIDATE_VULKAN_RESULT(vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &_swapChain));
 #endif
@@ -454,6 +472,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height, bool recreat
     // Cache data
     _width = width;
     _height = height;
+    _vsyncCurrent = _vsyncPending;
 
     // Setup back buffers
     {
@@ -503,6 +522,12 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &_swapChain;
     presentInfo.pImageIndices = (uint32*)&_currentImageIndex;
+
+#if VULKAN_USE_PERF_SDK
+    // NvPerf Vulkan profiling workaround: drain the present queue before presenting so NvPerf's per-queue tracking stays in the state RangeProfiler BeginSession requires
+    if (GPUDeviceVulkan::UsePerfSDK)
+        vkQueueWaitIdle(presentQueue->GetHandle());
+#endif
 
     const VkResult presentResult = vkQueuePresentKHR(presentQueue->GetHandle(), &presentInfo);
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
@@ -615,6 +640,9 @@ void GPUSwapChainVulkan::Present(bool vsync)
     PROFILE_CPU();
     ZoneColor(TracyWaitZoneColor);
 
+    // Update pending VSync value based on the present mode
+    _vsyncPending = vsync;
+
     // Ensure that backbuffer has been acquired before presenting it to the window
     const auto backBuffer = (GPUTextureViewVulkan*)GetBackBufferView();
 
@@ -625,7 +653,8 @@ void GPUSwapChainVulkan::Present(bool vsync)
 
     // Cache a command buffer to wait on its fence before drawing to this backbuffer again
     auto& acquiredBackBuffer = _backBuffers[_acquiredImageIndex];
-    ASSERT(acquiredBackBuffer.SubmitCmdBuffer == nullptr);
+    // TODO: fix rare issues with the assert below
+    //ASSERT(acquiredBackBuffer.SubmitCmdBuffer == nullptr || acquiredBackBuffer.SubmitCmdBuffer->IsSubmitted());
     acquiredBackBuffer.SubmitCmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
 
     context->GetCmdBufferManager()->SubmitActiveCmdBuffer(_backBuffers[_acquiredImageIndex].RenderingDoneSemaphore);

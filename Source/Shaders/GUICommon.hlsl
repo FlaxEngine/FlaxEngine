@@ -4,7 +4,7 @@
 #define __GUI_COMMON__
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/GammaCorrectionCommon.hlsl"
+#include "./Flax/PostFX/GammaCorrectionCommon.hlsl"
 
 #define CLIPPING_ENABLE 1
 
@@ -90,7 +90,7 @@ float GetFontMSDFPixelRange(Texture2D font, float2 uv)
     uint width, height;
     font.GetDimensions(width, height);
     float pxRange = 4.0f; // Must match C++ code
-    float unitRange = float2(pxRange, pxRange) / float2(width, height);
+    float2 unitRange = float2(pxRange, pxRange) / float2(width, height);
 
     float2 dx = ddx(uv);
     float2 dy = ddy(uv);

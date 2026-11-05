@@ -12,13 +12,14 @@
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Content/Deprecated.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
-#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 
 Terrain::Terrain(const SpawnParams& params)
@@ -529,28 +530,16 @@ void Terrain::RemovePatch(const Int2& patchCoord)
 void Terrain::Draw(RenderContextBatch& renderContextBatch)
 {
     PROFILE_CPU();
-    if (DrawSetup(renderContextBatch.GetMainContext()))
+    RenderContext& mainContext = renderContextBatch.GetMainContext();
+    if (DrawSetup(mainContext))
         return;
     HashSet<TerrainChunk*, RendererAllocation> drawnChunks;
+    bool isMain = true;
     for (RenderContext& renderContext : renderContextBatch.Contexts)
     {
-        const DrawPass drawModes = DrawModes & renderContext.View.Pass;
-        if (drawModes == DrawPass::None)
-            continue;
-        DrawImpl(renderContext, drawnChunks);
+        DrawImpl(renderContext, DrawModes & renderContext.View.Pass, drawnChunks, isMain);
+        isMain = false;
     }
-}
-
-void Terrain::Draw(RenderContext& renderContext)
-{
-    const DrawPass drawModes = DrawModes & renderContext.View.Pass;
-    if (drawModes == DrawPass::None)
-        return;
-    PROFILE_CPU();
-    if (DrawSetup(renderContext))
-        return;
-    HashSet<TerrainChunk*, RendererAllocation> drawnChunks;
-    DrawImpl(renderContext, drawnChunks);
 }
 
 bool Terrain::DrawSetup(RenderContext& renderContext)
@@ -614,14 +603,18 @@ bool Terrain::DrawSetup(RenderContext& renderContext)
     return false;
 }
 
-void Terrain::DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, RendererAllocation>& drawnChunks)
+void Terrain::DrawImpl(RenderContext& renderContext, DrawPass drawModes, HashSet<TerrainChunk*, RendererAllocation>& drawnChunks, bool isMain)
 {
+    if (drawModes == DrawPass::None)
+        return;
+
     // Collect chunks to render and calculate LOD/material for them (required to be done before to gather NeighborLOD)
     Array<TerrainChunk*, RendererAllocation> drawChunks;
 
     // Frustum vs Box culling for patches
     const BoundingFrustum frustum = renderContext.View.CullingFrustum;
     const Vector3 origin = renderContext.View.Origin;
+    auto scene = _scene ? &_scene->Rendering : nullptr;
     for (int32 patchIndex = 0; patchIndex < _patches.Count(); patchIndex++)
     {
         const auto patch = _patches[patchIndex];
@@ -635,16 +628,22 @@ void Terrain::DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, Rend
             // Frustum vs Box culling for chunks
             for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
-                auto chunk = &patch->Chunks[chunkIndex];
+                TerrainChunk* chunk = &patch->Chunks[chunkIndex];
                 bounds = BoundingBox(chunk->_bounds.Minimum - origin, chunk->_bounds.Maximum - origin);
                 if (renderContext.View.IsCullingDisabled || frustum.Intersects(bounds))
                 {
+                    // Init chunks (once)
                     if (!drawnChunks.Contains(chunk) && !chunk->PrepareDraw(renderContext))
+                        continue;
+                    drawnChunks.Add(chunk);
+
+                    // Main-view occlusion culling
+                    uint32 cullingId = 0;
+                    if (isMain && !renderContext.Buffers->TestOcclusionCulling(scene, this, chunk->_bounds, cullingId, chunk))
                         continue;
 
                     // Add chunk for drawing
                     drawChunks.Add(chunk);
-                    drawnChunks.Add(chunk);
                 }
             }
         }
@@ -653,7 +652,7 @@ void Terrain::DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, Rend
     // Draw all visible chunks
     for (int32 i = 0; i < drawChunks.Count(); i++)
     {
-        drawChunks.Get()[i]->Draw(renderContext);
+        drawChunks.Get()[i]->Draw(renderContext, drawModes);
     }
 }
 

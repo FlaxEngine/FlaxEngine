@@ -40,14 +40,14 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     /// </summary>
     /// <param name="screenPos">The screen-space position.</param>
     /// <returns>The game viewport position.</returns>
-    API_FUNCTION() static Float2 ScreenToGameViewport(const Float2& screenPos);
+    API_FUNCTION(Attributes="DebugCommand(Hide=true)") static Float2 ScreenToGameViewport(const Float2& screenPos);
 
     /// <summary>
     /// Converts the game viewport position to the screen-space position.
     /// </summary>
     /// <param name="viewportPos">The game viewport position.</param>
     /// <returns>The screen-space position.</returns>
-    API_FUNCTION() static Float2 GameViewportToScreen(const Float2& viewportPos);
+    API_FUNCTION(Attributes="DebugCommand(Hide=true)") static Float2 GameViewportToScreen(const Float2& viewportPos);
 
     /// <summary>
     /// Sets the window size (in screen-space, includes DPI scale).

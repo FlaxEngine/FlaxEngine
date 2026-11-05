@@ -2,8 +2,10 @@
 
 #include "PointLight.h"
 #include "Engine/Content/Deprecated.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
@@ -15,8 +17,9 @@ PointLight::PointLight(const SpawnParams& params)
 {
     CastVolumetricShadow = false;
     ShadowsDistance = 2000.0f;
-    ShadowsFadeDistance = 100.0f;
-    ShadowsDepthBias = 0.5f;
+    ShadowsFadeDistance = 500.0f;
+    ShadowsDepthBias = 0.05f;
+
     _direction = Float3::Forward;
     _sphere = BoundingSphere(Vector3::Zero, _radius);
     BoundingBox::FromSphere(_sphere, _box);
@@ -79,8 +82,9 @@ void PointLight::OnTransformChanged()
     UpdateBounds();
 }
 
-void PointLight::Draw(RenderContext& renderContext)
+void PointLight::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
     Float3 position;
@@ -120,6 +124,12 @@ void PointLight::Draw(RenderContext& renderContext)
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
         data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
+        uint32 cullingId = 0;
+        if (data.CanRenderShadow(renderContext.View) && !renderContext.Buffers->TestOcclusionCulling(this, cullingId))
+        {
+            // Occlusion cull dynamic shadow
+            data.ShadowsMode = ShadowsCastingMode::None;
+        }
         renderContext.List->PointLights.Add(data);
     }
 }

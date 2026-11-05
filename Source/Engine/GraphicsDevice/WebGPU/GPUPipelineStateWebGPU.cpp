@@ -295,7 +295,7 @@ WGPUBindGroupLayout CreateBindGroupLayout(WGPUDevice device, const GPUContextBin
 #endif
             break;
         default:
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
             LOG(Fatal, "Unknown descriptor type: {} used as {} in '{}'", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType, String(debugName));
 #else
             CRASH;
@@ -707,6 +707,7 @@ bool GPUPipelineStateWebGPU::Init(const Description& desc)
     GetDebugName(_debugName);
     PipelineDesc.label = { _debugName.Get(), (size_t)_debugName.Count() - 1 };
 #endif
+    // WGPUPrimitiveTopology_LineList could be used for wireframe mode but it breaks index buffers usage
     PipelineDesc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
     PipelineDesc.primitive.frontFace = WGPUFrontFace_CW;
     switch (desc.CullMode)

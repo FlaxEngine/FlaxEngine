@@ -13,6 +13,12 @@ class FLAXENGINE_API DirectionalLight : public LightWithShadow
     DECLARE_SCENE_OBJECT(DirectionalLight);
 public:
     /// <summary>
+    /// Light source angle (in degrees) that defines its angular diameter. Higher values produce softer shadows. The default value is 0.5357 degrees, which is the angular diameter of the Sun as seen from Earth. Set this to 0 to produce hard shadows with sharp edges.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(41), EditorDisplay(\"Light\"), Limit(0, 4, 0.001f), ValueCategory(Utils.ValueCategory.Angle)")
+    float SourceAngle = 0.5332f;
+
+    /// <summary>
     /// The partitioning mode for the shadow cascades.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(64), DefaultValue(PartitionMode.Manual), EditorDisplay(\"Shadow\")")
@@ -48,9 +54,15 @@ public:
     API_FIELD(Attributes="EditorOrder(69), DefaultValue(1.0f), VisibleIf(nameof(ShowCascade4)), Limit(0, 1, 0.001f), EditorDisplay(\"Shadow\")")
     float Cascade4Spacing = 1.0f;
 
+    /// <summary>
+    /// Percentage of the cascade distance over which cascades will blend together. This helps to hide the transition between cascades.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(70), EditorDisplay(\"Shadow\", \"Cascade Blend Distance\"), Limit(0.0f, 1.0f)")
+    float CascadeBlendSize = 0.1f;
+
 public:
     // [LightWithShadow]
-    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;

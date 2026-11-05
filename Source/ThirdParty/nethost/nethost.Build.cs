@@ -10,6 +10,8 @@ using Flax.Build.NativeCpp;
 /// </summary>
 public class nethost : ThirdPartyModule
 {
+    private static bool _logDotnetOnce;
+
     /// <inheritdoc />
     public override void Init()
     {
@@ -41,6 +43,19 @@ public class nethost : ThirdPartyModule
                 return; // Ignore missing Host Runtime at projects evaluation stage (not important)
             if (Configuration.BuildBindingsOnly)
                 return; // Ignore missing Host Runtime when just building C# bindings (without native code)
+            if (!_logDotnetOnce)
+            {
+                // Dump dotnet info to help diagnose missing runtime issues
+                _logDotnetOnce = true;
+                try
+                {
+                    Flax.Build.Utilities.Run("dotnet", "--info", null, null, Flax.Build.Utilities.RunOptions.ConsoleLogOutput);
+                }
+                catch (Exception)
+                {
+                    // Ignore errors
+                }
+            }
             throw new Exception($"Missing NET SDK runtime for {options.Platform.Target} {options.Architecture}.");
         }
 
@@ -64,7 +79,6 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.XboxScarlett:
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "monosgen-2.0.lib"));
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "mono-profiler-aot.lib"));
-            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "System.Globalization.Native-Static.lib"));
             break;
         case TargetPlatform.Linux:
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));
@@ -92,6 +106,13 @@ public class nethost : ThirdPartyModule
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Ports.Native.a"));
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Compression.Native.a"));
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Globalization.Native.a"));
+                if (options.Platform.Target == TargetPlatform.PS5 || options.Platform.Target == TargetPlatform.PS4)
+                {
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libbrotlicommon.a"));
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libbrotlidec.a"));
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libbrotlienc.a"));
+                    options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libz.a"));
+                }
             }
             break;
         }

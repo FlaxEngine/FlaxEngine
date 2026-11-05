@@ -741,6 +741,8 @@ namespace FlaxEditor.Surface
         /// <param name="action">The action node.</param>
         public virtual void OnControlLoaded(SurfaceControl control, SurfaceNodeActions action)
         {
+            control.OnLoading(action);
+
             if (control is SurfaceNode node)
             {
                 // Initialize node

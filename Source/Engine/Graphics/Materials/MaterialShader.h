@@ -10,7 +10,7 @@
 /// <summary>
 /// Current materials shader version.
 /// </summary>
-#define MATERIAL_GRAPH_VERSION 183
+#define MATERIAL_GRAPH_VERSION 187
 
 class Material;
 class GPUShader;
@@ -31,29 +31,29 @@ class MaterialShader : public IMaterial
 protected:
     struct PipelineStateCache
     {
-        GPUPipelineState* PS[6];
+        GPUPipelineState* PS[3];
         GPUPipelineState::Description Desc;
 
         PipelineStateCache()
         {
-            Platform::MemoryClear(PS, sizeof(PS));
+            Platform::MemoryClear(this, sizeof(*this));
         }
 
-        void Init(GPUPipelineState::Description& desc)
+        void Init(const GPUPipelineState::Description& desc)
         {
             Desc = desc;
         }
 
-        GPUPipelineState* GetPS(CullMode mode, bool wireframe)
+        GPUPipelineState* GetPS(const MaterialShader* owner, CullMode mode)
         {
-            const int32 index = static_cast<int32>(mode) + (wireframe ? 3 : 0);
+            const int32 index = (int32)mode;
             auto ps = PS[index];
             if (!ps)
-                PS[index] = ps = InitPS(mode, wireframe);
+                PS[index] = ps = InitPS(owner, mode);
             return ps;
         }
 
-        GPUPipelineState* InitPS(CullMode mode, bool wireframe);
+        GPUPipelineState* InitPS(const MaterialShader* owner, CullMode mode);
 
         void Release()
         {
@@ -63,6 +63,7 @@ protected:
 
 protected:
     bool _isLoaded;
+    DrawPass _drawModes = DrawPass::None;
     GPUShader* _shader;
     GPUConstantBuffer* _cb;
     Array<byte> _cbData;
@@ -110,6 +111,7 @@ protected:
 
 public:
     // [IMaterial]
+    DrawPass GetDrawModes() const override;
     const MaterialInfo& GetInfo() const override;
     GPUShader* GetShader() const override;
     bool IsReady() const override;

@@ -6,6 +6,23 @@ using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
+namespace FlaxEngine
+{
+    partial class ProfilerGPU
+    {
+        /// <summary>
+        /// Delegate for profiler event click callback. Can be used by external profiling tools integration inside Editor.
+        /// </summary>
+        /// <param name="e">Event data.</param>
+        public delegate void EventDelegate(ref Event e);
+
+        /// <summary>
+        /// Called when the user double-clicks a GPU profiler event in Editor to open it. Can be used by external profiling tools integration inside Editor.
+        /// </summary>
+        public static EventDelegate OpenEventEditor;
+    }
+}
+
 namespace FlaxEditor.Windows.Profiler
 {
     /// <summary>
@@ -32,8 +49,8 @@ namespace FlaxEditor.Windows.Profiler
                 Offsets = Margin.Zero,
                 Parent = this,
             };
-            
-            // Chart
+
+            // Charts
             _drawTimeCPU = new SingleChart
             {
                 Title = "Draw (CPU)",
@@ -44,17 +61,16 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = mainPanel,
             };
             _drawTimeCPU.SelectedSampleChanged += OnSelectedSampleChanged;
-            
             _drawTimeGPU = new SingleChart
             {
                 Title = "Draw (GPU)",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                Offsets = new Margin(0, 0, _drawTimeCPU.Height + 2, 0),
+                Offsets = new Margin(0, 0, _drawTimeCPU.Height + 2, SingleChart.DefaultHeight),
                 FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
                 Parent = mainPanel,
             };
             _drawTimeGPU.SelectedSampleChanged += OnSelectedSampleChanged;
-            
+
             var panel = new Panel(ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -218,6 +234,8 @@ namespace FlaxEditor.Windows.Profiler
             }
             control.Bounds = new Rectangle(x, e.Depth * Timeline.Event.DefaultHeight, width, Timeline.Event.DefaultHeight - 1);
             control.Name = name;
+            control.Tag = e;
+            control.EventDoubleClick = OnEventDoubleClick;
             control.TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f));
             control.Parent = parent;
 
@@ -355,10 +373,11 @@ namespace FlaxEditor.Windows.Profiler
                 }
                 else
                 {
-                    row = new Row
+                    row = new ClickableRow
                     {
                         Values = new object[6],
                         BackgroundColors = new Color[6],
+                        RowDoubleClick = OnRowDoubleClick,
                     };
                     for (int k = 0; k < row.BackgroundColors.Length; k++)
                         row.BackgroundColors[k] = Color.Transparent;
@@ -388,6 +407,25 @@ namespace FlaxEditor.Windows.Profiler
                 row.Width = _table.Width;
                 row.Visible = e.Depth < 3;
                 row.Parent = _table;
+                row.Tag = e;
+            }
+        }
+
+        private void OnEventDoubleClick(Timeline.Event control)
+        {
+            if (ProfilerGPU.OpenEventEditor != null)
+            {
+                var e = (ProfilerGPU.Event)control.Tag;
+                ProfilerGPU.OpenEventEditor(ref e);
+            }
+        }
+
+        private void OnRowDoubleClick(ClickableRow row)
+        {
+            if (ProfilerGPU.OpenEventEditor != null)
+            {
+                var e = (ProfilerGPU.Event)row.Tag;
+                ProfilerGPU.OpenEventEditor(ref e);
             }
         }
     }

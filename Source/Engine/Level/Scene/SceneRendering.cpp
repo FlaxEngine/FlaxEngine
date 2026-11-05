@@ -1,11 +1,13 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+// Enable to put CPU profiler sections for each actor drawing to inspect slow actors draw issues
 #define SCENE_RENDERING_USE_PROFILER_PER_ACTOR 0
 
 #include "SceneRendering.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Physics/Actors/IPhysicsDebug.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -13,13 +15,14 @@
 #if !BUILD_RELEASE
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Engine/Engine.h"
 #endif
 
 #if BUILD_RELEASE
 #define CHECK_SCENE_EDIT_ACCESS()
 #else
 #define CHECK_SCENE_EDIT_ACCESS() \
-    if (_isRendering && IsInMainThread() && GPUDevice::Instance && GPUDevice::Instance->IsRendering()) \
+    if (_isRendering && IsInRenderThread() && GPUDevice::Instance && GPUDevice::Instance->IsRendering() && Engine::FatalError != FatalErrorType::None) \
     { \
         LOG(Error, "Adding/removing actors during rendering is not supported ({}, '{}').", a->ToString(), a->GetNamePath()); \
         return; \
@@ -38,6 +41,7 @@ void ISceneRenderingListener::ListenSceneRendering(SceneRendering* scene)
 {
     if (!_scenes.Contains(scene))
     {
+        PROFILE_MEM(Graphics);
         _scenes.Add(scene);
         scene->_listeners.Add(this);
     }
@@ -67,6 +71,8 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Register scene
         for (const auto& renderContext : renderContextBatch.Contexts)
             renderContext.List->Scenes.Add(this);
+        auto buffers = renderContextBatch.GetMainContext().Buffers;
+        buffers->OnSceneRendering(this);
     }
     else if (category == PostRender)
     {
@@ -87,20 +93,21 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         _drawFrustumsData.Get()[i] = renderContextBatch.Contexts.Get()[i].View.CullingFrustum;
 
     // Draw all visual components
-    _drawListIndex = -1;
 #if PLATFORM_THREADS_LIMIT > 1
     if (_drawListSize >= 64 && category == SceneDrawAsync && renderContextBatch.EnableAsync)
     {
         // Run in async via Job System
         Function<void(int32)> func;
         func.Bind<SceneRendering, &SceneRendering::DrawActorsJob>(this);
-        const int64 waitLabel = JobSystem::Dispatch(func, JobSystem::GetThreadsCount());
+        _drawListJobs = JobSystem::GetThreadsCount();
+        const int64 waitLabel = JobSystem::Dispatch(func, _drawListJobs);
         renderContextBatch.WaitLabels.Add(waitLabel);
     }
     else
 #endif
     {
         // Scene is small so draw on a main-thread
+        _drawListJobs = 1;
         DrawActorsJob(0);
     }
 
@@ -187,7 +194,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
     e.Bounds = a->GetBoundingSphere();
     e.NoCulling = a->_drawNoCulling;
     for (auto* listener : _listeners)
-        listener->OnSceneRenderingAddActor(a);
+        listener->OnSceneRenderingAddActor(this, key, a);
 }
 
 void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::UpdateFlags flags)
@@ -203,7 +210,7 @@ void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::
         if (e.Actor == a)
         {
             for (auto* listener : _listeners)
-                listener->OnSceneRenderingUpdateActor(a, e.Bounds, flags);
+                listener->OnSceneRenderingUpdateActor(this, key, a, e.Bounds, flags);
             if (flags & ISceneRenderingListener::Layer)
                 e.LayerMask = a->GetLayerMask();
             if (flags & ISceneRenderingListener::Bounds)
@@ -226,7 +233,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
         if (e.Actor == a)
         {
             for (auto* listener : _listeners)
-                listener->OnSceneRenderingRemoveActor(a);
+                listener->OnSceneRenderingRemoveActor(this, key, a);
             e.Actor = nullptr;
             e.LayerMask = 0;
             FreeActors[category].Add(key);
@@ -235,43 +242,46 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
     key = -1;
 }
 
-#define FOR_EACH_BATCH_ACTOR const int64 count = _drawListSize; while (true) { const int64 index = Platform::InterlockedIncrement(&_drawListIndex); if (index >= count) break; auto e = _drawListData[index];
-#define CHECK_ACTOR ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || FrustumsListCull(e.Bounds, _drawFrustumsData)))
-#define CHECK_ACTOR_SINGLE_FRUSTUM ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || view.CullingFrustum.Intersects(e.Bounds)))
+#define FOR_EACH_BATCH_ACTOR const int32 count = _drawListSize; int32 step = _drawListJobs; DrawActor* data = _drawListData; for (int32 index = i; index < count; index += step) { auto e = data[index]; Platform::MemoryPrefetch(&data[index + step]);
+#define CHECK_ACTOR ((viewRenderLayersMask & e.LayerMask) && (e.NoCulling || FrustumsListCull(e.Bounds, _drawFrustumsData)))
+#define CHECK_ACTOR_SINGLE_FRUSTUM ((viewRenderLayersMask & e.LayerMask) && (e.NoCulling || viewCullingFrustum.Intersects(e.Bounds)))
 #if SCENE_RENDERING_USE_PROFILER_PER_ACTOR
 #define DRAW_ACTOR(mode) PROFILE_CPU_ACTOR(e.Actor); e.Actor->Draw(mode)
 #else
 #define DRAW_ACTOR(mode) e.Actor->Draw(mode)
 #endif
 
-void SceneRendering::DrawActorsJob(int32)
+void SceneRendering::DrawActorsJob(int32 i)
 {
     PROFILE_CPU();
     PROFILE_MEM(Graphics);
     auto& mainContext = _drawBatch->GetMainContext();
     const auto& view = mainContext.View;
+    const Vector3 viewOrigin = view.Origin;
+    const uint32 viewRenderLayersMask = view.RenderLayersMask.Mask;
     if (view.StaticFlagsMask != StaticFlags::None)
     {
         // Static-flags culling
         FOR_EACH_BATCH_ACTOR
-            e.Bounds.Center -= view.Origin;
+            e.Bounds.Center -= viewOrigin;
             if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) == view.StaticFlagsCompare)
             {
                 DRAW_ACTOR(*_drawBatch);
             }
         }
     }
-    else if (view.Origin.IsZero() && _drawFrustumsData.Count() == 1)
+    else if (viewOrigin.IsZero() && _drawFrustumsData.Count() == 1)
     {
         // Fast path for no origin shifting with a single context
+        const BoundingFrustum viewCullingFrustum = view.CullingFrustum;
         FOR_EACH_BATCH_ACTOR
             if (CHECK_ACTOR_SINGLE_FRUSTUM)
             {
-                DRAW_ACTOR(mainContext);
+                DRAW_ACTOR(*_drawBatch);
             }
         }
     }
-    else if (view.Origin.IsZero())
+    else if (viewOrigin.IsZero())
     {
         // Fast path for no origin shifting
         FOR_EACH_BATCH_ACTOR
@@ -285,7 +295,7 @@ void SceneRendering::DrawActorsJob(int32)
     {
         // Generic case
         FOR_EACH_BATCH_ACTOR
-            e.Bounds.Center -= view.Origin;
+            e.Bounds.Center -= viewOrigin;
             if (CHECK_ACTOR)
             {
                 DRAW_ACTOR(*_drawBatch);

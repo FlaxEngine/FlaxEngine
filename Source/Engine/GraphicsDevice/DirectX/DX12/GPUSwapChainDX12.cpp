@@ -26,7 +26,7 @@ void BackBufferDX12::Setup(GPUSwapChainDX12* window, ID3D12Resource* backbuffer)
         Handle.SetRTV(rtDesc);
     }
 
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
     // Create SRV
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srDesc;
@@ -198,7 +198,7 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
         swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
         swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
         swapChainDesc.BufferUsage |= DXGI_USAGE_SHADER_INPUT;
 #endif
         if (_allowTearing)
@@ -354,13 +354,7 @@ void GPUSwapChainDX12::End(RenderTask* task)
     GPUSwapChain::End(task);
 
     auto context = _device->GetMainContextDX12();
-
-    // Indicate that the back buffer will be used to present a frame
-    // Note: after that we should not use this backbuffer
-    context->SetResourceState(&_backBuffers[_currentFrameIndex], D3D12_RESOURCE_STATE_PRESENT);
-
-    // Send event
-    context->OnSwapChainFlush();
+    context->OnSwapChainFlush(&_backBuffers[_currentFrameIndex]);
 }
 
 void GPUSwapChainDX12::Present(bool vsync)
@@ -387,6 +381,10 @@ void GPUSwapChainDX12::Present(bool vsync)
     {
         presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
     }
+#if GPU_ENABLE_ASSERTION
+    //ASSERT(_currentFrameIndex == _swapChain->GetCurrentBackBufferIndex());
+    ASSERT(_backBuffers[_currentFrameIndex].State.CheckResourceState(D3D12_RESOURCE_STATE_PRESENT));
+#endif
     const HRESULT res = _swapChain->Present(vsync ? 1 : 0, presentFlags);
     LOG_DIRECTX_RESULT(res);
 

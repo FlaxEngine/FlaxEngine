@@ -301,13 +301,13 @@ namespace Flax.Build.Bindings
                         reader.ReadInt32() != (int)moduleOptions.Architecture ||
                         reader.ReadInt32() != (int)moduleOptions.Configuration)
                         return false;
-                    var publicDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    var publicDefinitions = Read(reader, Array.Empty<string>());
                     if (publicDefinitions.Length != moduleOptions.PublicDefinitions.Count || publicDefinitions.Any(x => !moduleOptions.PublicDefinitions.Contains(x)))
                         return false;
-                    var privateDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    var privateDefinitions = Read(reader, Array.Empty<string>());
                     if (privateDefinitions.Length != moduleOptions.PrivateDefinitions.Count || privateDefinitions.Any(x => !moduleOptions.PrivateDefinitions.Contains(x)))
                         return false;
-                    var preprocessorDefinitions = Read(reader, Utilities.GetEmptyArray<string>());
+                    var preprocessorDefinitions = Read(reader, Array.Empty<string>());
                     if (preprocessorDefinitions.Length != moduleOptions.CompileEnv.PreprocessorDefinitions.Count || preprocessorDefinitions.Any(x => !moduleOptions.CompileEnv.PreprocessorDefinitions.Contains(x)))
                         return false;
 

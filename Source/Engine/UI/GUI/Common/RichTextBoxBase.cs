@@ -100,15 +100,19 @@ namespace FlaxEngine.GUI
             }
 
             // Handle case when index is outside all text ranges
-            if (index >= 0 && blockCount > 0 && index <= textBlocksSpan[0].Range.StartIndex)
+            if (index >= 0 && blockCount > 0)
             {
-                result = textBlocksSpan[0];
-                return true;
-            }
-            if (index >= 0 && blockCount > 0 && index >= textBlocksSpan[blockCount - 1].Range.StartIndex)
-            {
-                result = textBlocksSpan[blockCount - 1];
-                return true;
+                if (index <= textBlocksSpan[0].Range.StartIndex)
+                {
+                    result = textBlocksSpan[0];
+                    return true;
+                }
+
+                if (index >= textBlocksSpan[blockCount - 1].Range.StartIndex)
+                {
+                    result = textBlocksSpan[blockCount - 1];
+                    return true;
+                }
             }
 
             // If no text block is found
@@ -262,17 +266,20 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            // Select the word under the mouse
-            int textLength = TextLength;
-            if (textLength != 0 && IsSelectable)
+            if (button == MouseButton.Left)
             {
-                var hitPos = CharIndexAtPoint(ref location);
-                int spaceLoc = _text.LastIndexOfAny(Separators, hitPos - 2);
-                var left = spaceLoc == -1 ? 0 : spaceLoc + 1;
-                spaceLoc = _text.IndexOfAny(Separators, Math.Min(hitPos + 1, _text.Length));
-                var right = spaceLoc == -1 ? textLength : spaceLoc;
-                Deselect();
-                SetSelection(left, right);
+                // Select the word under the mouse
+                int textLength = TextLength;
+                if (textLength != 0 && IsSelectable)
+                {
+                    var hitPos = CharIndexAtPoint(ref location);
+                    int spaceLoc = _text.LastIndexOfAny(Separators, hitPos - 2);
+                    var left = spaceLoc == -1 ? 0 : spaceLoc + 1;
+                    spaceLoc = _text.IndexOfAny(Separators, Math.Min(hitPos + 1, _text.Length));
+                    var right = spaceLoc == -1 ? textLength : spaceLoc;
+                    Deselect();
+                    SetSelection(left, right);
+                }
             }
 
             return base.OnMouseDoubleClick(location, button);

@@ -50,6 +50,10 @@
 #endif
 #include "FlaxEngine.Gen.h"
 
+#ifndef REVERSE_Z
+#define REVERSE_Z 0
+#endif
+
 Dictionary<String, CookAssetsStep::ProcessAssetFunc> CookAssetsStep::AssetProcessors;
 
 void IBuildCache::InvalidateCacheShaders()
@@ -231,6 +235,16 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
     if (buildSettings->ShadersGenerateDebugData != Settings.Global.ShadersGenerateDebugData)
     {
         LOG(Info, "{0} option has been modified.", TEXT("ShadersGenerateDebugData"));
+        invalidateShaders = true;
+    }
+    if (REVERSE_Z != Settings.Global.ShadersReverseZ)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersReverseZ"));
+        invalidateShaders = true;
+    }
+    if ((data.Configuration != BuildConfiguration::Release) != Settings.Global.ShadersDevelopment)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("ShadersDevelopment"));
         invalidateShaders = true;
     }
 #if PLATFORM_TOOLS_WINDOWS
@@ -423,7 +437,9 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     options.NoOptimize = data.Cache.Settings.Global.ShadersNoOptimize;
     options.GenerateDebugData = data.Cache.Settings.Global.ShadersGenerateDebugData;
     options.TreatWarningsAsErrors = false;
+    options.DevelopmentShaders = data.Cache.Settings.Global.ShadersDevelopment;
     options.Output = &cacheStream;
+    options.Platform = data.Data.Tools->GetPlatform();
     Array<String> includes;
 
 #define COMPILE_PROFILE(profile, cacheChunk) \
@@ -526,7 +542,6 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 #if PLATFORM_TOOLS_XBOX_SCARLETT
     case BuildPlatform::XboxScarlett:
     {
-        options.Platform = PlatformType::XboxScarlett;
         const char* platformDefineName = "PLATFORM_XBOX_SCARLETT";
         COMPILE_PROFILE(DirectX_SM6, SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE);
         break;
@@ -1076,6 +1091,8 @@ bool CookAssetsStep::Perform(CookingData& data)
     {
         cache.Settings.Global.ShadersNoOptimize = buildSettings->ShadersNoOptimize;
         cache.Settings.Global.ShadersGenerateDebugData = buildSettings->ShadersGenerateDebugData;
+        cache.Settings.Global.ShadersReverseZ = REVERSE_Z;
+        cache.Settings.Global.ShadersDevelopment = data.Configuration != BuildConfiguration::Release;
         cache.Settings.Global.StreamingSettingsAssetId = gameSettings->Streaming;
         cache.Settings.Global.ShadersVersion = GPU_SHADER_CACHE_VERSION;
         cache.Settings.Global.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;

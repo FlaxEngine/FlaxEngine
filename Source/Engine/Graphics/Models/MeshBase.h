@@ -14,11 +14,12 @@
 #include "CollisionProxy.h"
 #endif
 
-struct GeometryDrawStateData;
+struct GeometryDrawState;
 struct RenderContext;
 struct RenderContextBatch;
 class Task;
 class ModelBase;
+class MaterialBase;
 class Lightmap;
 class GPUBuffer;
 class SkinnedMeshDrawData;
@@ -346,9 +347,9 @@ public:
         Matrix* World;
 
         /// <summary>
-        /// The instance drawing state data container. Used for LOD transition handling and previous world transformation matrix updating.
+        /// The instance drawing state data container (optional). Used for LOD transition handling and previous world transformation matrix updating.
         /// </summary>
-        GeometryDrawStateData* DrawState;
+        GeometryDrawState* DrawState;
 
         /// <summary>
         /// The instance deformation utility.
@@ -362,7 +363,10 @@ public:
                 /// <summary>
                 /// The skinning.
                 /// </summary>
-                SkinnedMeshDrawData* Skinning;
+                GPUBuffer* SkinningBones;
+                uint32 SkinningBonesOffset; // In Matrix3x4s
+                int16 PrevBonesOffset; // In Matrix3x4s, can be negative
+                bool WithPrevBones;
             };
 
             struct
@@ -375,7 +379,7 @@ public:
                 /// <summary>
                 /// The lightmap UVs.
                 /// </summary>
-                const Rectangle* LightmapUVs;
+                const Half4* LightmapUVs;
             };
         };
 
@@ -424,9 +428,19 @@ public:
         /// </summary>
         int8 SortOrder;
 
-#if USE_EDITOR
-        float LightmapScale = -1.0f;
+#if GPU_ENABLE_DEVELOPMENT
+        float LightmapScale;
 #endif
+
+        // Zero-init.
+        FORCE_INLINE DrawInfo()
+        {
+            Platform::MemoryClear(this, sizeof(DrawInfo));
+            ForcedLOD = -1;
+#if GPU_ENABLE_DEVELOPMENT
+            LightmapScale = -1;
+#endif
+        }
 
         // Packs object layer into the stencil bits.
         FORCE_INLINE void SetStencilValue(int32 layer)
@@ -453,7 +467,7 @@ private:
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj);
     API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj);
-    API_FUNCTION(NoProxy) MArray* DownloadIndexBuffer(bool forceGpu, MTypeObject* resultType, bool use16Bit);
+    API_FUNCTION(NoProxy) MArray* DownloadIndexBuffer(bool forceGpu, MType* resultType, bool use16Bit);
     API_FUNCTION(NoProxy) bool DownloadData(int32 count, MeshBufferType* types, API_PARAM(Out) BytesContainer& buffer0, API_PARAM(Out) BytesContainer& buffer1, API_PARAM(Out) BytesContainer& buffer2, API_PARAM(Out) BytesContainer& buffer3, API_PARAM(Out) GPUVertexLayout*& layout0, API_PARAM(Out) GPUVertexLayout*& layout1, API_PARAM(Out) GPUVertexLayout*& layout2, API_PARAM(Out) GPUVertexLayout*& layout3, bool forceGpu) const;
 #endif
 };

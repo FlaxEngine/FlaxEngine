@@ -148,11 +148,16 @@ namespace WaylandImpl
 
     wl_data_offer* DataOffer = nullptr; // The last accepted offer
     wl_data_offer* SelectionOffer = nullptr;
+    wl_event_queue* EventQueue = nullptr;
+    bool DraggingWindow = false;
     wl_data_device_listener DataDeviceListener =
     {
         [](void* data, wl_data_device* data_device, wl_data_offer* id) { }, // Data offer event
         [](void* data, wl_data_device* data_device, uint32 serial, wl_surface* surface, wl_fixed_t x, wl_fixed_t y, wl_data_offer* id) // Enter event
         {
+            if (!DraggingWindow)
+                return;
+            
             DataOffer = id;
 
             SDLWindow* sourceWindow = (SDLWindow*)data;
@@ -168,14 +173,22 @@ namespace WaylandImpl
         },
         [](void* data, wl_data_device* data_device) // Leave event
         {
+            if (!DraggingWindow)
+                return;
+            
             // The cursor left the surface area
             if (DataOffer != nullptr)
+            {
                 wl_data_offer_destroy(DataOffer);
-            DataOffer = nullptr;
+                DataOffer = nullptr;
+            }
         },
         [](void* data, wl_data_device* data_device, uint32_t time, wl_fixed_t x, wl_fixed_t y) { },  // Motion event
         [](void* data, wl_data_device* data_device) // Drop event
         {
+            if (!DraggingWindow)
+                return;
+            
             // The drop is accepted
             if (DataOffer != nullptr)
             {
@@ -186,6 +199,9 @@ namespace WaylandImpl
         },
         [](void* data, wl_data_device* data_device, wl_data_offer* id) // Selection event
         {
+            if (!DraggingWindow)
+                return;
+            
             // Clipboard: We can read the clipboard content
             if (SelectionOffer != nullptr)
                 wl_data_offer_destroy(SelectionOffer);
@@ -193,27 +209,31 @@ namespace WaylandImpl
         },
     };
 
+    bool DataSourceValid = false;
     wl_data_source_listener DataSourceListener =
     {
         [](void* data, wl_data_source* source, const char* mime_type) { }, // Target event
         [](void* data, wl_data_source* source, const char* mime_type, int32_t fd) // Send event
         {
             // Clipboard: The other end has accepted and is requesting the data
+            UnixFile file(fd);
             IGuiData* inputData = static_cast<IGuiData*>(data);
-            if (inputData->GetType() == IGuiData::Type::Text)
+            if (inputData != nullptr && inputData->GetType() == IGuiData::Type::Text)
             {
-                UnixFile file(fd);
-                StringAnsi text = StringAnsi(inputData->GetAsText());
-                file.Write(text.Get(), text.Length() * sizeof(StringAnsi::CharType));
-                file.Close();
+                if (StringUtils::Compare(mime_type, "text/plain;charset=utf-8") == 0)
+                {
+                    StringAnsi text = StringAnsi(inputData->GetAsText());
+                    file.Write(text.Get(), text.Length() * sizeof(StringAnsi::CharType));
+                }
             }
+            file.Close();
         },
         [](void* data, wl_data_source* source) // Cancelled event
         {
             // Clipboard: other application has replaced the content in clipboad
             wl_data_source_destroy(source);
-            
-            IGuiData* inputData = static_cast<IGuiData*>(data);
+            DataSourceValid = false;
+
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
         },
         [](void* data, wl_data_source* source) { }, // DnD drop performed event
@@ -221,6 +241,7 @@ namespace WaylandImpl
         {
             // The destination has finally accepted the last given dnd_action
             wl_data_source_destroy(source);
+            DataSourceValid = false;
 
             IGuiData* inputData = static_cast<IGuiData*>(data);
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
@@ -229,11 +250,9 @@ namespace WaylandImpl
     };
 
     wl_data_device* DataDevice = nullptr;
-    wl_event_queue* EventQueue = nullptr;
     wl_data_device_manager* WrappedDataDeviceManager = nullptr;
     wl_data_device* WrappedDataDevice = nullptr;
     bool DraggingActive = false;
-    bool DraggingWindow = false;
     StringView DraggingData = nullptr;
     class DragDropJob : public ThreadPoolTask
     {
@@ -279,8 +298,7 @@ namespace WaylandImpl
 
             // Offer data for consumption, the data source is destroyed elsewhere
             wl_data_source* dataSource = wl_data_device_manager_create_data_source(WrappedDataDeviceManager);
-            wl_data_source* wrappedDataSource = (wl_data_source*)wl_proxy_create_wrapper(dataSource);
-            wl_proxy_set_queue(reinterpret_cast<wl_proxy*>(wrappedDataSource), EventQueue);
+            DataSourceValid = true;
             if (dragWindow)
             {
                 wl_data_source_offer(dataSource, "flaxengine/window");
@@ -354,8 +372,11 @@ namespace WaylandImpl
             
             Platform::AtomicStore(&DragOverFlag, 1);
 
-            if (wrappedDataSource != nullptr)
-                wl_proxy_wrapper_destroy(wrappedDataSource);
+            if (DataSourceValid)
+            {
+                wl_data_source_destroy(dataSource);
+                DataSourceValid = false;
+            }
 
             if (SelectionOffer != nullptr)
             {
@@ -743,9 +764,9 @@ DragDropEffect Window::DoDragDropWayland(const StringView& data, Window* dragSou
 DragDropEffect Window::DoDragDropX11(const StringView& data)
 {
     using namespace X11Impl;
-	auto cursorWrong = X11::XCreateFontCursor(xDisplay, 54);
+	auto cursorWrong = X11::XCreateFontCursor(xDisplay, 0);
 	auto cursorTransient = X11::XCreateFontCursor(xDisplay, 24);
-	auto cursorGood = X11::XCreateFontCursor(xDisplay, 4);
+	auto cursorGood = X11::XCreateFontCursor(xDisplay, 58);
     Array<X11::Atom, FixedAllocation<3>> formats;
     formats.Add(X11::XInternAtom(xDisplay, "text/plain", 0));
     formats.Add(xAtomText);
@@ -784,6 +805,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
         CanDrop,
     };
     int status = Unaware, previousVersion = -1;
+    bool isOverFlaxWindow = false;
     X11::Window previousWindow = 0;
     DragDropEffect result = DragDropEffect::None;
     float lastDraw = Platform::GetTimeSeconds();
@@ -795,7 +817,8 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
         // Hardcoded hack for SDL3 with X11 to end drag
         if (event.type == XFixesSelectionNotifyEvent - 2)
             break;
-            
+
+        bool isGenericMotion = false, isGenericButtonRelease = false;
         if (event.type == GenericEvent)
         {
             X11::XGenericEventCookie& cookie = event.xcookie;
@@ -803,10 +826,13 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             {
                 switch (cookie.evtype)
                 {
+                case XI_ButtonRelease:
+                    isGenericButtonRelease = true;
+                    break;
                 case XI_Motion:
                 {
-                    auto xev = (const X11::xXIDeviceEvent*)cookie.data;
-                    // TODO: implement drag over/move/leave events via XInput2 and restore it in Editor (SDL_VIDEO_X11_XINPUT2=1 in SDLPlatform.cpp)
+                    //auto xev = (const X11::xXIDeviceEvent*)cookie.data;
+                    isGenericMotion = true;
                     break;
                 }
                 default:
@@ -815,9 +841,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 }
                 X11::XFreeEventData(xDisplay, &cookie);
             }
-            continue;
         }
-
         if (event.type == SelectionClear)
             break;
         if (event.type == SelectionRequest)
@@ -853,7 +877,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             }
             X11::XSendEvent(event.xselection.display, event.xselectionrequest.requestor, 1, 0, &s);
         }
-        else if (event.type == MotionNotify)
+        else if (event.type == MotionNotify || isGenericMotion)
         {
             // Find window under mouse
             auto window = X11Impl::FindAppWindow(xDisplay, rootWindow);
@@ -879,10 +903,15 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             	status = Unreceptive;
             else if(version == -1)
             	status = Unaware;
-            xDndPos = Float2((float)event.xmotion.x_root, (float)event.xmotion.y_root);
+            if (event.type == MotionNotify)
+                xDndPos = Float2((float)event.xmotion.x_root, (float)event.xmotion.y_root);
+            else
+                xDndPos = GetX11MousePosition();
 
             // Update mouse grab
-            if (status == Unaware)
+            if (isOverFlaxWindow)
+                X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, xDndResult != DragDropEffect::None ? cursorGood : cursorWrong, CurrentTime);
+            else if (status == Unaware)
                 X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, cursorWrong, CurrentTime);
             else if(status == Unreceptive)
                 X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, cursorTransient, CurrentTime);
@@ -900,6 +929,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 }
                 else
                 {
+                    isOverFlaxWindow = false;
                     X11::XClientMessageEvent m;
                     memset(&m, 0, sizeof(m));
                     m.type = ClientMessage;
@@ -923,12 +953,15 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 auto ww = WindowsManager::GetByNativePtr((void*)window);
                 if (ww)
                 {
+                    isOverFlaxWindow = true;
                     xDndPos = ww->ScreenToClient(X11Impl::GetX11MousePosition());
                     xDndResult = DragDropEffect::None;
                     ww->OnDragEnter(&dropData, xDndPos, xDndResult);
+                    X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, xDndResult != DragDropEffect::None ? cursorGood : cursorWrong, CurrentTime);
                 }
                 else
                 {
+                    isOverFlaxWindow = false;
                     X11::XClientMessageEvent m;
                     memset(&m, 0, sizeof(m));
                     m.type = ClientMessage;
@@ -952,14 +985,17 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
                 auto ww = WindowsManager::GetByNativePtr((void*)window);
                 if (ww)
                 {
+                    isOverFlaxWindow = true;
                     xDndPos = ww->ScreenToClient(X11Impl::GetX11MousePosition());
                     ww->_dragOver = true;
                     xDndResult = DragDropEffect::None;
                     ww->OnDragOver(&dropData, xDndPos, xDndResult);
                     status = CanDrop;
+                    X11::XChangeActivePointerGrab(xDisplay, Button1MotionMask | ButtonReleaseMask, xDndResult != DragDropEffect::None ? cursorGood : cursorWrong, CurrentTime);
                 }
                 else
                 {
+                    isOverFlaxWindow = false;
                     int x, y, tmp;
                     unsigned int utmp;
                     X11::Window wtmp;
@@ -991,7 +1027,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
             if (!(event.xclient.data.l[1]&1) && status != Unaware)
                 status = Unreceptive;
         }
-        else if (event.type == ButtonRelease && event.xbutton.button == Button1)
+        else if ((event.type == ButtonRelease && event.xbutton.button == Button1) || isGenericButtonRelease)
         {
             if (status == CanDrop)
             {
@@ -1029,10 +1065,9 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
 
         // Redraw
         const float time = Platform::GetTimeSeconds();
-        if (time - lastDraw >= 1.0f / 20.0f)
+        if (time - lastDraw >= 1.0f / 30.0f)
         {
             lastDraw = time;
-            
             Engine::OnDraw();
         }
 

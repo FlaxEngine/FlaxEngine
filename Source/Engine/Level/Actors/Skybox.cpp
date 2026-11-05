@@ -6,7 +6,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Content/Assets/Material.h"
@@ -29,7 +29,7 @@ void Skybox::setupProxy()
     }
 }
 
-void Skybox::Draw(RenderContext& renderContext)
+void Skybox::Draw(RenderContextBatch& renderContextBatch)
 {
     bool isReady;
     if (CustomMaterial)
@@ -41,6 +41,7 @@ void Skybox::Draw(RenderContext& renderContext)
         setupProxy();
         isReady = _proxyMaterial && _proxyMaterial->IsReady();
     }
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (isReady && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         renderContext.List->Sky = this;

@@ -478,7 +478,7 @@ namespace FlaxEditor.GUI.Timeline
             if (base.OnMouseDoubleClick(location, button))
                 return true;
 
-            if (PropertiesEditObject != null)
+            if (button == MouseButton.Left && PropertiesEditObject != null)
             {
                 Timeline.ShowEditPopup(PropertiesEditObject, PointToParent(Timeline, location), Track);
                 return true;

@@ -81,9 +81,11 @@ struct ObjectData
     float4x4 PrevWorldMatrix;
     float3 GeometrySize;
     float WorldDeterminantSign;
+    float4 LightmapArea;
     float LODDitherFactor;
     float PerInstanceRandom;
-    float4 LightmapArea;
+    uint SkinningOffset;
+    int PrevBonesOffset;
 };
 
 float2 UnpackHalf2(uint xy)
@@ -115,8 +117,11 @@ ObjectData LoadObject(Buffer<float4> objectsBuffer, uint objectIndex)
     object.PrevWorldMatrix[3] = float4(vector3.w, vector4.w, vector5.w, 1.0f);
     object.GeometrySize = vector6.xyz;
     object.PerInstanceRandom = vector6.w;
-    object.WorldDeterminantSign = vector7.x;
-    object.LODDitherFactor = vector7.y;
+    uint packed7x = asuint(vector7.x);
+    object.WorldDeterminantSign = (packed7x & 256) == 256 ? -1.0f : 1.0f;
+    object.LODDitherFactor = (packed7x & 127) / 127.0f * ((packed7x & 128) == 128 ? -1.0f : 1.0f);
+    object.SkinningOffset = asuint(vector7.y);
+    object.PrevBonesOffset = (int)(packed7x >> 16) - 32760;
     object.LightmapArea.xy = UnpackHalf2(asuint(vector7.z));
     object.LightmapArea.zw = UnpackHalf2(asuint(vector7.w));
     return object;
@@ -176,7 +181,8 @@ cbuffer ViewData : register(b1)
     float4 TemporalAAJitter;
     float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
-    float2 ViewPadding0;
+    float MaterialTextureMipBias;
+    float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
 };
@@ -247,6 +253,9 @@ struct ModelInput_Skinned
 #endif
     uint4 BlendIndices : BLENDINDICES;
     float4 BlendWeights : BLENDWEIGHTS;
+#if USE_INSTANCING
+    uint ObjectIndex : ATTRIBUTE0;
+#endif
 };
 
 struct Model_VS2PS
@@ -320,10 +329,10 @@ float2 Flipbook(float2 uv, float frame, float2 sizeXY, float2 flipXY = 0.0f)
 }
 
 // Calculates the world-position offset to stabilize tiling (eg. via triplanar mapping) due to Large Worlds view origin offset.
-float3 GetLargeWorldsTileOffset(float tileSize)
+float3 GetLargeWorldsTileOffset(float3 tileSize)
 {
 #if USE_PER_VIEW_CONSTANTS
-    return LargeWorldsChunkIndex * fmod(LargeWorldsChunkSize, tileSize);
+    return LargeWorldsChunkIndex * fmod((float3)LargeWorldsChunkSize, tileSize);
 #else
     return float3(0, 0, 0);
 #endif

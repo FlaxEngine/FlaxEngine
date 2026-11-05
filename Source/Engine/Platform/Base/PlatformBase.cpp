@@ -53,6 +53,7 @@ Delegate<User*> PlatformBase::UserAdded;
 Delegate<User*> PlatformBase::UserRemoved;
 void* OutOfMemoryBuffer = nullptr;
 volatile int64 FatalReporting = 0;
+CPUInfo CpuInfo;
 
 const Char* ToString(NetworkConnectionType value)
 {
@@ -308,6 +309,11 @@ bool PlatformBase::Is64BitPlatform()
 #else
     return false;
 #endif
+}
+
+CPUInfo PlatformBase::GetCPUInfo()
+{
+    return CpuInfo;
 }
 
 int32 PlatformBase::GetCacheLineSize()
@@ -834,6 +840,39 @@ const Char* ToString(PlatformType type)
         return TEXT("Switch");
     case PlatformType::PS5:
         return TEXT("PlayStation 5");
+    case PlatformType::Mac:
+        return TEXT("Mac");
+    case PlatformType::iOS:
+        return TEXT("iOS");
+    case PlatformType::Web:
+        return TEXT("Web");
+    default:
+        return TEXT("");
+    }
+}
+
+const Char* ToStringExact(PlatformType type)
+{
+    switch (type)
+    {
+    case PlatformType::Windows:
+        return TEXT("Windows");
+    case PlatformType::XboxOne:
+        return TEXT("XboxOne");
+    case PlatformType::UWP:
+        return TEXT("UWP");
+    case PlatformType::Linux:
+        return TEXT("Linux");
+    case PlatformType::PS4:
+        return TEXT("PS4");
+    case PlatformType::XboxScarlett:
+        return TEXT("XboxScarlett");
+    case PlatformType::Android:
+        return TEXT("Android");
+    case PlatformType::Switch:
+        return TEXT("Switch");
+    case PlatformType::PS5:
+        return TEXT("PS5");
     case PlatformType::Mac:
         return TEXT("Mac");
     case PlatformType::iOS:

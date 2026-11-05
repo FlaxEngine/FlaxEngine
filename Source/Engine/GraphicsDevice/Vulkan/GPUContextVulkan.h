@@ -70,6 +70,12 @@ struct PipelineBarrierVulkan
 class GPUContextVulkan : public GPUContext
 {
 private:
+    struct PendingClear
+    {
+        GPUTextureViewVulkan* View;
+        VkClearValue Value;
+    };
+
     GPUDeviceVulkan* _device;
     QueueVulkan* _queue;
     CmdBufferManagerVulkan* _cmdBufferManager;
@@ -78,6 +84,7 @@ private:
     int32 _psDirtyFlag : 1;
     int32 _rtDirtyFlag : 1;
     int32 _cbDirtyFlag : 1;
+    int32 _drawPassCanClear : 1;
     int32 _depthBoundsEnable : 1;
 
     int32 _rtCount;
@@ -85,11 +92,19 @@ private:
     uint32 _stencilRef;
 
     RenderPassVulkan* _renderPass;
+    GPUDrawPass* _drawPass = nullptr;
     GPUPipelineStateVulkan* _currentState;
     GPUShaderProgramCSVulkan* _currentCompute;
     GPUVertexLayoutVulkan* _vertexLayout;
-    GPUTextureViewVulkan* _rtDepth;
-    GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
+    union
+    {
+        struct
+        {
+            GPUTextureViewVulkan* _rtDepth;
+            GPUTextureViewVulkan* _rtTargets[GPU_MAX_RT_BINDED];
+        };
+        GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED + 1];
+    };
     DescriptorOwnerResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
     DescriptorOwnerResourceVulkan* _srHandles[GPU_MAX_SR_BINDED];
     DescriptorOwnerResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
@@ -101,6 +116,7 @@ private:
 #if COMPILE_WITH_PROFILER
     void* _tracyContext;
 #endif
+    Array<PendingClear> _pendingClears;
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
@@ -129,6 +145,11 @@ public:
         return _cmdBufferManager;
     }
 
+    FORCE_INLINE GPUShaderProgramCSVulkan* GetCurrentCS() const
+    {
+        return _currentCompute;
+    }
+
     void AddImageBarrier(VkImage image, VkImageLayout srcLayout, VkImageLayout dstLayout, const VkImageSubresourceRange& subresourceRange, GPUTextureViewVulkan* handle);
     void AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayout dstLayout);
     void AddImageBarrier(GPUTextureVulkan* texture, int32 mipSlice, int32 arraySlice, VkImageLayout dstLayout);
@@ -143,10 +164,12 @@ public:
     DescriptorPoolVulkan* AllocateDescriptorSets(const VkDescriptorSetAllocateInfo& descriptorSetAllocateInfo, const DescriptorSetLayoutVulkan& layout, VkDescriptorSet* outSets);
 
     void BeginRenderPass();
-
     void EndRenderPass();
 
 private:
+    bool FindClear(const GPUTextureViewVulkan* view, PendingClear& clear);
+    void ManualClear(const PendingClear& clear);
+    void FlushManualClears();
     void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
     void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
     void OnDrawCall();
@@ -211,6 +234,8 @@ public:
     void Transition(GPUResource* resource, GPUResourceAccess access) override;
     void MemoryBarrier() override;
     void OverlapUA(bool end) override;
+    void BeginDrawPass(GPUDrawPass& pass) override;
+    void EndDrawPass() override;
 };
 
 #endif

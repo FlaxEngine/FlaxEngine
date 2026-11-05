@@ -31,7 +31,7 @@ public:
     /// <summary>
     /// Controls light visibility range. The distance at which the light becomes completely faded (blend happens on the last 10% of that range). Use a value of 0 to always draw light.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(35), Limit(0, float.MaxValue, 10.0f), EditorDisplay(\"Light\")")
+    API_FIELD(Attributes="EditorOrder(35), Limit(0, float.MaxValue, 10.0f), EditorDisplay(\"Light\"), ValueCategory(Utils.ValueCategory.Distance)")
     float ViewDistance = 0.0f;
 
     /// <summary>
@@ -126,13 +126,13 @@ public:
     /// <summary>
     /// Shadows casting distance from view.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Shadow\", \"Distance\"), Limit(0, 1000000)")
+    API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Shadow\", \"Distance\"), Limit(0, 1000000), ValueCategory(Utils.ValueCategory.Distance)")
     float ShadowsDistance = 5000.0f;
 
     /// <summary>
     /// Shadows fade off distance.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(90), EditorDisplay(\"Shadow\", \"Fade Distance\"), Limit(0.0f, 10000.0f, 0.1f)")
+    API_FIELD(Attributes="EditorOrder(90), EditorDisplay(\"Shadow\", \"Fade Distance\"), Limit(0.0f, 10000.0f, 0.1f), ValueCategory(Utils.ValueCategory.Distance)")
     float ShadowsFadeDistance = 500.0f;
 
     /// <summary>
@@ -151,7 +151,7 @@ public:
     /// The depth bias used for shadow map comparison.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(95), EditorDisplay(\"Shadow\", \"Depth Bias\"), Limit(0.0f, 10.0f, 0.0001f)")
-    float ShadowsDepthBias = 0.005f;
+    float ShadowsDepthBias = 0.05f;
 
     /// <summary>
     /// A factor specifying the offset to add to the calculated shadow map depth with respect to the surface normal.
@@ -162,7 +162,7 @@ public:
     /// <summary>
     /// The length of the rays for contact shadows computed via the screen-space tracing. Set this to values higher than 0 to enable screen-space shadows rendering for this light. This improves the shadowing details. Actual ray distance is based on the pixel distance from the camera.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(99), EditorDisplay(\"Shadow\"), Limit(0.0f, 0.1f, 0.001f)")
+    API_FIELD(Attributes="EditorOrder(99), EditorDisplay(\"Shadow\"), Limit(0.0f, 0.4f, 0.001f)")
     float ContactShadowsLength = 0.0f;
 
     /// <summary>

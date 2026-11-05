@@ -10,7 +10,6 @@
 #include "Engine/Foliage/Foliage.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Level/Actors/StaticModel.h"
-#include "Engine/Level/ActorsCache.h"
 #include "Engine/Navigation/NavigationSettings.h"
 #include "Engine/Navigation/NavMeshBoundsVolume.h"
 #include "Engine/Navigation/NavMesh.h"
@@ -120,8 +119,6 @@ void Scene::BuildCSG(float timeoutMs)
     CSGData.BuildCSG(timeoutMs);
 }
 
-#if USE_EDITOR
-
 String Scene::GetPath() const
 {
     AssetInfo info;
@@ -137,6 +134,8 @@ String Scene::GetFilename() const
 {
     return StringUtils::GetFileNameWithoutExtension(GetPath());
 }
+
+#if USE_EDITOR
 
 String Scene::GetDataFolderPath() const
 {

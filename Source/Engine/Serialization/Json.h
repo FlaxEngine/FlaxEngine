@@ -24,6 +24,7 @@
 //#define RAPIDJSON_MALLOC(size) ::malloc(size)
 //#define RAPIDJSON_REALLOC(ptr, new_size) ::realloc(ptr, new_size)
 //#define RAPIDJSON_FREE(ptr) ::free(ptr)
+#define RAPIDJSON_ALLOCATOR_DEFAULT_CHUNK_CAPACITY 65511 // Keep it smaller than default so it fits 64kB alloc INCLUDING headers/chunks from MemoryPoolAllocator
 
 #include <ThirdParty/rapidjson/writer.h>
 #include <ThirdParty/rapidjson/prettywriter.h>

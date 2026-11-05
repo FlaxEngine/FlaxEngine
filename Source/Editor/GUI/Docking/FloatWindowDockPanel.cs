@@ -270,8 +270,8 @@ namespace FlaxEditor.GUI.Docking
         public override void OnDestroy()
         {
             _masterPanel?.FloatingPanels.Remove(this);
-
             UnlinkWindow();
+
             base.OnDestroy();
         }
     }

@@ -164,7 +164,7 @@ void SpatialSort::FindPositions(const aiVector3D& pPosition,
     // Add all positions inside the distance range within the given radius to the result aray
     std::vector<Entry>::const_iterator it = mPositions.begin() + index;
     const ai_real pSquared = pRadius * pRadius;
-    while (it->mDistance < maxDist)
+    while (it->mDistance <= maxDist)
     {
         if ((it->mPosition - pPosition).SquareLength() < pSquared)
             poResults.push_back(it->mIndex);

@@ -186,7 +186,7 @@ public:
     typedef Array<char, InlinedAllocation<200>> DebugName;
     void GetDebugName(DebugName& name) const;
 #endif
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     int32 Complexity;
 #endif
 

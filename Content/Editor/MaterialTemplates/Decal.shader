@@ -32,6 +32,7 @@ struct MaterialInput
 	float TwoSidedSign;
 	float2 TexCoord;
 	float4 TexCoord_DDX_DDY;
+	float3 TexCoord3D;
 	float3x3 TBN;
 	float4 SvPosition;
 	float3 PreSkinnedPosition;
@@ -126,7 +127,7 @@ float3 TransformWorldVectorToLocal(MaterialInput input, float3 worldVector)
 	return mul(localToWorld, worldVector);
 }
 
-// Gets the current object position (supports instancing)
+// Gets the current object position
 float3 GetObjectPosition(MaterialInput input)
 {
 	return WorldMatrix[3].xyz;
@@ -135,22 +136,23 @@ float3 GetObjectPosition(MaterialInput input)
 // Gets the current object size
 float3 GetObjectSize(MaterialInput input)
 {
-	return float3(1, 1, 1);
+    // Decal bounds are baked into world matrix (decal draws unit cube)
+    return float3(length(WorldMatrix[0].xyz), length(WorldMatrix[1].xyz), length(WorldMatrix[2].xyz));
 }
 
-// Gets the current object scale (supports instancing)
+// Gets the current object scale
 float3 GetObjectScale(MaterialInput input)
 {
 	return float3(1, 1, 1);
 }
 
-// Get the current object random value supports instancing)
+// Get the current object random value
 float GetPerInstanceRandom(MaterialInput input)
 {
 	return 0;
 }
 
-// Get the current object LOD transition dither factor (supports instancing)
+// Get the current object LOD transition dither factor
 float GetLODDitherFactor(MaterialInput input)
 {
 	return 0;
@@ -176,22 +178,31 @@ Material GetMaterialPS(MaterialInput input)
 #define DECAL_BLEND_MODE_NORMAL      2
 #define DECAL_BLEND_MODE_EMISSIVE    3
 
+// Geometry data passed though the graphics rendering stages up to the pixel shader
+struct VS2PS
+{
+    float4 SvPosition : SV_Position;
+    float3 VertexPosition : TEXCOORD0;
+};
+
 // Vertex Shader function for decals rendering
 META_VS(true, FEATURE_LEVEL_ES2)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
-void VS_Decal(in float3 Position : POSITION0, out float4 SvPosition : SV_Position)
+void VS_Decal(in float3 Position : POSITION0, out VS2PS output)
 {
-	// Compute world space vertex position
-	float3 worldPosition = PROJECT_POINT(float4(Position.xyz, 1), WorldMatrix).xyz;
+    output.VertexPosition = Position;
 
-	// Compute clip space position
-	SvPosition = PROJECT_POINT(float4(worldPosition.xyz, 1), ViewProjectionMatrix);
+    // Compute world space vertex position
+    float3 worldPosition = PROJECT_POINT(float4(Position, 1), WorldMatrix).xyz;
+
+    // Compute clip space position
+    output.SvPosition = PROJECT_POINT(float4(worldPosition, 1), ViewProjectionMatrix);
 }
 
 // Pixel Shader function for decals rendering
 META_PS(true, FEATURE_LEVEL_ES2)
 void PS_Decal(
-	in float4 SvPosition : SV_Position
+	in VS2PS input
 	, out float4 Out0 : SV_Target0
 #if DECAL_BLEND_MODE == DECAL_BLEND_MODE_TRANSLUCENT
 	, out float4 Out1 : SV_Target1
@@ -205,29 +216,32 @@ void PS_Decal(
 	)
 {
 	// Stencil masking
-	uint stencilObjectLayer = STENCIL_BUFFER_OBJECT_LAYER(STENCIL_BUFFER_LOAD(StencilBuffer, SvPosition.xy));
+	uint stencilObjectLayer = STENCIL_BUFFER_OBJECT_LAYER(STENCIL_BUFFER_LOAD(StencilBuffer, input.SvPosition.xy));
 	if ((RenderLayersMask & (1 << stencilObjectLayer)) == 0)
 	{
 		clip(-1);
 		return;
 	}
 
-	float2 screenUV = SvPosition.xy * ScreenSize.zw;
-	SvPosition.z = SAMPLE_RT_DEPTH(DepthBuffer, screenUV);
+    // Snap position to the underlying surface on the depth buffer
+	float2 screenUV = input.SvPosition.xy * ScreenSize.zw;
+	input.SvPosition.z = SAMPLE_RT_DEPTH(DepthBuffer, screenUV);
 
-	float4 positionHS = PROJECT_POINT(float4(SvPosition.xyz, 1), SvPositionToWorld);
+    // Project position into decal UV-space
+	float4 positionHS = PROJECT_POINT(float4(input.SvPosition.xyz, 1), SvPositionToWorld);
 	float3 positionWS = positionHS.xyz / positionHS.w;
 	float3 positionOS = PROJECT_POINT(float4(positionWS, 1), InvWorld).xyz;
-
 	clip(0.5 - abs(positionOS.xyz));
-	float2 decalUVs = positionOS.xz + 0.5f;
 
 	// Setup material input
 	MaterialInput materialInput = (MaterialInput)0;
 	materialInput.WorldPosition = positionWS;
-	materialInput.TexCoord = decalUVs;
+	materialInput.TexCoord3D = positionOS + 0.5f;
+	materialInput.TexCoord = materialInput.TexCoord3D.xz;
 	materialInput.TwoSidedSign = 1;
-	materialInput.SvPosition = SvPosition;
+	materialInput.SvPosition = input.SvPosition;
+	materialInput.PreSkinnedPosition = input.VertexPosition;
+	materialInput.PreSkinnedNormal = normalize(input.VertexPosition);
 	materialInput.TexCoord_DDX_DDY = CalculateTextureDerivatives(materialInput.SvPosition, materialInput.TexCoord);
 
 	// Calculate tangent-space

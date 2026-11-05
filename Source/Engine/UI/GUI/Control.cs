@@ -598,6 +598,26 @@ namespace FlaxEngine.GUI
         public virtual void OnEndMouseCapture()
         {
         }
+        
+        /// <summary>
+        /// Enables <see cref="OnCharInput"/> events.
+        /// </summary>
+        [NoAnimate]
+        public virtual void StartTextInput()
+        {
+            var parent = Root;
+            parent?.StartTextInput();
+        }
+        
+        /// <summary>
+        /// Disables <see cref="OnCharInput"/> events.
+        /// </summary>
+        [NoAnimate]
+        public virtual void EndTextInput()
+        {
+            var parent = Root;
+            parent?.EndTextInput();
+        }
 
         #endregion
 
@@ -853,8 +873,12 @@ namespace FlaxEngine.GUI
         #region Keyboard
 
         /// <summary>
-        /// On input character
+        /// On character input
         /// </summary>
+        /// <remarks>
+        /// Requires text input enabled in order to receive character input events.
+        /// See <see cref="StartTextInput"/>.
+        /// </remarks>
         /// <param name="c">Input character</param>
         /// <returns>True if event has been handled, otherwise false</returns>
         [NoAnimate]

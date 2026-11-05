@@ -498,6 +498,8 @@ void ParticleEmitterGPUGenerator::PrepareGraph(ParticleEmitterGraphGPU* graph)
             }
             if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUTexture") == 0)
                 mp.Type = MaterialParameterType::GPUTexture;
+            else if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUBuffer") == 0)
+                mp.Type = MaterialParameterType::GPUBuffer;
             else
                 OnError(nullptr, nullptr, String::Format(TEXT("Invalid or unsupported particle parameter type {0}."), param->Type));
             mp.AsGuid = (Guid)param->Value;

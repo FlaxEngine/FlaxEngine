@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Config.h"
-#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Core/Math/Half.h"
 #include "Engine/Core/Math/Color.h"
 
 struct RenderView;
@@ -80,8 +80,9 @@ public:
     /// <summary>
     /// Gets the volumetric fog options.
     /// </summary>
+    /// <param name="view">The rendering view.</param>
     /// <param name="result">The result.</param>
-    virtual void GetVolumetricFogOptions(VolumetricFogOptions& result) const = 0;
+    virtual void GetVolumetricFogOptions(const RenderView& view, VolumetricFogOptions& result) const = 0;
 
     /// <summary>
     /// Gets the exponential height fog data.
@@ -148,6 +149,13 @@ struct DrawCall
     /// </summary>
     int32 InstanceCount;
 
+    enum class SkinningMode
+    {
+        None = 0,
+        Active,
+        WithPrevBones,
+    };
+
     union
     {
         struct
@@ -183,23 +191,26 @@ struct DrawCall
         struct
         {
             const Lightmap* Lightmap;
-            Rectangle LightmapUVsArea;
+            Half4 LightmapUVsArea;
         } Features;
 
         struct
         {
             const Lightmap* Lightmap;
-            Rectangle LightmapUVsArea;
-            SkinnedMeshDrawData* Skinning;
+            Half4 LightmapUVsArea;
+            SkinningMode Skinning;
+            int16 PrevBonesOffset; // In Matrix3x4s, can be negative
+            int8 LODDitherFactor; // The model LOD transition dither progress. [-127; 127] that maps into [-1;1] inside shader
+            GPUBuffer* SkinningBones;
             Float3 GeometrySize; // Object geometry size in the world (unscaled).
-            float LODDitherFactor; // The model LOD transition dither progress.
+            uint32 SkinningBonesOffset; // In Matrix3x4s
             Matrix PrevWorld;
         } Surface;
 
         struct
         {
             const Lightmap* Lightmap;
-            Rectangle LightmapUVsArea;
+            Half4 LightmapUVsArea;
             Float4 HeightmapUVScaleBias;
             Float4 NeighborLOD;
             Float2 OffsetUV;
@@ -276,7 +287,7 @@ struct DrawCall
     uint8 StencilValue;
 
     /// <summary>
-    /// The world matrix determinant sign (used for geometry that is two sided or has inverse scale - needs to flip normal vectors and change triangles culling).
+    /// The world matrix determinant sign (used for geometry that is two-sided or has inverse scale - needs to flip normal vectors and change triangles culling).
     /// 0 - sign is positive
     /// 1 - sign is negative (flips object surfaces)
     /// </summary>
@@ -312,7 +323,7 @@ struct TIsPODType<DrawCall>
 /// Data container for meshes and skinned meshes rendering with minimal state caching. 
 /// Used to update previous world transformation matrix for motion vectors pass and handle LOD transitions blending.
 /// </summary>
-struct GeometryDrawStateData
+struct GeometryDrawState
 {
     /// <summary>
     /// The previous frame world transformation matrix for the given geometry instance.
@@ -323,6 +334,11 @@ struct GeometryDrawStateData
     /// The previous frame index. In sync with Engine::FrameCount used to detect new frames and rendering gaps to reset state.
     /// </summary>
     uint64 PrevFrame = 0;
+
+    /// <summary>
+    /// Unique identifier of the object culling state. Assigned and managed by the occlusion culling system (IOcclusionCulling).
+    /// </summary>
+    uint32 CullingId = 0;
 
     /// <summary>
     /// The previous frame model LOD index used. It's locked during LOD transition to cache the transition start LOD.
@@ -337,23 +353,23 @@ struct GeometryDrawStateData
 };
 
 template<>
-struct TIsPODType<GeometryDrawStateData>
+struct TIsPODType<GeometryDrawState>
 {
     enum { Value = true };
 };
 
 #define GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, worldMatrix) \
     const auto frame = Engine::FrameCount; \
-	if (drawState.PrevFrame + 1 < frame && !renderContext.View.IsSingleFrame) \
+	if (drawState && drawState->PrevFrame + 1 < frame && !renderContext.View.IsSingleFrame) \
 	{ \
-        drawState.PrevWorld = worldMatrix; \
+        drawState->PrevWorld = worldMatrix; \
     }
 
 #define GEOMETRY_DRAW_STATE_EVENT_END(drawState, worldMatrix) \
-	if (drawState.PrevFrame != frame && !renderContext.View.IsSingleFrame) \
+	if (drawState && drawState->PrevFrame != frame && !renderContext.View.IsSingleFrame) \
 	{ \
-		drawState.PrevWorld = worldMatrix; \
-		drawState.PrevFrame = frame; \
+		drawState->PrevWorld = worldMatrix; \
+		drawState->PrevFrame = frame; \
 	}
 
 #if USE_LARGE_WORLDS

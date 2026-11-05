@@ -283,6 +283,8 @@ void LocalizationService::OnLocalizationChanged()
 
 #if PLATFORM_ANDROID
     // Android doesn't support locales in the native C library (https://issuetracker.google.com/issues/36974962)
+#elif PLATFORM_PS5 || PLATFORM_PS4
+    // Not supported
 #else
     // Change C++ locale (eg. used by fmt lib for values formatting)
     {

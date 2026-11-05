@@ -7,6 +7,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/Task.h"
+#include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/BinaryModule.h"
@@ -53,9 +54,9 @@ struct CommandData
                 }
 
                 // Use Xml docs reader used by Editor to get tooltips
-                auto getXmlInternal = DebugCommands::TypeInitializer.GetClass()->GetMethod("GetXmlInternal", 2);
-                void* params[2] = { INTERNAL_TYPE_GET_OBJECT(mclass->GetType()), MUtils::ToString(name) };
-                Help = MUtils::ToString((MString*)getXmlInternal->Invoke(nullptr, params, nullptr));
+                auto internal = DebugCommands::TypeInitializer.GetClass()->GetMethod("GetDebugHelpInternal", 2);
+                void* params[2] = { mclass->GetType(), MUtils::ToString(name) };
+                Help = MUtils::ToString((MString*)internal->Invoke(nullptr, params, nullptr));
             }
         }
         return Help;
@@ -265,8 +266,23 @@ namespace
         if (auto* managedModule = dynamic_cast<ManagedBinaryModule*>(module))
         {
             const MClass* attribute = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEngine.DebugCommand");
+            const MMethod* getInfo = attribute->GetMethod("GetInfoInternal", 1);
             ASSERT_LOW_LAYER(attribute);
             const auto& classes = managedModule->Assembly->GetClasses();
+#define FILTER(type) \
+    if (useClass && type->GetVisibility() != MVisibility::Public) \
+        continue; \
+    MObject* attr = type->GetAttribute(attribute); \
+    if (!useClass && !attr) \
+        continue; \
+    if (attr) \
+    { \
+        bool hide = false; \
+        void* params[1] = { &hide }; \
+        getInfo->Invoke(attr, params, nullptr); \
+        if (hide) \
+            continue; \
+    }
             for (const auto& e : classes)
             {
                 MClass* mclass = e.Value;
@@ -292,10 +308,7 @@ namespace
                         name.StartsWith("add_") ||
                         name.StartsWith("remove_"))
                         continue;
-                    if (!useClass && !method->HasAttribute(attribute))
-                        continue;
-                    if (useClass && method->GetVisibility() != MVisibility::Public)
-                        continue;
+                    FILTER(method);
 
                     auto& commandData = Commands.AddOne();
                     BuildName(commandData, mclass, method->GetName());
@@ -309,10 +322,7 @@ namespace
                 {
                     if (!field->IsStatic())
                         continue;
-                    if (!useClass && !field->HasAttribute(attribute))
-                        continue;
-                    if (useClass && field->GetVisibility() != MVisibility::Public)
-                        continue;
+                    FILTER(field);
 
                     auto& commandData = Commands.AddOne();
                     BuildName(commandData, mclass, field->GetName());
@@ -326,10 +336,7 @@ namespace
                 {
                     if (!property->IsStatic())
                         continue;
-                    if (!useClass && !property->HasAttribute(attribute))
-                        continue;
-                    if (useClass && property->GetVisibility() != MVisibility::Public)
-                        continue;
+                    FILTER(property);
 
                     auto& commandData = Commands.AddOne();
                     BuildName(commandData, mclass, property->GetName());
@@ -338,6 +345,7 @@ namespace
                     commandData.MethodSet = property->GetSetMethod();
                 }
             }
+#undef FILTER
         }
         else
 #endif
@@ -357,6 +365,7 @@ namespace
     {
         ASSERT_LOW_LAYER(!Inited);
         PROFILE_CPU();
+        MCore::Thread::Attach();
 
         // Cache existing modules
         const auto& modules = BinaryModule::GetModules();
@@ -438,6 +447,34 @@ DebugCommandsService DebugCommandsServiceInstance;
 
 void DebugCommands::Execute(StringView command)
 {
+    if (!IsInMainThread())
+    {
+        // Route to the main thread to avoid threading issues
+        struct Action
+        {
+            String Command;
+
+            Action(StringView cmd)
+                : Command(cmd)
+            {
+            }
+
+            void Run()
+            {
+                DebugCommands::Execute(Command);
+                Delete(this);
+            }
+
+            void Start()
+            {
+                Function<void()> action;
+                action.Bind<Action, &Action::Run>(this);
+                Task::StartNew(New<MainThreadActionTask>(action));
+            }
+        };
+        New<Action>(command)->Start();
+        return;
+    }
     PROFILE_MEM(EngineDebug);
     // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
     String commandCopy = command;

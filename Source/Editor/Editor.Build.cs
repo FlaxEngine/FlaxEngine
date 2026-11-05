@@ -12,6 +12,8 @@ using Microsoft.Win32;
 /// </summary>
 public class Editor : EditorModule
 {
+    private static bool _logDotnetVersionsRange;
+
     private void AddPlatformTools(BuildOptions options, string platformToolsRoot, string platformToolsRootExternal, string platform, params string[] macros)
     {
         if (Directory.Exists(Path.Combine(platformToolsRoot, platform)))
@@ -107,7 +109,7 @@ public class Editor : EditorModule
             var maxVer = DotNetSdk.MaximumVersion.Major;
             options.PrivateDefinitions.Add("GAME_BUILD_DOTNET_RUNTIME_MIN_VER=" + minVer);
             options.PrivateDefinitions.Add("GAME_BUILD_DOTNET_RUNTIME_MAX_VER=" + DotNetSdk.MaximumVersion.Major);
-            Log.Verbose($"Using Dotnet runtime versions range {minVer}-{maxVer} for Game Cooker");
+            Log.VerboseOnce($"Using Dotnet runtime versions range {minVer}-{maxVer} for Game Cooker", ref _logDotnetVersionsRange);
         }
     }
 

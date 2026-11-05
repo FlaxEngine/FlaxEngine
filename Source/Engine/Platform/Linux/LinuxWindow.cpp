@@ -846,7 +846,7 @@ void LinuxWindow::SetCursor(CursorType type)
 	WindowBase::SetCursor(type);
 
 	LINUX_WINDOW_PROLOG;
-    if (!display)
+    if (!display || type == CursorType::Image)
         return;
 	X11::XDefineCursor(display, window, Cursors[(int32)type]);
 }
@@ -859,7 +859,7 @@ int SetIconErrorHandler(X11::Display *dpy, X11::XErrorEvent *ev)
 	return 0;
 }
 
-void LinuxWindow::SetIcon(TextureData& icon)
+void LinuxWindow::SetIcon(const TextureData& icon)
 {
 	WindowBase::SetIcon(icon);
 

@@ -11,12 +11,15 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
@@ -382,16 +385,27 @@ bool SplineModel::HasContentLoaded() const
     return (Model == nullptr || Model->IsLoaded()) && Entries.HasContentLoaded();
 }
 
-void SplineModel::Draw(RenderContext& renderContext)
+void SplineModel::Draw(RenderContextBatch& renderContextBatch)
 {
-    const DrawPass actorDrawModes = DrawModes & renderContext.View.Pass;
-    if (!_spline || !Model || !Model->IsLoaded() || !Model->CanBeRendered() || actorDrawModes == DrawPass::None)
-        return;
     auto model = Model.Get();
+    if (!_spline || !model || !model->IsLoaded() || !model->CanBeRendered())
+        return;
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return; // TODO: Spline Model rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // TODO: Spline Model rendering to Global Surface Atlas
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    ACTOR_GET_WORLD_MATRIX(this, view, world);
+    DrawPass drawModes = DrawModes;
+    if (drawState && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    {
+        // Draw shadows-only (or cull)
+        drawModes &= DrawPass::Depth;
+        if (renderContextBatch.Contexts.Count() == 1 || drawModes == DrawPass::None)
+            return;
+    }
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
     if (!Entries.IsValidFor(model))
         Entries.Setup(model);
 
@@ -466,16 +480,18 @@ void SplineModel::Draw(RenderContext& renderContext)
 
             // Check if skip rendering
             const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;
-            const auto drawModes = actorDrawModes & renderContext.View.GetShadowsDrawPassMask(shadowsMode) & material->GetDrawModes();
-            if (drawModes == DrawPass::None)
+            const auto meshDrawModes = drawModes & material->GetDrawModes();
+            if (meshDrawModes == DrawPass::None)
                 continue;
 
             // Submit draw call
             mesh->GetDrawCallGeometry(drawCall);
             drawCall.Material = material;
-            renderContext.List->AddDrawCall(renderContext, drawModes, _staticFlags, drawCall, entry.ReceiveDecals);
+            renderContext.List->AddDrawCall(renderContextBatch, meshDrawModes, _staticFlags, shadowsMode, instanceSphere, drawCall, entry.ReceiveDecals);
         }
     }
+
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 bool SplineModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

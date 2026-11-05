@@ -1,5 +1,7 @@
 # Flax stuff
 *.sln
+*.slnx
+*.slnx.DotSettings
 [Dd]ebug/
 [Rr]elease/
 obj/
@@ -19,6 +21,7 @@ PackagePlatforms_Cert.bat
 *.suo
 *.user
 *.sln.docstates
+*.slnx.docstates
 *.idb
 *.tlog
 *.lastbuilddate

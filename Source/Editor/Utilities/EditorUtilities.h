@@ -43,12 +43,19 @@ public:
     }
 
 public:
-
     static bool FindWDKBin(String& outputWdkBinPath);
     static bool GenerateCertificate(const String& name, const String& outputPfxFilePath);
     static bool GenerateCertificate(const String& name, const String& outputPfxFilePath, const String& outputCerFilePath, const String& outputPvkFilePath);
 
 public:
+    /// <summary>
+    /// Gets the path to the SDK using Flax.Build to query it via '-printSDKs' command.
+    /// </summary>
+    /// <param name="sdk">Name of the SDK (eg. VulkanSdk).</param>
+    /// <param name="customArgs">Custom arguments to pass to Flax.Build invocation when printing SDKs.</param>
+    /// <param name="logFilePath">Custom log file path to use, otherwise will use a temp file.</param>
+    /// <param name="version">Optional output for the SDK version.</param>
+    static String GetSDK(StringView sdk, StringView customArgs = StringView::Empty, StringView logFilePath = StringView::Empty, String* version = nullptr);
 
     /// <summary>
     /// Determines whether the specified path character is invalid.

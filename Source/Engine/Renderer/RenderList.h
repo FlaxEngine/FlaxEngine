@@ -10,7 +10,6 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "DrawCall.h"
 #include "RenderListBuffer.h"
-#include "RendererAllocation.h"
 #include "RenderSetup.h"
 
 enum class StaticFlags;
@@ -22,6 +21,7 @@ class IPostFxSettingsProvider;
 class CubeTexture;
 struct RenderContext;
 struct RenderContextBatch;
+struct Half4;
 
 struct RenderLightData
 {
@@ -63,6 +63,10 @@ struct RenderLightData
     int32 ShadowsResolution;
 
     bool CanRenderShadow(const RenderView& view) const;
+#if !BUILD_RELEASE
+    // Development-only, gets the actor that produced this light (from ID).
+    Light* GetActor() const;
+#endif
 };
 
 struct RenderDirectionalLightData : RenderLightData
@@ -74,6 +78,8 @@ struct RenderDirectionalLightData : RenderLightData
 
     PartitionMode PartitionMode;
     int32 CascadeCount;
+    float CascadeBlendSize;
+    float SourceAngle;
 
     RenderDirectionalLightData()
     {
@@ -137,7 +143,8 @@ struct RenderSkyLightData : RenderLightData
     Float3 AdditiveColor;
     float Radius;
 
-    CubeTexture* Image;
+    GPUTextureView* CubemapImageView;
+    float CubemapImageMip;
 
     RenderSkyLightData()
     {
@@ -255,7 +262,7 @@ struct DrawBatch
     }
 };
 
-struct BatchedDrawCall
+struct FLAXENGINE_API BatchedDrawCall
 {
     DrawCall DrawCall;
     uint16 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally).
@@ -320,7 +327,7 @@ struct RenderListAlloc
 };
 
 /// <summary>
-/// Rendering cache container object for the draw calls collecting, sorting and executing.
+/// Rendering cache container object for the draw calls collecting, sorting and executing. Reusable between frames or drawing tasks.
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
 {
@@ -352,6 +359,8 @@ API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
         IExtension();
         virtual ~IExtension();
 
+        // Event called when GPU Device is shutting down and the extension is being disposed. Used to clean up GPU resources (before scripting might destroy extension).
+        virtual void Dispose() {}
         // Event called before collecting draw calls. Can be used for initialization.
         virtual void PreDraw(GPUContext* context, RenderContextBatch& renderContextBatch) {}
         // Event called after collecting draw calls. Can be used for cleanup or to perform additional drawing using collected draw calls data such as batched data processing.
@@ -512,6 +521,7 @@ public:
     void PostDraw(GPUContext* context, RenderContextBatch& renderContextBatch);
 
 private:
+    bool _objectsBufferDirty = true;
     DynamicVertexBuffer _instanceBuffer;
     RenderListBuffer<DelayedDraw> _delayedDraws;
 
@@ -630,7 +640,7 @@ public:
     /// <param name="pass">The draw pass (optional).</param>
     API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType, DrawPass pass = DrawPass::All)
     {
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, listType);
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, listType, pass);
     }
 
     /// <summary>
@@ -683,18 +693,18 @@ GPU_CB_STRUCT(ShaderObjectData
     {
     Float4 Raw[8];
 
-    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, float lodDitherFactor = 0.0f);
-    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectangle& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const;
+    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsAreaPacked, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, int8 lodDitherFactor = 0, uint32 skinningOffset = 0, int16 skinningPrevOffset = 0);
+    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, int8& lodDitherFactor, uint32& skinningOffset, int16& prevBonesOffset) const;
 
     FORCE_INLINE void Store(const DrawCall& drawCall)
     {
-    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor);
+    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor, drawCall.Surface.SkinningBonesOffset, drawCall.Surface.PrevBonesOffset);
     }
 
     FORCE_INLINE void Load(DrawCall& drawCall) const
     {
     float worldDeterminantSign;
-    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, worldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, worldDeterminantSign, drawCall.Surface.LODDitherFactor, drawCall.Surface.SkinningBonesOffset, drawCall.Surface.PrevBonesOffset);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.WorldDeterminant = worldDeterminantSign < 0 ? 1 : 0;
     }

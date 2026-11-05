@@ -3,9 +3,11 @@
 #if GRAPHICS_API_DIRECTX12
 
 #include "GPUTextureDX12.h"
+#include "GPUContextDX12.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.h>
 
 bool GPUTextureDX12::GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
 {
@@ -48,8 +50,6 @@ bool GPUTextureDX12::GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData
 bool GPUTextureDX12::OnInit()
 {
     ID3D12Resource* resource;
-
-    // Cache formats
     const PixelFormat format = Format();
     const PixelFormat typelessFormat = PixelFormatExtensions::MakeTypeless(format);
     const DXGI_FORMAT dxgiFormat = RenderToolsDX::ToDxgiFormat(typelessFormat);
@@ -57,25 +57,17 @@ bool GPUTextureDX12::OnInit()
     _dxgiFormatSRV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindShaderResourceFormat(format, _sRGB));
     _dxgiFormatRTV = _dxgiFormatSRV;
     _dxgiFormatUAV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindUnorderedAccessFormat(format));
-
-    // Cache properties
-    auto device = _device->GetDevice();
     bool useSRV = IsShaderResource();
     bool useDSV = IsDepthStencil();
     bool useRTV = IsRenderTarget();
     bool useUAV = IsUnorderedAccess();
     int32 depthOrArraySize = IsVolume() ? Depth() : ArraySize();
+    D3D12MA::ALLOCATION_DESC allocationDesc = {};
 
     if (IsStaging())
     {
         // Initialize as a buffer
         const int32 totalSize = ComputeBufferTotalSize(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
-        D3D12_HEAP_PROPERTIES heapProperties;
-        heapProperties.Type = D3D12_HEAP_TYPE_READBACK;
-        heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-        heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-        heapProperties.CreationNodeMask = 1;
-        heapProperties.VisibleNodeMask = 1;
         D3D12_RESOURCE_DESC resourceDesc;
         resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         resourceDesc.Alignment = 0;
@@ -88,17 +80,26 @@ bool GPUTextureDX12::OnInit()
         resourceDesc.SampleDesc.Quality = 0;
         resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-        auto result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&resource));
-        LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
+        allocationDesc.HeapType = D3D12_HEAP_TYPE_READBACK;
+        HRESULT result = _device->Allocator->CreateResource(&allocationDesc, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, &_allocation, IID_PPV_ARGS(&resource));
+        if (FAILED(result))
+        {
+            LOG(Error, "CreatePlacedResource failed");
+            LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+            LOG_STR(Error, GetName());
+#endif
+            RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__);
+            return true;
+        }
         initResource(resource, D3D12_RESOURCE_STATE_COPY_DEST, 1);
         DX_SET_DEBUG_NAME(_resource, GetName());
         _memoryUsage = totalSize;
         return false;
     }
 
-    D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
-
     // Create texture description
+    D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
     D3D12_RESOURCE_DESC resourceDesc;
     resourceDesc.MipLevels = _desc.MipLevels;
     resourceDesc.Format = dxgiFormat;
@@ -128,15 +129,9 @@ bool GPUTextureDX12::OnInit()
     if (useUAV)
     {
         resourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        if (!useRTV && !useDSV)
+            initialState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
     }
-
-    // Create heap properties
-    D3D12_HEAP_PROPERTIES heapProperties;
-    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProperties.CreationNodeMask = 1;
-    heapProperties.VisibleNodeMask = 1;
 
     // Create clear value (used by render targets and depth stencil buffers)
     D3D12_CLEAR_VALUE* clearValuePtr = nullptr;
@@ -150,22 +145,26 @@ bool GPUTextureDX12::OnInit()
     else if (useDSV)
     {
         clearValue.Format = _dxgiFormatDSV;
-        clearValue.DepthStencil.Depth = 1.0f;
+        clearValue.DepthStencil.Depth = GPU_DEPTH_RANGE_MAX;
         clearValue.DepthStencil.Stencil = 0;
         clearValuePtr = &clearValue;
     }
-
     if (IsRegularTexture())
         initialState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
     // Create texture
-#if PLATFORM_WINDOWS && 0
-    D3D12_HEAP_FLAGS heapFlags = useRTV || useDSV ? D3D12_HEAP_FLAG_CREATE_NOT_ZEROED : D3D12_HEAP_FLAG_NONE;
-#else
-    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
+    allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    HRESULT result = _device->Allocator->CreateResource(&allocationDesc, &resourceDesc, initialState, clearValuePtr, &_allocation, IID_PPV_ARGS(&resource));
+    if (FAILED(result))
+    {
+        LOG(Error, "CreatePlacedResource failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
 #endif
-    auto result = device->CreateCommittedResource(&heapProperties, heapFlags, &resourceDesc, initialState, clearValuePtr, IID_PPV_ARGS(&resource));
-    LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
+        RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__);
+        return true;
+    }
 
     // Set state
     bool isRead = useSRV || useUAV;
@@ -184,6 +183,17 @@ bool GPUTextureDX12::OnInit()
     {
         // Create all handles
         initHandles();
+    }
+
+    // Discard resource contents (allows using non-zero heap)
+    if (isWrite)
+    {
+        _device->Locker.Lock();
+        if (IsInRenderThread() && _device->IsRendering() && _device->GetMainContextDX12()->IsOpen)
+            _device->GetMainContextDX12()->GetCommandList()->DiscardResource(_resource, nullptr);
+        else
+            _device->PendingResourceDiscards.Add(_resource);
+        _device->Locker.Unlock();
     }
 
     return false;
@@ -325,7 +335,7 @@ void GPUTextureDX12::initHandles()
         {
             uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
             uavDesc.Texture2DArray.MipSlice = 0;
-            uavDesc.Texture2DArray.ArraySize = arraySize * 6;
+            uavDesc.Texture2DArray.ArraySize = arraySize; // ArraySize() counts the slices (for a cube map, its 6 faces)
             uavDesc.Texture2DArray.FirstArraySlice = 0;
             uavDesc.Texture2DArray.PlaneSlice = 0;
         }
@@ -460,7 +470,7 @@ void GPUTextureDX12::initHandles()
                 uavDesc.Texture2DArray.FirstArraySlice = arrayIndex;
                 uavDesc.Texture2DArray.MipSlice = 0;
                 uavDesc.Texture2DArray.PlaneSlice = 0;
-                _handlesPerSlice[arrayIndex].SetSRV(srDesc);
+                _handlesPerSlice[arrayIndex].SetUAV(uavDesc);
             }
         }
 

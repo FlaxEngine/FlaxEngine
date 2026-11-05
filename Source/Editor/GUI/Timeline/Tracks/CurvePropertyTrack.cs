@@ -180,7 +180,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void OnSplitterMoved(Float2 location)
         {
-            var height = Mathf.Clamp(PointToParent(location).Y, 40.0f, 1000.0f);
+            var height = Mathf.Clamp(_splitter.PointToParent(location).Y + Height - Curve.Height, 40.0f, 1000.0f);
             if (!Mathf.NearEqual(height, _expandedHeight))
             {
                 Height = _expandedHeight = height;
@@ -292,7 +292,19 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             Height = IsExpanded ? _expandedHeight : CollapsedHeight;
             UpdateCurve();
             if (IsExpanded)
+            {
+                // Layout bug: whole curve showing after track resize needs panel scrolls bars s smoothing disabled and showing twice
+                if (Curve.MainPanel.VScrollBar != null)
+                    Curve.MainPanel.VScrollBar.EnableSmoothing = false;
+                if (Curve.MainPanel.HScrollBar != null)
+                    Curve.MainPanel.HScrollBar.EnableSmoothing = false;
                 Curve.ShowWholeCurve();
+                Curve.ShowWholeCurve();
+                if (Curve.MainPanel.VScrollBar != null)
+                    Curve.MainPanel.VScrollBar.EnableSmoothing = true;
+                if (Curve.MainPanel.HScrollBar != null)
+                    Curve.MainPanel.HScrollBar.EnableSmoothing = true;
+            }
 
             base.OnExpandedChanged();
         }
@@ -311,7 +323,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             UpdatePreviewValue();
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc />  
         public override void OnUndo()
         {
             base.OnUndo();

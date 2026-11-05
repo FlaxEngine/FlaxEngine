@@ -106,7 +106,7 @@ namespace Flax.Build
         public static bool ConsoleLog = false;
 
         /// <summary>
-        /// Enables logging only messages into console (general info logs will be ignored)."
+        /// Enables logging only messages into console (general info logs will be ignored).
         /// </summary>
         [CommandLine("logMessagesOnly", "Enables logging only messages into console (general info logs will be ignored).")]
         public static bool LogMessagesOnly = false;
@@ -220,9 +220,9 @@ namespace Flax.Build
         public static bool ProjectFormatCLion = false;
 
         /// <summary>
-        /// Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.
+        /// Generates Visual Studio 2026 project format files for Rider. Valid only with -genproject option.
         /// </summary>
-        [CommandLine("rider", "Generates Visual Studio 2022 project format files for Rider. Valid only with -genproject option.")]
+        [CommandLine("rider", "Generates Visual Studio 2026 project format files for Rider. Valid only with -genproject option.")]
         public static bool ProjectFormatRider = false;
 
         /// <summary>
@@ -313,16 +313,16 @@ namespace Flax.Build
         public static bool UseLargeWorlds = false;
 
         /// <summary>
+        /// 1 to use reversed Z Buffer, or traditional one.
+        /// </summary>
+        [CommandLine("useReverseZ", "1 to use reversed Z Buffer, or traditional one.")]
+        public static bool UseReverseZ = false;
+
+        /// <summary>
         /// True if managed C# scripting should be enabled, otherwise false. Engine without C# is partially supported and can be used when porting to a new platform before implementing C# runtime on it.
         /// </summary>
         [CommandLine("useCSharp", "0 to disable C# support in build")]
         public static bool UseCSharp = true;
-
-        /// <summary>
-        /// True if .NET support should be enabled.
-        /// </summary>
-        [CommandLine("useDotNet", "1 to enable .NET support in build, 0 to enable Mono support in build")]
-        public static bool UseDotNet = true;
 
         /// <summary>
         /// True if enable logging in Release game builds.
@@ -349,9 +349,10 @@ namespace Flax.Build
             return UseLargeWorlds;
         }
 
-        public static bool WithDotNet(NativeCpp.BuildOptions options)
+        public static bool WithReverseZ(NativeCpp.BuildOptions options)
         {
-            return UseDotNet;
+            // Whether to use traditional z-buffer or reversed depth
+            return UseReverseZ;
         }
 
         public static bool WithSDL(NativeCpp.BuildOptions options)

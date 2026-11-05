@@ -1750,7 +1750,7 @@ namespace FlaxEngine.Interop
             {
                 var marshalSizeField = typeof(TypeHelpers<>).MakeGenericType(type).GetField(nameof(TypeHelpers<int>.MarshalSize), BindingFlags.Static | BindingFlags.Public);
                 size = (int)marshalSizeField.GetValue(null);
-                _typeSizeCache.AddOrUpdate(type, size, (t, v) => size);
+                _typeSizeCache.TryAdd(type, size);
             }
             return size;
         }

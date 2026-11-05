@@ -42,7 +42,7 @@ bool Online::Initialize(IOnlinePlatform* platform)
 {
     if (Platform == platform)
         return false;
-    const auto object = ScriptingObject::FromInterface(platform, IOnlinePlatform::TypeInitializer);
+    const auto object = ScriptingObject::FromInterface(platform);
     LOG(Info, "Changing online platform to {0}", object ? object->ToString() : (platform ? TEXT("?") : TEXT("none")));
 
     if (Platform)
@@ -51,6 +51,8 @@ bool Online::Initialize(IOnlinePlatform* platform)
         Scripting::ScriptsReloading.Unbind(OnOnlineScriptsReloading);
 #endif
         Platform->Deinitialize();
+        if (auto* prevObject = ScriptingObject::FromInterface(Platform))
+            Delete(prevObject);
     }
     Platform = platform;
     if (Platform)

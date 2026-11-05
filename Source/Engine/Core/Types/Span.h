@@ -165,8 +165,8 @@ inline Span<U> ToSpan(const Array<T, AllocationType>& data)
     return Span<U>((U*)data.Get(), data.Count());
 }
 
-template<typename T>
-inline bool SpanContains(const Span<T> span, const T& value)
+template<typename T, typename ComparableType = T>
+inline bool SpanContains(const Span<T> span, const ComparableType& value)
 {
     for (int32 i = 0; i < span.Length(); i++)
     {

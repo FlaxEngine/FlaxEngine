@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR
-
 #include "QuadOverdrawPass.h"
+
+#if GPU_ENABLE_DEVELOPMENT
+
 #include "Engine/Engine/Time.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Material.h"
@@ -10,11 +11,30 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
+
+void CheckDrawListQuadOverdraw(RenderList* list, DrawCallsListType type)
+{
+    DrawCallsList& drawCallsList = list->DrawCallsLists[(int32)type];
+    const auto* listData = drawCallsList.Indices.Get();
+    const auto* drawCallsData = list->DrawCalls.Get();
+    const auto* batchesData = drawCallsList.Batches.Get();
+    for (int32 i = 0; i < drawCallsList.Batches.Count(); i++)
+    {
+        const DrawBatch& batch = batchesData[i];
+        uint32 drawCallIndex = listData[batch.StartIndex];
+        const DrawCall& drawCall = drawCallsData[drawCallIndex];
+        if (EnumHasNoneFlags(drawCall.Material->GetDrawModes(), DrawPass::QuadOverdraw))
+        {
+            // Don't draw it
+            drawCallsList.Batches.RemoveAt(i--);
+        }
+    }
+}
 
 void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
 {
@@ -24,6 +44,12 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         return;
     }
     PROFILE_GPU_CPU("Quad Overdraw");
+
+    // Process draw calls to skip materials that don't support Quad Overdraw pass
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::GBuffer);
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::GBufferNoDecals);
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::Forward);
+    CheckDrawListQuadOverdraw(renderContext.List, DrawCallsListType::Distortion);
 
     // Setup resources
     const int32 width = renderContext.Buffers->GetWidth();
@@ -101,6 +127,10 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     context->ResetUA();
     context->ResetSR();
 
+    // Submit occlusion queries
+    if (renderContext.Buffers->OcclusionCulling)
+        renderContext.Buffers->OcclusionCulling->Submit(renderContext);
+
     // Convert stats into debug colors
     context->BindSR(0, overdrawTexture->View());
     context->SetRenderTarget(lightBuffer);
@@ -137,13 +167,11 @@ bool QuadOverdrawPass::setupResources()
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/QuadOverdraw"));
         if (!_shader)
             return true;
-#if COMPILE_WITH_DEV_ENV
-        _shader.Get()->OnReloading.Bind<QuadOverdrawPass, &QuadOverdrawPass::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, QuadOverdrawPass, OnShaderReloading);
     }
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
 
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_ps)

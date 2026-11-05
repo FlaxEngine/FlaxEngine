@@ -14,6 +14,7 @@
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #include "Editor/Utilities/EditorUtilities.h"
+#include "Engine/Localization/Localization.h"
 
 String GetGDK()
 {
@@ -170,6 +171,13 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
         sb.AppendFormat(TEXT("    <BlockBroadcast>{0}</BlockBroadcast>\n"), platformSettings->BlockBroadcast);
         sb.AppendFormat(TEXT("    <BlockGameDVR>{0}</BlockGameDVR>\n"), platformSettings->BlockGameDVR);
         sb.Append(TEXT("  </MediaCapture>\n"));
+        sb.Append(TEXT("  <Resources>\n"));
+        auto locales = Localization::GetLocales();
+        for (const String& locale : locales)
+            sb.AppendFormat(TEXT("    <Resource Language=\"{0}\"/>\n"), locale);
+        if (locales.IsEmpty()) // Default locale when none used
+            sb.AppendFormat(TEXT("    <Resource Language=\"{0}\"/>\n"), TEXT("en-US"));
+        sb.Append(TEXT("  </Resources>\n"));
         sb.Append(TEXT("</Game>\n"));
 
         if (File::WriteAllText(configFilePath, sb, Encoding::ANSI))
@@ -184,14 +192,40 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
     if (FileSystem::DirectoryExists(packageOutputPath))
         FileSystem::DeleteDirectory(packageOutputPath);
 
+    CreateProcessSettings procSettings;
+    const String gdkBinPath = _gdkPath / TEXT("../bin");
+    procSettings.WorkingDirectory = data.DataOutputPath;
+
+    // Fix 'MakePkg.exe localize' failing by adding Windows SDK bin folder to path
+    // "error 0x80070057: Failed to load MrmSupport.dll. Please ensure the Windows SDK is installed to generate a Resources.pri file."
+    String windowsSDKVer;
+    String windowsSDK = EditorUtilities::GetSDK(TEXT("Windows SDK"), StringView::Empty, StringView::Empty, &windowsSDKVer);
+    if (windowsSDK.HasChars())
+    {
+        // Put Windows SDK binaries folder into PATH so MakePkg.exe finds MrmSupport.dll
+        procSettings.Environment[TEXT("PATH")] = windowsSDK / TEXT("bin") / windowsSDKVer / TEXT("x64");
+    }
+    else
+    {
+        LOG(Warning, "Cannot find Windows SDK");
+    }
+
+    // Generate package resource index (PRI)
+    data.StepProgress(TEXT("Generating package resource index"), 0.25f);
+    procSettings.FileName = gdkBinPath / TEXT("MakePkg.exe");
+    procSettings.Arguments = String::Format(TEXT("localize /d \"{0}\""), data.DataOutputPath);
+    int32 result = Platform::CreateProcess(procSettings);
+    if (result != 0)
+    {
+        data.Error(TEXT("Failed to generate package resource index."));
+        return true;
+    }
+
     // Generate package layout
     data.StepProgress(TEXT("Generating package layout"), 0.3f);
-    const String gdkBinPath = _gdkPath / TEXT("../bin");
-    const String makePkgPath = gdkBinPath / TEXT("MakePkg.exe");
-    CreateProcessSettings procSettings;
-    procSettings.FileName = String::Format(TEXT("\"{0}\" genmap /f layout.xml /d \"{1}\""), makePkgPath, data.DataOutputPath);
-    procSettings.WorkingDirectory = data.DataOutputPath;
-    const int32 result = Platform::CreateProcess(procSettings);
+    procSettings.FileName = gdkBinPath / TEXT("MakePkg.exe");
+    procSettings.Arguments = String::Format(TEXT("genmap /f layout.xml /d \"{0}\""), data.DataOutputPath);
+    result = Platform::CreateProcess(procSettings);
     if (result != 0)
     {
         data.Error(TEXT("Failed to generate package layout."));

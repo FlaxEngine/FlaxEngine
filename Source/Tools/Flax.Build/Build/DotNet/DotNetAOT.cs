@@ -318,6 +318,9 @@ namespace Flax.Build
                 var dotnetLibPath = Utilities.NormalizePath(Path.GetDirectoryName(coreLibPaths[0]));
                 Log.Info("Class library found in: " + dotnetLibPath);
 
+                // Force include lib used by corlib
+                inputFiles.Add(Path.Combine(dotnetLibPath, "System.Security.Claims.dll"));
+
                 // Build list of assemblies to process (use game assemblies as root to walk over used references from stdlib)
                 var assembliesPaths = new List<string>();
                 if (Configuration.SkipUnusedDotnetLibsPackaging)
@@ -357,18 +360,21 @@ namespace Flax.Build
 
                 // Run compilation
                 bool failed = false, validCache = true, coreLibDirty = false;
-                string platformToolsPath;
+                Toolchain.CSharpOptions baseOptions;
                 {
                     // Get platform tools
-                    var options = new Toolchain.CSharpOptions
+                    baseOptions = new Toolchain.CSharpOptions
                     {
                         Action = Toolchain.CSharpOptions.ActionTypes.GetPlatformTools,
                         AssembliesPath = aotAssembliesPath,
+                        ManagedAssemblyExtension = ".dll",
                         ClassLibraryPath = dotnetLibPath,
                         EnableToolDebug = dotnetAotDebug,
                     };
-                    buildToolchain.CompileCSharp(ref options);
-                    platformToolsPath = options.PlatformToolsPath;
+                    buildToolchain.CompileCSharp(ref baseOptions);
+                    if (!Directory.Exists(baseOptions.PlatformToolsPath))
+                        throw new Exception("Missing platform tools " + baseOptions.PlatformToolsPath);
+                    Log.Info("Platform tools found in: " + baseOptions.PlatformToolsPath);
                 }
                 {
                     // Check if core library has been modified
@@ -379,16 +385,13 @@ namespace Flax.Build
                         OutputFiles = new List<string>(),
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformToolsPath = platformToolsPath,
+                        PlatformToolsPath = baseOptions.PlatformToolsPath,
                         EnableDebugSymbols = false,
                         EnableToolDebug = dotnetAotDebug,
                     };
                     buildToolchain.CompileCSharp(ref options);
                     coreLibDirty = File.GetLastWriteTime(options.InputFiles[0]) > File.GetLastWriteTime(options.OutputFiles[0]);
                 }
-                if (!Directory.Exists(platformToolsPath))
-                    throw new Exception("Missing platform tools " + platformToolsPath);
-                Log.Info("Platform tools found in: " + platformToolsPath);
                 var compileAssembly = (string assemblyPath) =>
                 {
                     // Determinate whether use debug information for that assembly
@@ -407,7 +410,7 @@ namespace Flax.Build
                         OutputFiles = new List<string>(),
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformToolsPath = platformToolsPath,
+                        PlatformToolsPath = baseOptions.PlatformToolsPath,
                         EnableDebugSymbols = useDebug,
                         EnableToolDebug = dotnetAotDebug,
                     };
@@ -439,27 +442,48 @@ namespace Flax.Build
                     var assemblyFileName = Path.GetFileName(assemblyPath);
                     if (Configuration.AOTMode == DotNetAOTModes.MonoAOTDynamic)
                     {
+                        // Class library goes to 'Dotnet' while other assemblies go to the output root
+                        var outputRoot = dotnetOutputPath;
+                        if (Utilities.NormalizePath(Path.GetDirectoryName(assemblyPath)) == Utilities.NormalizePath(aotAssembliesPath))
+                            outputRoot = outputPath;
+
+                        // Certain platforms prohibit using managed libraries in a game package (strict policy) so rename assemblies to avoid shipping them as .dll
+                        var outputName = Path.GetFileNameWithoutExtension(assemblyFileName) + baseOptions.ManagedAssemblyExtension;
+
                         {
                             // Copy assembly
-                            var outputFile = Path.Combine(dotnetOutputPath, assemblyFileName);
-                            var deployedFilePath = Path.Combine(dotnetOutputPath, Path.GetFileName(outputFile));
-                            if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFile) > File.GetLastWriteTime(deployedFilePath))
+                            var deployedFilePath = Path.Combine(outputRoot, outputName);
+                            deployedFilePath = Utilities.NormalizePath(deployedFilePath);
+                            if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(assemblyPath) > File.GetLastWriteTime(deployedFilePath))
                             {
-                                Utilities.FileCopy(assemblyPath, outputFile);
+                                Utilities.FileCopy(assemblyPath, deployedFilePath);
+                            }
+
+                            // Get rid of the original assembly in the destination folder to avoid shipping it if extension has to be different
+                            var outputFile = Path.Combine(outputRoot, assemblyFileName);
+                            outputFile = Utilities.NormalizePath(outputFile);
+                            if (outputFile != deployedFilePath && File.Exists(outputFile))
+                            {
+                                File.Delete(outputFile);
                             }
                         }
 
                         // Copy AOT build products
                         foreach (var outputFile in options.OutputFiles)
                         {
-                            // Skip if deployed file is already valid
-                            var deployedFilePath = Path.Combine(dotnetOutputPath, Path.GetFileName(outputFile));
+                            var deployedFilePath = Path.Combine(outputRoot, Path.GetFileName(outputFile));
+                            if (baseOptions.ManagedAssemblyExtension != ".dll")
+                            {
+                                deployedFilePath = deployedFilePath.Replace(Path.GetFileNameWithoutExtension(outputFile), outputName);
+                            }
+
+                            // Skip if deployed file is already up-to-date
                             if (!File.Exists(deployedFilePath) || File.GetLastWriteTime(outputFile) > File.GetLastWriteTime(deployedFilePath))
                             {
                                 // Copy to the destination folder
                                 Utilities.FileCopy(outputFile, deployedFilePath);
                                 if (useDebug && File.Exists(outputFile + ".pdb"))
-                                    Utilities.FileCopy(outputFile + ".pdb", Path.Combine(dotnetOutputPath, Path.GetFileName(outputFile + ".pdb")));
+                                    Utilities.FileCopy(outputFile + ".pdb", Path.Combine(outputRoot, Path.GetFileName(outputFile + ".pdb")));
                                 validCache = false;
                             }
                         }
@@ -494,7 +518,7 @@ namespace Flax.Build
                         OutputFiles = new List<string>() { outputAotLib },
                         AssembliesPath = aotAssembliesPath,
                         ClassLibraryPath = dotnetLibPath,
-                        PlatformToolsPath = platformToolsPath,
+                        PlatformToolsPath = baseOptions.ManagedAssemblyExtension,
                         EnableDebugSymbols = configuration != TargetConfiguration.Release,
                         EnableToolDebug = dotnetAotDebug,
                     };

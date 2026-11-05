@@ -101,7 +101,7 @@ public class DragControlType<U> : DragHelper<ScriptType, U> where U : DragEventA
                 return results;
             }
         }
-        return Utils.GetEmptyArray<ScriptType>();
+        return Array.Empty<ScriptType>();
     }
 }
 

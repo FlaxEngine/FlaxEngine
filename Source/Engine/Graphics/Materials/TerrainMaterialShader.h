@@ -15,8 +15,9 @@ private:
         PipelineStateCache Default;
         PipelineStateCache DefaultLightmap;
         PipelineStateCache Depth;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
+        PipelineStateCache Wireframe;
 #endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useLightmap)
@@ -29,9 +30,11 @@ private:
             case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
             case DrawPass::GlobalSurfaceAtlas:
                 return useLightmap ? &DefaultLightmap : &Default;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return &QuadOverdraw;
+            case DrawPass::Wireframe:
+                return &Wireframe;
 #endif
             default:
                 return nullptr;
@@ -43,8 +46,9 @@ private:
             Default.Release();
             DefaultLightmap.Release();
             Depth.Release();
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             QuadOverdraw.Release();
+            Wireframe.Release();
 #endif
         }
     };
@@ -64,7 +68,6 @@ public:
 
 public:
     // [MaterialShader]
-    DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
     void Bind(BindParameters& params) override;
     void Unload() override;

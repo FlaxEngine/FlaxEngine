@@ -5,7 +5,7 @@
 #include "GPUResourceProperty.h"
 #include "GPUBufferDescription.h"
 #include "PixelFormatExtensions.h"
-#include "RenderTask.h"
+#include "RenderContext.h"
 #include "Shaders/GPUVertexLayout.h"
 #include "Async/Tasks/GPUCopyResourceTask.h"
 #include "Engine/Core/Utilities.h"

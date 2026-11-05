@@ -227,6 +227,8 @@ bool MeshAccessor::LoadMesh(const MeshBase* mesh, bool forceGpu, Span<MeshBuffer
         PixelFormat format = PixelFormat::Unknown;
         if (meshLayouts[i] && meshLayouts[i]->GetElements().Count() == 1)
             format = meshLayouts[i]->GetElements()[0].Format;
+        else if (buffers[i] == MeshBufferType::Index)
+            format = mesh->Use16BitIndexBuffer() ? PixelFormat::R16_UInt : PixelFormat::R32_UInt;
         _formats[buffer] = format;
     }
     return false;
@@ -239,6 +241,17 @@ bool MeshAccessor::LoadBuffer(MeshBufferType bufferType, Span<byte> bufferData, 
     const int32 idx = (int32)bufferType;
     _data[idx].Link(bufferData);
     _layouts[idx] = layout;
+    return false;
+}
+
+bool MeshAccessor::LoadBuffer(MeshBufferType bufferType, Span<byte> bufferData, PixelFormat format)
+{
+    const int32 stride = PixelFormatExtensions::SizeInBytes(format);
+    CHECK_RETURN(stride, true);
+    CHECK_RETURN(bufferData.IsValid(), true);
+    const int32 idx = (int32)bufferType;
+    _data[idx].Link(bufferData);
+    _formats[idx] = format;
     return false;
 }
 
@@ -376,7 +389,7 @@ MeshAccessor::Stream MeshAccessor::Index()
         data = ib;
         format = _formats[(int32)MeshBufferType::Index];
         stride = PixelFormatExtensions::SizeInBytes(format);
-        count = data.Length() / stride;
+        count = stride != 0 ? data.Length() / stride : 0;
     }
     return Stream(data, format, stride, count);
 }
@@ -886,7 +899,7 @@ bool MeshBase::UpdateTrianglesUShort(int32 triangleCount, const MArray* triangle
     return ::UpdateTriangles<uint16>(this, triangleCount, trianglesObj);
 }
 
-MArray* MeshBase::DownloadIndexBuffer(bool forceGpu, MTypeObject* resultType, bool use16Bit)
+MArray* MeshBase::DownloadIndexBuffer(bool forceGpu, MType* resultType, bool use16Bit)
 {
     ScopeLock lock(GetModelBase()->Locker);
 
@@ -903,7 +916,7 @@ MArray* MeshBase::DownloadIndexBuffer(bool forceGpu, MTypeObject* resultType, bo
     auto indexStride = indexStream.GetStride();
 
     // Convert into managed array
-    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), indexCount);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(resultType), indexCount);
     void* managedArrayPtr = MCore::Array::GetAddress(result);
     if (use16Bit)
     {

@@ -96,6 +96,8 @@ API_ENUM(Attributes="Flags") enum class AnimationRootMotionFlags : byte
     RootPosition = RootPositionXZ | RootPositionY,
     // Root node position and rotation.
     RootTransform = RootPosition | RootRotation,
+    // Marks that the root node position is affected by the skeleton transform and should be extracted with transformed mask. Use this option for models that don't use Y-up coordinate system.
+    LocalPositionMask = 1 << 3,
 };
 
 DECLARE_ENUM_OPERATORS(AnimationRootMotionFlags);

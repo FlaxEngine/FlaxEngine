@@ -157,6 +157,23 @@ namespace VisualStudio
 		return _wcsicmp(path1, path2) == 0;
     }
 
+	bool AreSolutionPathsEqual(const wchar_t* path1, const wchar_t* path2)
+	{
+		// Compare exact paths first (fast path)
+		if (AreFilePathsEqual(path1, path2))
+			return true;
+		// Strip .sln/.slnx extension and compare stems (handles .sln vs .slnx mismatch)
+		auto stripSolExt = [](const wchar_t* p, size_t& len) {
+			if (len >= 5 && _wcsicmp(p + len - 5, L".slnx") == 0) len -= 5;
+			else if (len >= 4 && _wcsicmp(p + len - 4, L".sln") == 0) len -= 4;
+		};
+		size_t len1 = wcslen(path1);
+		size_t len2 = wcslen(path2);
+		stripSolExt(path1, len1);
+		stripSolExt(path2, len2);
+		return len1 == len2 && _wcsnicmp(path1, path2, len1) == 0;
+	}
+
 	class ConnectionInternal
 	{
 	public:
@@ -226,7 +243,7 @@ namespace VisualStudio
 				if (FAILED(solution->get_FullName(&fullName.Str)))
 					continue;
 
-				if (AreFilePathsEqual(connection->SolutionPath, fullName))
+				if (AreSolutionPathsEqual(connection->SolutionPath, fullName))
 				{
 					// Found
 					connection->DTE = dte;

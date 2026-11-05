@@ -155,6 +155,15 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     bool LoadBuffer(MeshBufferType bufferType, Span<byte> bufferData, GPUVertexLayout* layout);
 
+    /// <summary>
+    /// Loads the data from the provided mesh buffer.
+    /// </summary>
+    /// <param name="bufferType">Type of the mesh buffer to load.</param>
+    /// <param name="bufferData">Data used by that buffer.</param>
+    /// <param name="format">Format of the elements in the buffer.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    bool LoadBuffer(MeshBufferType bufferType, Span<byte> bufferData, PixelFormat format);
+
     // Used internally via ModelBase::LoadMesh.
     bool LoadFromMeshData(const void* meshDataPtr);
 

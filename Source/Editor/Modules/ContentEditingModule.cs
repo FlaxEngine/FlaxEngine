@@ -42,7 +42,7 @@ namespace FlaxEditor.Modules
         public EditorWindow Open(ContentItem item, bool disableAutoShow = false)
         {
             if (item == null)
-                throw new ArgumentNullException();
+                return null;
 
             // Check if any window is already editing this item
             var window = Editor.Windows.FindEditor(item);

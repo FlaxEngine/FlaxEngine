@@ -679,7 +679,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     return asArray;
                 if (Values[0] is List<Tag> asList)
                     return asList.ToArray();
-                return Utils.GetEmptyArray<Tag>();
+                return Array.Empty<Tag>();
             }
             set
             {

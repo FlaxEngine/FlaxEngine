@@ -334,7 +334,8 @@ namespace FlaxEditor.Tools.Foliage
         /// Initializes a new instance of the <see cref="FoliageTypesTab"/> class.
         /// </summary>
         /// <param name="tab">The parent tab.</param>
-        public FoliageTypesTab(FoliageTab tab)
+        /// <param name="mode">The gizmo mode.</param>
+        public FoliageTypesTab(FoliageTab tab, FoliageTypesGizmoMode mode)
         : base("Foliage Types")
         {
             Tab = tab;

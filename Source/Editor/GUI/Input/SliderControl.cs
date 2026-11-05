@@ -57,8 +57,6 @@ namespace FlaxEditor.GUI.Input
                     if (value != _value)
                     {
                         _value = value;
-
-                        // Update
                         UpdateThumb();
                         ValueChanged?.Invoke();
                     }
@@ -122,7 +120,6 @@ namespace FlaxEditor.GUI.Input
 
             private void UpdateThumb()
             {
-                // Cache data
                 float trackSize = TrackSize;
                 float range = Maximum - Minimum;
                 _thumbSize = Mathf.Min(trackSize, Mathf.Max(trackSize / range * 10.0f, 30.0f));
@@ -290,10 +287,7 @@ namespace FlaxEditor.GUI.Input
                 value = Mathf.Clamp(value, _min, _max);
                 if (Math.Abs(_value - value) > Mathf.Epsilon)
                 {
-                    // Set value
                     _value = value;
-
-                    // Update
                     _valueIsChanging = true;
                     UpdateText();
                     UpdateSlider();
@@ -315,7 +309,6 @@ namespace FlaxEditor.GUI.Input
                 {
                     if (value > _max)
                         throw new ArgumentException();
-
                     _min = value;
                     Value = Value;
                 }
@@ -334,7 +327,6 @@ namespace FlaxEditor.GUI.Input
                 {
                     if (value < _min)
                         throw new ArgumentException();
-
                     _max = value;
                     Value = Value;
                 }
@@ -434,6 +426,7 @@ namespace FlaxEditor.GUI.Input
             _min = limits.Min;
             _max = Mathf.Max(_min, limits.Max);
             Value = Value;
+            UpdateSlider();
         }
 
         /// <summary>
@@ -445,6 +438,7 @@ namespace FlaxEditor.GUI.Input
             _min = limits.Min;
             _max = Mathf.Max(_min, limits.Max);
             Value = Value;
+            UpdateSlider();
         }
 
         /// <summary>

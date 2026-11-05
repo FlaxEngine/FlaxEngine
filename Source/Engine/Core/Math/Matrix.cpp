@@ -10,6 +10,7 @@
 #include "../Types/String.h"
 
 static_assert(sizeof(Matrix) == 4 * 4 * 4, "Invalid Matrix type size.");
+static_assert(sizeof(Double4x4) == 8 * 4 * 4, "Invalid Double4x4 type size.");
 
 const Matrix Matrix::Zero(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 const Matrix Matrix::Identity(
@@ -17,6 +18,13 @@ const Matrix Matrix::Identity(
     0.0f, 1.0f, 0.0f, 0.0f,
     0.0f, 0.0f, 1.0f, 0.0f,
     0.0f, 0.0f, 0.0f, 1.0f);
+
+const Double4x4 Double4x4::Zero(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+const Double4x4 Double4x4::Identity(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0);
 
 Matrix::Matrix(const Matrix3x3& matrix)
 {
@@ -514,10 +522,15 @@ void Matrix::OrthoOffCenter(float left, float right, float bottom, float top, fl
     result = Identity;
     result.M11 = 2.0f / (right - left);
     result.M22 = 2.0f / (top - bottom);
-    result.M33 = zRange;
     result.M41 = (left + right) / (left - right);
     result.M42 = (top + bottom) / (bottom - top);
+#if REVERSE_Z
+    result.M33 = -zRange;
+    result.M43 = zFar * zRange;
+#else
+    result.M33 = zRange;
     result.M43 = -zNear * zRange;
+#endif
 }
 
 void Matrix::PerspectiveFov(float fov, float aspect, float zNear, float zFar, Matrix& result)
@@ -533,16 +546,21 @@ void Matrix::PerspectiveFov(float fov, float aspect, float zNear, float zFar, Ma
 
 void Matrix::PerspectiveOffCenter(float left, float right, float bottom, float top, float zNear, float zFar, Matrix& result)
 {
-    const float zRange = zFar / (zFar - zNear);
+    const float zRange = 1.0f / (zFar - zNear);
 
     result = Zero;
     result.M11 = 2.0f * zNear / (right - left);
     result.M22 = 2.0f * zNear / (top - bottom);
     result.M31 = (left + right) / (left - right);
     result.M32 = (top + bottom) / (bottom - top);
-    result.M33 = zRange;
     result.M34 = 1.0f;
-    result.M43 = -zNear * zRange;
+#if REVERSE_Z
+    result.M33 = -zNear * zRange;
+    result.M43 = zFar * zNear * zRange;
+#else
+    result.M33 = zFar * zRange;
+    result.M43 = -zFar * zNear * zRange;
+#endif
 }
 
 void Matrix::RotationX(float angle, Matrix& result)

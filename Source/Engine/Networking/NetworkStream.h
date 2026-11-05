@@ -5,13 +5,14 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
+#include "NetworkMessage.h"
 
 class INetworkSerializable;
 
 /// <summary>
 /// Objects and values serialization stream for sending data over network. Uses memory buffer for both read and write operations.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkStream final : public ScriptingObject, public ReadStream, public WriteStream
+API_CLASS(Sealed, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkStream final : public ScriptingObject, public ReadStream, public WriteStream
 {
     DECLARE_SCRIPTING_TYPE(NetworkStream);
 private:
@@ -27,6 +28,11 @@ public:
     /// The ClientId of the network client that is a data sender. Can be used to detect who send the incoming RPC or replication data. Set to the current client when writing data.
     /// </summary>
     API_FIELD(ReadOnly) uint32 SenderId = 0;
+
+    /// <summary>
+    /// Set of flags that describe the stream state.
+    /// </summary>
+    API_FIELD() NetworkMessageFlags Flags = NetworkMessageFlags::None;
 
     /// <summary>
     /// Gets the pointer to the native stream memory buffer.
@@ -83,6 +89,7 @@ public:
 
 public:
     // [Stream]
+    bool HasError() const override;
     void Flush() override;
     void Close() override;
     uint32 GetLength() override;

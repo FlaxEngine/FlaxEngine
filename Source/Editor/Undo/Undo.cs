@@ -3,9 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using FlaxEditor.History;
 using FlaxEditor.Utilities;
-using FlaxEngine.Collections;
 
 namespace FlaxEditor
 {

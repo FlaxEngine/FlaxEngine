@@ -112,37 +112,37 @@ namespace FlaxEditor.Scripting
         /// <inheritdoc />
         public object[] GetAttributes(bool inherit)
         {
-            return Utils.GetEmptyArray<object>();
+            return Array.Empty<object>();
         }
 
         /// <inheritdoc />
         public ScriptMemberInfo[] GetMembers(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <inheritdoc />
         public ScriptMemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <inheritdoc />
         public ScriptMemberInfo[] GetFields(BindingFlags bindingAttr)
         {
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <inheritdoc />
         public ScriptMemberInfo[] GetProperties(BindingFlags bindingAttr)
         {
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <inheritdoc />
         public ScriptMemberInfo[] GetMethods(BindingFlags bindingAttr)
         {
-            return Utils.GetEmptyArray<ScriptMemberInfo>();
+            return Array.Empty<ScriptMemberInfo>();
         }
 
         /// <inheritdoc />

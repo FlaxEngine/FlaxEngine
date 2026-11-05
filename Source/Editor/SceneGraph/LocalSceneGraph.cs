@@ -95,6 +95,8 @@ namespace FlaxEditor.SceneGraph
                 return;
 
             // Check if it has parent
+            if (actor.Parent == null)
+                return;
             var parentNode = SceneGraphFactory.FindNode(actor.Parent.ID) as ActorNode;
             if (parentNode == null)
                 return;

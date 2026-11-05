@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.GUI
 {
@@ -60,16 +60,23 @@ namespace FlaxEditor.GUI
             public long Value;
 
             /// <summary>
+            /// Marks enum entry as deprecated and should not be used by users anymore (displayed in grey).
+            /// </summary>
+            public bool IsObsolete;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="Entry"/> struct.
             /// </summary>
             /// <param name="name">The name.</param>
             /// <param name="tooltip">The tooltip.</param>
             /// <param name="value">The value.</param>
-            public Entry(string name, long value, string tooltip = null)
+            /// <param name="isObsolete">The deprecated entry flag.</param>
+            public Entry(string name, long value, string tooltip = null, bool isObsolete = false)
             {
                 Name = name;
                 Tooltip = tooltip;
                 Value = value;
+                IsObsolete = isObsolete;
             }
         }
 
@@ -106,16 +113,6 @@ namespace FlaxEditor.GUI
                 if (_cachedValue == value && _hasValueCached)
                     return;
 
-                // Single value
-                for (int i = 0; i < _entries.Count; i++)
-                {
-                    if (_entries[i].Value == value)
-                    {
-                        SelectedIndex = i;
-                        return;
-                    }
-                }
-
                 if (IsFlags)
                 {
                     // Collection of flags
@@ -123,7 +120,7 @@ namespace FlaxEditor.GUI
                     for (int i = 0; i < _entries.Count; i++)
                     {
                         var e = _entries[i].Value;
-                        if (e != 0 && (e & value) == e)
+                        if ((e != 0 || value == 0) && (e & value) == e)
                         {
                             selection.Add(i);
                         }
@@ -132,7 +129,17 @@ namespace FlaxEditor.GUI
                 }
                 else
                 {
-                    SelectedIndex = -1;
+                    // Single value
+                    var toSelect = -1;
+                    for (int i = 0; i < _entries.Count; i++)
+                    {
+                        if (_entries[i].Value == value)
+                        {
+                            toSelect = i;
+                            break;
+                        }
+                    }
+                    SelectedIndex = toSelect;
                 }
             }
         }
@@ -280,10 +287,9 @@ namespace FlaxEditor.GUI
                     default: throw new ArgumentOutOfRangeException(nameof(formatMode), formatMode, null);
                     }
                 }
-
                 string tooltip = Editor.Instance.CodeDocs.GetTooltip(new ScriptMemberInfo(field), attributes);
-
-                entries.Add(new Entry(name, Convert.ToInt64(field.GetRawConstantValue()), tooltip));
+                bool isObsolete = attributes.Any(x => x is ObsoleteAttribute);
+                entries.Add(new Entry(name, Convert.ToInt64(field.GetRawConstantValue()), tooltip, isObsolete));
             }
         }
 
@@ -291,8 +297,27 @@ namespace FlaxEditor.GUI
         protected override void OnLayoutMenuButton(ContextMenuButton button, int index, bool construct = false)
         {
             base.OnLayoutMenuButton(button, index, construct);
+
             if (IsFlags)
                 button.CloseMenuOnClick = false;
+            if (index < _entries.Count && _entries[index].IsObsolete)
+                button.TextColor = Style.Current.ForegroundGrey;
+        }
+
+        /// <inheritdoc />
+        protected override string GetSelectedText()
+        {
+            // If multiple values are selected then try to find an enum item that matches the mask value
+            if (_selectedIndices.Count > 1)
+            {
+                foreach (var e in _entries)
+                {
+                    if (e.Value == Value)
+                        return e.Name;
+                }
+            }
+
+            return base.GetSelectedText();
         }
 
         /// <inheritdoc />
@@ -310,43 +335,22 @@ namespace FlaxEditor.GUI
                 }
 
                 // Calculate value that will be set after change
-                long valueAfter = 0;
+                long valueAfter = Value;
                 bool isSelected = _selectedIndices.Contains(index);
                 long selectedValue = entries[index].Value;
-                for (int i = 0; i < _selectedIndices.Count; i++)
+                if (isSelected)
                 {
-                    int selectedIndex = _selectedIndices[i];
-                    if (selectedIndex != index && (isSelected || (entries[selectedIndex].Value & selectedValue) == 0))
-                        valueAfter |= entries[selectedIndex].Value;
+                    // Remove from flags selection
+                    valueAfter &= ~selectedValue;
                 }
-                if (!isSelected)
+                else
+                {
+                    // Add to flags selection
                     valueAfter |= selectedValue;
-
-                // Skip if value won't change
-                if (Value == valueAfter)
-                {
-                    return;
                 }
 
-                // Build new selection
-                for (int i = 0; i < entries.Count; i++)
-                {
-                    if (entries[i].Value == valueAfter)
-                    {
-                        SelectedIndex = i;
-                        return;
-                    }
-                }
-                _selectedIndices.Clear();
-                for (int i = 0; i < entries.Count; i++)
-                {
-                    var e = entries[i].Value;
-                    if (e != 0 && (e & valueAfter) == e)
-                    {
-                        _selectedIndices.Add(i);
-                    }
-                }
-                OnSelectedIndexChanged();
+                // Change value (incl. multiselection for flags)
+                Value = valueAfter;
                 return;
             }
 

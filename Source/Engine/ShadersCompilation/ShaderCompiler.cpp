@@ -249,6 +249,14 @@ bool ShaderCompiler::OnCompileBegin()
     const auto profile = GetProfile();
     const auto featureLevel = RenderTools::GetFeatureLevel(profile);
     _globalMacros.Add({ "FEATURE_LEVEL", Numbers[(int32)featureLevel] });
+#if REVERSE_Z
+    _globalMacros.Add({ "REVERSE_Z", "1"});
+#endif
+
+    // Setup version macros
+    _macroVersionMinor = StringAnsi::Format("{}", FLAXENGINE_VERSION_MINOR);
+    _globalMacros.Add({ "FLAXENGINE_VERSION_MAJOR", Numbers[FLAXENGINE_VERSION_MAJOR] });
+    _globalMacros.Add({ "FLAXENGINE_VERSION_MINOR", _macroVersionMinor.Get() });
 
     return false;
 }

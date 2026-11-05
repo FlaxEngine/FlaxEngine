@@ -43,7 +43,6 @@ namespace FlaxEditor.Windows
             {
                 { PlatformType.Windows, new Windows() },
                 { PlatformType.XboxOne, new XboxOne() },
-                { PlatformType.UWP, new UWP() },
                 { PlatformType.Linux, new Linux() },
                 { PlatformType.PS4, new PS4() },
                 { PlatformType.XboxScarlett, new XboxScarlett() },
@@ -164,8 +163,6 @@ namespace FlaxEditor.Windows
 #if PLATFORM_WINDOWS
                         case BuildPlatform.Windows32:
                         case BuildPlatform.Windows64:
-                        case BuildPlatform.UWPx86:
-                        case BuildPlatform.UWPx64:
                         case BuildPlatform.LinuxX64:
                         case BuildPlatform.AndroidARM64:
                         case BuildPlatform.Web:
@@ -213,11 +210,6 @@ namespace FlaxEditor.Windows
             class Windows : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.Windows64;
-            }
-
-            class UWP : Platform
-            {
-                protected override BuildPlatform BuildPlatform => BuildPlatform.UWPx64;
             }
 
             class XboxOne : Platform
@@ -573,10 +565,6 @@ namespace FlaxEditor.Windows
                         case PlatformType.XboxOne:
                             name = "Xbox One";
                             break;
-                        case PlatformType.UWP:
-                            name = "Windows Store";
-                            layout.Label("UWP (Windows Store) platform has been deprecated and is no longer supported", TextAlignment.Center).Label.TextColor = Color.Red;
-                            break;
                         case PlatformType.Linux:
                             name = "Linux";
                             break;
@@ -925,6 +913,15 @@ namespace FlaxEditor.Windows
         internal void ExitOnBuildQueueEnd()
         {
             _exitOnBuildEnd = true;
+        }
+
+        /// <summary>
+        /// Returns true if can cook game now (based on editor state).
+        /// </summary>
+        /// <returns>True if can cook, otherwise false.</returns>
+        public bool CanCook()
+        {
+            return !GameCooker.IsRunning && Editor.StateMachine.CurrentState.CanCookGame;
         }
 
         /// <summary>
@@ -1290,7 +1287,7 @@ namespace FlaxEditor.Windows
         public override void OnUpdate()
         {
             // Building queue
-            if (!GameCooker.IsRunning)
+            if (CanCook())
             {
                 if (_buildingQueue.Count > 0)
                 {

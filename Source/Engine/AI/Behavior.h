@@ -110,5 +110,7 @@ private:
     // Editor-only utilities to debug nodes state.
     API_FUNCTION(Internal) static bool GetNodeDebugRelevancy(const BehaviorTreeNode* node, const Behavior* behavior);
     API_FUNCTION(Internal) static String GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavior);
+    API_FUNCTION(Internal) static int32 GetDecoratorDebugResult(class BehaviorTreeDecorator* node, Behavior* behavior);
+    static void InitNodeDebugContext(const BehaviorTreeNode* node, Behavior* behavior, BehaviorUpdateContext& context);
 #endif
 };

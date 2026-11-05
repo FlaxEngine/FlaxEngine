@@ -20,7 +20,8 @@ GPUBufferView* GPUBufferDX11::View() const
 
 void* GPUBufferDX11::Map(GPUResourceMapMode mode)
 {
-    const bool isMainThread = IsInMainThread();
+    CHECK_RETURN(_resource, nullptr);
+    const bool isMainThread = IsInRenderThread();
     if (!isMainThread)
         _device->Locker.Lock();
     ASSERT(!_mapped);
@@ -62,7 +63,7 @@ void GPUBufferDX11::Unmap()
     ASSERT(_mapped);
     _mapped = false;
     _device->GetIM()->Unmap(_resource, 0);
-    if (!IsInMainThread())
+    if (!IsInRenderThread())
         _device->Locker.Unlock();
 }
 
@@ -106,7 +107,17 @@ bool GPUBufferDX11::OnInit()
         data.SysMemPitch = bufferDesc.ByteWidth;
         data.SysMemSlicePitch = 0;
     }
-    VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateBuffer(&bufferDesc, _desc.InitData ? &data : nullptr, &_resource));
+    HRESULT result = _device->GetDevice()->CreateBuffer(&bufferDesc, _desc.InitData ? &data : nullptr, &_resource);
+    if (FAILED(result))
+    {
+        LOG(Error, "ID3D11Device::CreateBuffer failed");
+        LOG_STR(Error, _desc.ToString());
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG_STR(Error, GetName());
+#endif
+        RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__, true);
+        return true;
+    }
 
     // Set state
     DX_SET_DEBUG_NAME(_resource, GetName());

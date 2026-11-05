@@ -101,6 +101,11 @@ void UniformBufferUploaderVulkan::OnReleaseGPU()
     }
 }
 
+#if GPU_ENABLE_DEBUG_LAYER
+#include "Engine/Threading/ThreadLocal.h"
+ThreadLocal<const GPUShaderProgramInitializer*> CurrentVulkanShaderLoading;
+#endif
+
 GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)
 {
     // Extract the SPIR-V shader header from the cache
@@ -147,7 +152,13 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
         createInfo.pNext = &validationInfo;
     }
 #endif
+#if GPU_ENABLE_DEBUG_LAYER
+    CurrentVulkanShaderLoading = &initializer;
+#endif
     VALIDATE_VULKAN_RESULT(vkCreateShaderModule(_device->Device, &createInfo, nullptr, &shaderModule));
+#if GPU_ENABLE_DEBUG_LAYER
+    CurrentVulkanShaderLoading = nullptr;
+#endif
 #if GPU_ENABLE_RESOURCE_NAMING
     VK_SET_DEBUG_NAME(_device, shaderModule, VK_OBJECT_TYPE_SHADER_MODULE, initializer.Name.GetText());
 #endif

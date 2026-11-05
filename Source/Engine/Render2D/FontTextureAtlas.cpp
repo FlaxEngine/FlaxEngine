@@ -222,7 +222,7 @@ void FontTextureAtlas::Flush()
 
 void FontTextureAtlas::EnsureTextureCreated() const
 {
-    if (_texture->IsAllocated() == false)
+    if (_texture->IsAllocated() == false && GPUDevice::Instance->GetRendererType() != RendererType::Null)
     {
         // Initialize atlas texture
         if (_texture->Init(GPUTextureDescription::New2D(_width, _height, 1, _format, GPUTextureFlags::ShaderResource)))

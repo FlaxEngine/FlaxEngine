@@ -11,7 +11,6 @@ using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tabs;
-using FlaxEditor.History;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
@@ -666,6 +665,7 @@ namespace FlaxEditor.Surface
                 newParam.Button.ButtonClicked += OnAddParameterButtonClicked;
                 layout.Space(10);
             }
+
             // Defer renaming a newly added param once its label is built and laid out
             // Adding a param can rebuild the panel more than once (disposing earlier labels) 
             // Because of this every rebuild recaptures the current label, only the surviving one actually calls StartParameterRenaming

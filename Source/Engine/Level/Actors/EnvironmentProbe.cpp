@@ -8,8 +8,9 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Renderer/ProbesRenderer.h"
-#include "Engine/Renderer/ReflectionsPass.h"
+#include "Engine/Graphics/RenderContext.h"
+#include "Engine/Renderer/Reflections/ProbesRenderer.h"
+#include "Engine/Renderer/Reflections/ReflectionsPass.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"
 #include "Engine/ContentExporters/AssetExporters.h"
@@ -180,8 +181,9 @@ void EnvironmentProbe::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
-void EnvironmentProbe::Draw(RenderContext& renderContext)
+void EnvironmentProbe::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (Brightness > ZeroTolerance &&
         EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Reflections) &&
         EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer))
@@ -229,17 +231,19 @@ void EnvironmentProbe::OnDebugDrawSelected()
 {
     // Draw influence range
     auto rangeColor = Color::CornflowerBlue;
-    auto rangeColorAlpha = rangeColor.AlphaMultiplied(0.2f);
+    auto rangeColorAlpha = rangeColor.AlphaMultiplied(0.1f);
     if (BoxProjection)
     {
         OrientedBoundingBox box(_radius, _transform);
         DEBUG_DRAW_WIRE_BOX(box, rangeColorAlpha, 0, false);
         DEBUG_DRAW_WIRE_BOX(box, rangeColor, 0, true);
+        DEBUG_DRAW_BOX(box, rangeColorAlpha, 0, true);
     }
     else
     {
         DEBUG_DRAW_WIRE_SPHERE(_sphere, rangeColorAlpha, 0, false);
         DEBUG_DRAW_WIRE_SPHERE(_sphere, rangeColor, 0, true);
+        DEBUG_DRAW_SPHERE(_sphere, rangeColorAlpha, 0, true);
     }
 
     // Draw capture point (if offset)

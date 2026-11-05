@@ -82,8 +82,6 @@ public:
     /// <param name="timeoutMs">The timeout to wait before building CSG (in milliseconds).</param>
     API_FUNCTION() void BuildCSG(float timeoutMs = 50);
 
-#if USE_EDITOR
-
     /// <summary>
     /// Gets path to the scene file
     /// </summary>
@@ -94,6 +92,7 @@ public:
     /// </summary>
     API_PROPERTY() String GetFilename() const;
 
+#if USE_EDITOR
     /// <summary>
     /// Gets path to the scene data folder
     /// </summary>

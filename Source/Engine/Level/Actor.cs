@@ -298,7 +298,7 @@ namespace FlaxEngine
                     length++;
             }
             if (length == 0)
-                return Utils.GetEmptyArray<T>();
+                return Array.Empty<T>();
             var output = new T[length];
             length = 0;
             for (int i = 0; i < count; i++)
@@ -324,7 +324,7 @@ namespace FlaxEngine
                     length++;
             }
             if (length == 0)
-                return Utils.GetEmptyArray<T>();
+                return Array.Empty<T>();
             var output = new T[length];
             length = 0;
             for (int i = 0; i < count; i++)

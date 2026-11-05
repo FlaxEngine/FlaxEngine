@@ -228,8 +228,15 @@ public:
 
     /// <summary>
     /// Reorders all triangles for improved vertex cache locality. It tries to arrange all triangles to fans and to render triangles which share vertices directly one after the other.
+    /// [Deprecated in v1.13]
     /// </summary>
+    DEPRECATED("Use Optimize instead as it does more advanced optimizations on index buffer.")
     void ImproveCacheLocality();
+
+    /// <summary>
+    /// Optimizes mesh vertex and index buffers for runtime rendering. Uses 'meshoptimizer' library.
+    /// </summary>
+    void Optimize();
 
     /// <summary>
     /// Sums the area of all triangles in the mesh.

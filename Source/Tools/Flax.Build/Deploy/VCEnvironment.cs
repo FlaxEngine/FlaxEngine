@@ -244,6 +244,8 @@ namespace Flax.Deploy
                 // CMake VS2026 generator prefers .slnx solution files, just swap the extension for CMake dependencies
                 if (File.Exists(Path.ChangeExtension(solutionFile, "slnx")))
                     solutionFile = Path.ChangeExtension(solutionFile, "slnx");
+                else if (File.Exists(Path.ChangeExtension(solutionFile, "sln")))
+                    solutionFile = Path.ChangeExtension(solutionFile, "sln");
                 else
                     throw new Exception(string.Format("Unable to build solution {0}. Solution file not found.", solutionFile));
             }

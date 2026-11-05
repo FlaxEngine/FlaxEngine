@@ -1,7 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ForwardPass.h"
-#include "RenderList.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/Shader.h"
@@ -10,7 +10,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 
 ForwardPass::ForwardPass()
@@ -29,24 +29,17 @@ bool ForwardPass::Init()
     _psApplyDistortion = GPUDevice::Instance->CreatePipelineState();
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Forward"));
     if (_shader == nullptr)
-    {
         return true;
-    }
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<ForwardPass, &ForwardPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, ForwardPass, OnShaderReloading);
 
     return false;
 }
 
 bool ForwardPass::setupResources()
 {
-    // Check shader
     if (!_shader->IsLoaded())
-    {
         return true;
-    }
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;

@@ -300,6 +300,7 @@ namespace FlaxEngine
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
+                ProgressError = new Color(0.79f, 0.146f, 0.0f, 1.0f),
                 Statusbar = new Style.StatusbarStyle
                 {
                     PlayMode = Color.FromBgra(0xFF2F9135),
@@ -349,7 +350,7 @@ namespace FlaxEngine
                 {
                     // Someone added another action within current callback
                     var tmp = new List<Action>();
-                    for (int i = newlyAdded; i < UpdateActions.Count; i++)
+                    for (int i = count; i < UpdateActions.Count; i++)
                         tmp.Add(UpdateActions[i]);
                     UpdateActions.Clear();
                     UpdateActions.AddRange(tmp);

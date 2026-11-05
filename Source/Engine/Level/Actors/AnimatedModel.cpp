@@ -15,78 +15,176 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPass.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
+#include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 
-// Implements efficient skinning data update within a shared GPUMemoryPass with manual resource transitions batched for all animated models.
+// Implements efficient skinning data update within a shared GPUBuffer with memory sharing for all animated models.
 class AnimatedModelRenderListExtension : public RenderList::IExtension
 {
 public:
-    struct Item
+    // Allocation within the global buffer (offset and size are in bytes)
+    struct Allocation
     {
-        GPUBuffer* BoneMatrices;
-        void* Data;
-        int32 Size;
+        uint32 Size;
+        uint32 Offset;
     };
 
-    RenderListBuffer<Item> Items;
+    GPUBuffer* GlobalBuffer = nullptr;
+    RenderListBuffer<Allocation> Updates;
+    Array<Allocation> FreeList;
+    Array<byte> Data;
+    uint32 CurrentOffset = 0;
+    uint32 CurrentSize = 0;
+    uint32 ReallocateSize = 0; // Lower bound for the new buffer size to copy back from old buffer (in bytes)
+    volatile int64 UpdateSize = 0;
+    ReadWriteLock DataLocker; // Ensure to lock data writers when performing reallocation of the global buffer
 
-    void PreDraw(GPUContext* context, RenderContextBatch& renderContextBatch) override
+    // Allocates a new skinned bones data block from the global buffer and returns its offset and size (in bytes).
+    Allocation Allocate(uint32 size)
     {
-        Items.Clear();
+        Allocation result;
+        PROFILE_MEM(Animations);
+        ScopeLock lock(Updates.Locker());
+
+        // Check free items list to reuse allocation
+        auto* freeItems = FreeList.Get();
+        for (int32 i = 0; i < FreeList.Count(); i++)
+        {
+            if (freeItems[i].Size == size)
+            {
+                result = freeItems[i];
+                FreeList.RemoveAt(i);
+                return result;
+            }
+        }
+
+        // Safely resize if required size exceeds current chunk limits
+        if (CurrentOffset + size > CurrentSize)
+        {
+            DataLocker.WriteLock(); // Ensure none if writing to this buffer during resize
+
+            // First allocation sets it (in case multiple reallocs before draw)
+            if (ReallocateSize == 0)
+                ReallocateSize = CurrentSize;
+
+            // Ensure we grow enough to fit the requested size completely to avoid OoB
+            CurrentSize = CurrentSize == 0 ? 16 * 1024 : CurrentSize * 2;
+            while (CurrentOffset + size > CurrentSize)
+                CurrentSize *= 2;
+        
+            Data.Resize(CurrentSize, true);
+
+            DataLocker.WriteUnlock();
+        }
+
+        // Allocate new block
+        result = { size, CurrentOffset };
+        CurrentOffset += size;
+        return result;
     }
 
+    // Frees allocated memory back to the global buffer.
+    void Free(Allocation alloc)
+    {
+        PROFILE_MEM(Animations);
+        ScopeLock lock(Updates.Locker());
+        FreeList.Add(alloc);
+
+        // TODO: track active allocations count and roll back to offset 0 without free list when all allocations are freed to reduce fragmentation (eg. on scene changing)
+    }
+
+private:
+    GPUBuffer* InitBuffer() const
+    {
+        GPUBuffer* buffer = GPUDevice::Instance->CreateBuffer(TEXT("BoneMatrices"));
+        if (buffer->Init(GPUBufferDescription::Typed((int32)(CurrentSize / sizeof(Float4)), PixelFormat::R32G32B32A32_Float, false, GPUResourceUsage::Dynamic)))
+        {
+            LOG(Error, "Failed to initialize the skinned mesh bones buffer");
+            SAFE_DELETE_GPU_RESOURCE(buffer);
+        }
+        return buffer;
+    }
+
+public:
+    // [RenderList::IExtension]
+    void Dispose() override
+    {
+        // Free memory
+        Updates.Clear();
+        FreeList.Clear();
+        CurrentOffset = 0;
+        CurrentSize = 0;
+        ReallocateSize = 0;
+        SAFE_DELETE_GPU_RESOURCE(GlobalBuffer);
+    }
+    void PreDraw(GPUContext* context, RenderContextBatch& renderContextBatch) override
+    {
+        // Free pending updates to collect the during drawing
+        Updates.Clear();
+        UpdateSize = 0;
+
+        // Setup global buffer on GPU
+        if (!CurrentSize)
+            return;
+        if (!GlobalBuffer)
+        {
+            GlobalBuffer = InitBuffer();
+            ReallocateSize = 0;
+        }
+        else if (ReallocateSize)
+        {
+            auto newGlobalBuffer = InitBuffer();
+            context->CopyBuffer(newGlobalBuffer, GlobalBuffer, ReallocateSize);
+            GlobalBuffer->DeleteObject(1.0f); // Delay destruction
+            GlobalBuffer = newGlobalBuffer;
+            ReallocateSize = 0;
+        }
+    }
     void PostDraw(GPUContext* context, RenderContextBatch& renderContextBatch) override
     {
-        const int32 count = Items.Count();
+        const int32 count = Updates.Count();
         if (count == 0)
             return;
         PROFILE_GPU_CPU_NAMED("Update Bones");
         GPUMemoryPass pass(context);
-        Item* items = Items.Get();
+        ScopeWriteLock lock(DataLocker);
 
-        // Special case for D3D11 backend that doesn't need transitions
-        if (context->GetDevice()->GetRendererType() <= RendererType::DirectX11)
+        auto* updates = Updates.Get();
+        auto globalBuffer = GlobalBuffer;
+        auto globalData = Data.Get();
+        if (context->GetDevice()->GetRendererType() <= RendererType::DirectX11 || // Dynamic buffer cannot be updated partially on D3D11 (hence D3D11_MAP_WRITE_DISCARD), so update the whole buffer
+            count >= 1000 || // When updates count is large, it is more efficient to update the whole buffer at once
+            UpdateSize >= (uint32)(0.7f * CurrentOffset)) // When modified size is large, it is more efficient to update the whole buffer at once
         {
-            for (int32 i = 0; i < count; i++)
-            {
-                Item& item = items[i];
-                context->UpdateBuffer(item.BoneMatrices, item.Data, item.Size);
-            }
+            // Update whole buffer at once
+            context->UpdateBuffer(globalBuffer, globalData, CurrentOffset);
         }
         else
         {
-            // Batch resource barriers for buffer update
-            for (int32 i = 0; i < count; i++)
-                pass.Transition(items[i].BoneMatrices, GPUResourceAccess::CopyWrite);
-
-            // Update all buffers within Memory Pass (no barriers between)
+            // Update all modified chunks of the buffer
             for (int32 i = 0; i < count; i++)
             {
-                Item& item = items[i];
-                context->UpdateBuffer(item.BoneMatrices, item.Data, item.Size);
+                auto& item = updates[i];
+                context->UpdateBuffer(globalBuffer, globalData + item.Offset, item.Size, item.Offset);
             }
-
-            // Batch resource barriers for reading in Vertex Shader
-            for (int32 i = 0; i < count; i++)
-                pass.Transition(items[i].BoneMatrices, GPUResourceAccess::ShaderReadGraphics);
+            pass.Transition(globalBuffer, GPUResourceAccess::ShaderReadGraphics);
         }
 
 #if COMPILE_WITH_PROFILER
-        // Insert amount of kilobytes of data updated into profiler trace
-        uint32 dataSize = 0;
-        for (int32 i = 0; i < count; i++)
-            dataSize += items[i].Size;
-        ZoneValue(dataSize / 1024);
+        ZoneValue(UpdateSize / 1024); // Trace amount of kilobytes of data updated
 #endif
-
-        Items.Clear();
+        Updates.Clear();
+        UpdateSize = 0;
     }
 };
 
@@ -105,6 +203,94 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     GraphInstance.Object = this;
     _box = BoundingBox(Vector3::Zero);
     _sphere = BoundingSphere(Vector3::Zero, 0.0f);
+}
+
+AnimatedModel::SkinnedBones::SkinnedBones()
+{
+    static_assert(sizeof(*this) == sizeof(uint64), "Update size/alignment.");
+    *(uint64*)this = 0;
+}
+
+AnimatedModel::SkinnedBones::~SkinnedBones()
+{
+    if (IsAllocated)
+    {
+        uint32 dataSize = BonesCount * sizeof(Matrix3x4) * (HasPrevBones ? 2 : 1);
+        RenderListExtension.Free({ dataSize, GlobalBufferOffset });
+    }
+}
+
+void AnimatedModel::SkinnedBones::Update(const SkeletonData& skeleton, const Array<Matrix>& nodesPose, bool perBoneMotionBlur, bool reset)
+{
+    const int32 bonesCount = skeleton.Bones.Count();
+
+    // Swap between two halves of the buffer for current/previous frame bones
+    if (HasPrevBones)
+    {
+        IsPrevBones = !IsPrevBones;
+    }
+
+    // Lazy-allocate from global buffer (double the size when using prev frame bones for per-bone motion vectors)
+    if (!IsAllocated || BonesCount != bonesCount || HasPrevBones != perBoneMotionBlur)
+    {
+        if (IsAllocated)
+        {
+            uint32 dataSize = BonesCount * sizeof(Matrix3x4) * (HasPrevBones ? 2 : 1);
+            RenderListExtension.Free({ dataSize, GlobalBufferOffset });
+        }
+        uint32 dataSize = bonesCount * sizeof(Matrix3x4) * (perBoneMotionBlur ? 2 : 1);
+        auto alloc = RenderListExtension.Allocate(dataSize);
+        GlobalBufferOffset = alloc.Offset;
+        BonesCount = bonesCount;
+        IsAllocated = true;
+        IsPrevBones = false;
+        IsPrevFlushed = false;
+        HasPrevBones = perBoneMotionBlur;
+    }
+    else if (reset)
+    {
+        IsPrevBones = false;
+        IsPrevFlushed = false;
+    }
+
+    // Copy bones transformations to the CPU buffer (including bone offset matrix) and mark it as dirty to be flushed with GPU buffer later
+    RenderListExtension.DataLocker.ReadLock();
+    const SkeletonBone* bones = skeleton.Bones.Get();
+    const Matrix* nodes = nodesPose.Get();
+    Matrix3x4* output = (Matrix3x4*)(RenderListExtension.Data.Get() + GlobalBufferOffset); // DataLocker ensures it's safe to access (resizing happens within exclusive write-lock)
+    if (IsPrevBones)
+        output += BonesCount; // Write to the second half of the allocation
+    ASSERT(nodesPose.Count() == skeleton.Nodes.Count());
+    for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
+    {
+        const SkeletonBone& bone = bones[boneIndex];
+        Matrix matrix;
+        Matrix::Multiply(bone.OffsetMatrix, nodes[bone.NodeIndex], matrix);
+        output[boneIndex].SetMatrixTranspose(matrix);
+    }
+    RenderListExtension.DataLocker.ReadUnlock();
+    IsDirty = true;
+}
+
+void AnimatedModel::SkinnedBones::Flush()
+{
+    uint32 size = BonesCount * sizeof(Matrix3x4);
+    uint32 offset = GlobalBufferOffset;
+    if (IsPrevBones)
+    {
+        // Write to the second half of the allocation (1st half will contain previous frame bones)
+        offset += size;
+
+        // Mark initial flush of the previous frame bones
+        IsPrevFlushed = true;
+    }
+
+    // Add pending buffer update
+    RenderListExtension.Updates.Add({ size, offset });
+    Platform::InterlockedAdd(&RenderListExtension.UpdateSize, size);
+
+    // Clear dirty flag
+    IsDirty = false;
 }
 
 AnimatedModel::~AnimatedModel()
@@ -139,15 +325,6 @@ void AnimatedModel::UpdateAnimation()
 
 void AnimatedModel::SetupSkinningData()
 {
-    ASSERT(SkinnedModel && SkinnedModel->IsLoaded());
-
-    const int32 targetBonesCount = SkinnedModel->Skeleton.Bones.Count();
-    const int32 currentBonesCount = _skinningData.BonesCount;
-
-    if (targetBonesCount != currentBonesCount)
-    {
-        _skinningData.Setup(targetBonesCount);
-    }
 }
 
 void AnimatedModel::PreInitSkinningData()
@@ -158,7 +335,6 @@ void AnimatedModel::PreInitSkinningData()
     PROFILE_MEM(Animations);
     ScopeLock lock(SkinnedModel->Locker);
 
-    SetupSkinningData();
     auto& skeleton = SkinnedModel->Skeleton;
     const int32 bonesCount = skeleton.Bones.Count();
     const int32 nodesCount = skeleton.Nodes.Count();
@@ -180,18 +356,35 @@ void AnimatedModel::PreInitSkinningData()
     GraphInstance.RootTransform = nodesCount > 0 ? skeleton.Nodes[0].LocalTransform : Transform::Identity;
 
     // Setup bones transformations including bone offset matrix
-    Matrix3x4* output = (Matrix3x4*)_skinningData.Data.Get();
-    const SkeletonBone* bones = skeleton.Bones.Get();
-    for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
-    {
-        auto& bone = bones[boneIndex];
-        Matrix identityMatrix = bone.OffsetMatrix * nodesPose[bone.NodeIndex];
-        output[boneIndex].SetMatrixTranspose(identityMatrix);
-    }
-    _skinningData.OnDataChanged(true);
+    _bones.Update(skeleton, GraphInstance.NodesPose, PerBoneMotionBlur, true);
 
     UpdateBounds();
     UpdateSockets();
+}
+
+SkinnedMeshBones AnimatedModel::GetSkinnedMeshBones() const
+{
+    SkinnedMeshBones result;
+    if (_bones.IsAllocated)
+    {
+        // Flush skinning data with GPU
+        // TODO: what if it's called outside the rendering?outside PreDraw/PostDraw on AnimatedModelRenderListExtension?
+        if (_bones.IsDirty && GPUDevice::Instance->IsRendering())
+            const_cast<SkinnedBones&>(_bones).Flush();
+
+        result.BoneMatrices = RenderListExtension.GlobalBuffer;
+        result.BoneOffset = _bones.GlobalBufferOffset / sizeof(Matrix3x4);
+        if (_bones.HasPrevBones && _bones.IsPrevFlushed)
+        {
+            result.PrevBonesOffset = _bones.BonesCount;
+            if (_bones.IsPrevBones)
+            {
+                result.BoneOffset += result.PrevBonesOffset;
+                result.PrevBonesOffset = -result.PrevBonesOffset;
+            }
+        }
+    }
+    return result;
 }
 
 void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worldSpace) const
@@ -587,16 +780,41 @@ void AnimatedModel::ClearBlendShapeWeights()
 
 void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount)
 {
+    PROFILE_MEM(Animations);
     CHECK(anim);
+    int32 counts = 0;
     for (auto& slot : GraphInstance.Slots)
     {
         if (slot.Animation == anim && slot.Name == slotName)
         {
-            slot.Pause = false;
-            slot.BlendInTime = blendInTime;
-            slot.LoopCount = loopCount;
-            return;
+            if (slot.Stop)
+                continue; // Stopped playing (ignore to avoid using its playback state)
+            if (slot.Pause)
+            {
+                // Resume paused animation
+                slot.Pause = false;
+                slot.Rewind = false;
+                slot.BlendInTime = blendInTime;
+                slot.LoopCount = loopCount;
+                return;
+            }
+            counts++;
         }
+    }
+    if (counts >= 2)
+    {
+        // Don't play more than 2 instances of the same animation on the same slot (they can blend together) but don't spam queue
+        // Instead rewind the last one to the beginning
+        for (int32 i = GraphInstance.Slots.Count() - 1; i >= 0; i--)
+        {
+            auto& slot = GraphInstance.Slots[i];
+            if (slot.Animation == anim && slot.Name == slotName && slot.ActiveBlend)
+            {
+                slot.Rewind = true;
+                break;
+            }
+        }
+        return;
     }
     int32 index = 0;
     for (; index < GraphInstance.Slots.Count(); index++)
@@ -613,11 +831,18 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
     slot.BlendInTime = blendInTime;
     slot.BlendOutTime = blendOutTime;
     slot.LoopCount = loopCount;
+    slot.Pause = false;
+    slot.Stop = false;
+    slot.Rewind = false;
 }
 
 void AnimatedModel::StopSlotAnimation()
 {
-    GraphInstance.Slots.Clear();
+    for (auto& slot : GraphInstance.Slots)
+    {
+        if (slot.Animation != nullptr)
+            slot.Stop = true;
+    }
 }
 
 void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* anim)
@@ -626,10 +851,8 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
     {
         if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
-            //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
             if (slot.Animation != nullptr)
-                slot.Reset = true;
-            break;
+                slot.Stop = true;
         }
     }
 }
@@ -820,7 +1043,8 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
 
 void AnimatedModel::BeginPlay(SceneBeginData* data)
 {
-    PreInitSkinningData();
+    if (GraphInstance.NodesPose.IsEmpty())
+        PreInitSkinningData();
 
     // Base
     ModelInstanceActor::BeginPlay(data);
@@ -873,13 +1097,17 @@ void AnimatedModel::UpdateBounds()
         GetLocalToWorldMatrix(world);
         const BoundingBox modelBox = model->GetBox(world);
         BoundingBox box = modelBox;
-        if (GraphInstance.NodesPose.Count() != 0)
+        auto& skeleton = model->Skeleton;
+        if (GraphInstance.NodesPose.Count() == skeleton.Nodes.Count())
         {
             // Per-bone bounds estimated from positions
-            auto& skeleton = model->Skeleton;
             const int32 bonesCount = skeleton.Bones.Count();
             for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
-                box.Merge(_transform.LocalToWorld(GraphInstance.NodesPose[skeleton.Bones.Get()[boneIndex].NodeIndex].GetTranslation()));
+            {
+                int32 nodeIndex = skeleton.Bones.Get()[boneIndex].NodeIndex;
+                if (GraphInstance.NodesPose.IsValidIndex(nodeIndex))
+                    box.Merge(_transform.LocalToWorld(GraphInstance.NodesPose.Get()[nodeIndex].GetTranslation()));
+            }
         }
 
         // Apply margin based on model dimensions
@@ -926,18 +1154,7 @@ void AnimatedModel::OnAnimationUpdated_Async()
     // Calculate the final bones transformations and update skinning
     {
         ANIM_GRAPH_PROFILE_EVENT("Final Pose");
-        const int32 bonesCount = skeleton.Bones.Count();
-        Matrix3x4* output = (Matrix3x4*)_skinningData.Data.Get();
-        ASSERT(GraphInstance.NodesPose.Count() == skeleton.Nodes.Count());
-        ASSERT(_skinningData.Data.Count() == bonesCount * sizeof(Matrix3x4));
-        for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
-        {
-            const SkeletonBone& bone = skeleton.Bones[boneIndex];
-            Matrix matrix;
-            Matrix::Multiply(bone.OffsetMatrix, GraphInstance.NodesPose.Get()[bone.NodeIndex], matrix);
-            output[boneIndex].SetMatrixTranspose(matrix);
-        }
-        _skinningData.OnDataChanged(!PerBoneMotionBlur);
+        _bones.Update(skeleton, GraphInstance.NodesPose, PerBoneMotionBlur);
     }
 
     //if (UpdateWhenOffscreen)
@@ -984,7 +1201,8 @@ void AnimatedModel::OnSkinnedModelLoaded()
 {
     Entries.SetupIfInvalid(SkinnedModel);
     GraphInstance.Invalidate();
-    PreInitSkinningData();
+    if (IsDuringPlay() || GraphInstance.NodesPose.IsEmpty())
+        PreInitSkinningData();
 }
 
 void AnimatedModel::OnGraphChanged()
@@ -1065,77 +1283,53 @@ void AnimatedModel::Update()
     _lastMinDstSqr = MAX_Real;
 }
 
-void AnimatedModel::Draw(RenderContext& renderContext)
-{
-    if (!SkinnedModel || !SkinnedModel->IsLoaded())
-        return;
-    if (renderContext.View.Pass == DrawPass::GlobalSDF)
-        return;
-    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
-        return; // Not supported
-    ACTOR_GET_WORLD_MATRIX(this, view, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
-
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
-    if (_skinningData.IsReady())
-    {
-        // Flush skinning data with GPU
-        if (_skinningData.IsDirty())
-        {
-            RenderListExtension.Items.Add({ _skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count() });
-            _skinningData.OnFlush();
-        }
-
-        SkinnedMesh::DrawInfo draw;
-        draw.Buffer = &Entries;
-        draw.Skinning = &_skinningData;
-        draw.World = &world;
-        draw.DrawState = &_drawState;
-        draw.Deformation = _deformation;
-        PRAGMA_DISABLE_DEPRECATION_WARNINGS
-        draw.DrawModes = DrawModes & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
-        PRAGMA_ENABLE_DEPRECATION_WARNINGS
-        draw.Bounds = _sphere;
-        draw.Bounds.Center -= renderContext.View.Origin;
-        draw.PerInstanceRandom = GetPerInstanceRandom();
-        draw.LODBias = LODBias;
-        draw.ForcedLOD = ForcedLOD;
-        draw.SortOrder = SortOrder;
-        draw.SetStencilValue(_layer);
-
-        SkinnedModel->Draw(renderContext, draw);
-    }
-
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
-}
-
 void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
 {
-    if (!SkinnedModel || !SkinnedModel->IsLoaded())
+    auto model = SkinnedModel.Get();
+    if (!model || !model->IsLoaded())
         return;
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
+    if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+        return; // Not supported
     Matrix world;
     const Float3 translation = _transform.Translation - renderContext.View.Origin;
     Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    SkinnedMesh::DrawInfo draw;
+    draw.DrawModes = DrawModes;
+    if (drawState && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
+    {
+        // Draw shadows-only (or cull)
+        draw.DrawModes &= DrawPass::Depth;
+        if (renderContextBatch.Contexts.Count() == 1 || draw.DrawModes == DrawPass::None)
+            return;
+    }
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
-    if (_skinningData.IsReady())
+    if (_bones.IsAllocated)
     {
         // Flush skinning data with GPU
-        if (_skinningData.IsDirty())
-        {
-            RenderListExtension.Items.Add({ _skinningData.BoneMatrices, _skinningData.Data.Get(), _skinningData.Data.Count() });
-            _skinningData.OnFlush();
-        }
+        if (_bones.IsDirty)
+            _bones.Flush();
 
-        SkinnedMesh::DrawInfo draw;
         draw.Buffer = &Entries;
-        draw.Skinning = &_skinningData;
+        draw.SkinningBones = RenderListExtension.GlobalBuffer;
+        draw.SkinningBonesOffset = _bones.GlobalBufferOffset / sizeof(Matrix3x4);
+        draw.WithPrevBones = _bones.HasPrevBones && _bones.IsPrevFlushed;
+        if (draw.WithPrevBones)
+        {
+            draw.PrevBonesOffset = _bones.BonesCount;
+            if (_bones.IsPrevBones)
+            {
+                // Swap bone buffer chunks
+                draw.SkinningBonesOffset += draw.PrevBonesOffset;
+                draw.PrevBonesOffset = -draw.PrevBonesOffset;
+            }
+        }
         draw.World = &world;
-        draw.DrawState = &_drawState;
+        draw.DrawState = drawState;
         draw.Deformation = _deformation;
-        draw.DrawModes = DrawModes;
         draw.Bounds = _sphere;
         draw.Bounds.Center -= renderContext.View.Origin;
         draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -1144,7 +1338,7 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
         draw.SortOrder = SortOrder;
         draw.SetStencilValue(_layer);
 
-        PRAGMA_DISABLE_DEPRECATION_WARNINGS
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
         if (ShadowsMode != ShadowsCastingMode::All)
         {
             // To handle old ShadowsMode option for all meshes we need to call per-context drawing (no batching opportunity)
@@ -1152,17 +1346,17 @@ void AnimatedModel::Draw(RenderContextBatch& renderContextBatch)
             for (auto& e : renderContextBatch.Contexts)
             {
                 draw.DrawModes = DrawModes & e.View.GetShadowsDrawPassMask(ShadowsMode);
-                SkinnedModel->Draw(e, draw);
+                model->Draw(e, draw);
             }
         }
         else
         {
-            SkinnedModel->Draw(renderContextBatch, draw);
+            model->Draw(renderContextBatch, draw);
         }
-        PRAGMA_ENABLE_DEPRECATION_WARNINGS
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 #if USE_EDITOR
@@ -1220,7 +1414,19 @@ BoundingBox AnimatedModel::GetEditorBoundingBox() const
 {
     if (SkinnedModel)
         SkinnedModel->WaitForLoaded(100);
-    return BoundingBox::MakeScaled(_box, 1.0f / BoundsScale);
+    BoundingBox box = _box;
+    if (CustomBounds.GetSize().LengthSquared() <= 0.01f)
+    {
+        if (!IsDuringPlay() && SkinnedModel)
+        {
+            Matrix world;
+            GetLocalToWorldMatrix(world);
+            box = SkinnedModel->GetBox(world);
+        }
+        else
+            box = BoundingBox::MakeScaled(box, 1.0f / BoundsScale);
+    }
+    return box;
 }
 
 #endif

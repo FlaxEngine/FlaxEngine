@@ -156,7 +156,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (fieldsLength == 0)
                     {
                         // Skip allocations if structure is empty
-                        Values[1] = Utils.GetEmptyArray<byte>();
+                        Values[1] = Array.Empty<byte>();
                     }
                     else
                     {
@@ -471,7 +471,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
-                    Utils.GetEmptyArray<byte>(), // Cached structure layout data
+                    Array.Empty<byte>(), // Cached structure layout data
                 },
                 Elements = new[]
                 {
@@ -591,7 +591,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     string.Empty, // Typename
-                    Utils.GetEmptyArray<byte>(), // Cached structure layout data
+                    Array.Empty<byte>(), // Cached structure layout data
                 },
                 Elements = new[]
                 {

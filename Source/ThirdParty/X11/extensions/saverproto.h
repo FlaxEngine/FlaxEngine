@@ -39,7 +39,7 @@ in this Software without prior written authorization from the X Consortium.
 #define GContext CARD32
 #define Atom CARD32
 #define VisualID CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 
@@ -147,7 +147,7 @@ typedef struct _ScreenSaverNotify {
     CARD8 type;			/* always eventBase + ScreenSaverNotify */
     BYTE state;			/* off, on, cycle */
     CARD16 sequenceNumber B16;
-    Time timestamp B32;
+    XXTime timestamp B32;
     Window root B32;
     Window window B32;		/* screen saver window */
     BYTE kind;			/* blanked, internal, external */
@@ -168,7 +168,7 @@ typedef struct _ScreenSaverNotify {
 #undef GContext
 #undef Atom
 #undef VisualID
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef KeySym
 

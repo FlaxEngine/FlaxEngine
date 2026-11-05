@@ -3,7 +3,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEditor.SceneGraph;

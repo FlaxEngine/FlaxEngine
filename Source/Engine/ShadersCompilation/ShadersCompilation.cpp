@@ -157,7 +157,10 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
 
     // Process shader source to collect metadata
     ShaderMeta meta;
-    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, options.Profile, &meta))
+    auto shaderFeatures = RenderTools::GetShaderProfileFeatures(options.Profile);
+    if (options.DevelopmentShaders)
+        shaderFeatures |= ShaderProfileFeatures::DevelopmentShaders;
+    if (ShaderProcessing::Parser::Process(options.TargetName, options.Source, options.SourceLength, options.Macros, options.Profile, shaderFeatures , &meta))
     {
         LOG(Warning, "Failed to parse source code.");
         return true;
@@ -179,7 +182,7 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
         result = compiler->Compile(&context);
         FreeCompiler(compiler);
 
-#if GPU_USE_SHADERS_DEBUG_LAYER
+#if GPU_ENABLE_SHADERS_DEBUG_LAYER
         // Export debug data
         ShaderDebugDataExporter::Export(&context);
 #endif
@@ -312,6 +315,7 @@ namespace
     {
         if (action == FileSystemAction::Delete)
             return;
+        PROFILE_CPU();
 
         // Get list of assets using this shader file
         Array<Asset*> toReload;
@@ -555,6 +559,7 @@ namespace
     {
         if (action == FileSystemAction::Delete || !path.EndsWith(TEXT(".shader")))
             return;
+        PROFILE_CPU();
 
         LOG(Info, "Shader \'{0}\' has been modified.", path);
 
@@ -665,7 +670,7 @@ void ShaderCompilationContext::OnError(const char* message)
 
 void ShaderCompilationContext::OnCollectDebugInfo(ShaderFunctionMeta& meta, int32 permutationIndex, const char* data, const int32 dataLength)
 {
-#ifdef GPU_USE_SHADERS_DEBUG_LAYER
+#ifdef GPU_ENABLE_SHADERS_DEBUG_LAYER
 
     // Cache data
     meta.Permutations[permutationIndex].DebugData.Set(data, dataLength);

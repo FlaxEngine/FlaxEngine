@@ -9,7 +9,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -308,6 +308,37 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Flo
     return ::UpdateMesh(this, vertexCount, triangleCount, PixelFormat::R32_UInt, vertices, triangles, blendIndices, blendWeights, normals, tangents, uvs, colors);
 }
 
+void SkinnedMesh::Draw(const RenderContext& renderContext, const SkinnedMeshBones& pose, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder, uint8 stencilValue) const
+{
+    if (!material || !material->IsSurface() || !IsInitialized() || !pose)
+        return;
+    drawModes &= material->GetDrawModes();
+    if (drawModes == DrawPass::None)
+        return;
+
+    // Setup draw call
+    DrawCall drawCall;
+    drawCall.Geometry.IndexBuffer = _indexBuffer;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
+    drawCall.Draw.IndicesCount = _triangles * 3;
+    drawCall.InstanceCount = 1;
+    drawCall.Material = material;
+    drawCall.World = world;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = (float)_sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = world;
+    drawCall.Surface.Skinning = pose.PrevBonesOffset != 0 ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
+    drawCall.Surface.SkinningBones = pose.BoneMatrices;
+    drawCall.Surface.SkinningBonesOffset = pose.BoneOffset;
+    drawCall.Surface.PrevBonesOffset = pose.PrevBonesOffset;
+    drawCall.PerInstanceRandom = perInstanceRandom;
+    drawCall.StencilValue = stencilValue;
+
+    // Push draw call to the render list
+    renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals, sortOrder);
+}
+
 void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
 {
     const auto& entry = info.Buffer->At(_materialSlotIndex);
@@ -333,12 +364,12 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
         return;
 
     // Setup draw call
+    ASSERT(info.SkinningBones);
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
     if (info.Deformation)
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
-    drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;
@@ -346,9 +377,12 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
-    drawCall.Surface.Skinning = info.Skinning;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
+    drawCall.Surface.Skinning = info.WithPrevBones ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
+    drawCall.Surface.SkinningBones = info.SkinningBones;
+    drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;
+    drawCall.Surface.PrevBonesOffset = info.PrevBonesOffset;
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 
@@ -375,6 +409,7 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
         return;
 
     // Setup draw call
+    ASSERT(info.SkinningBones);
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
     drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
@@ -387,9 +422,12 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
-    drawCall.Surface.Skinning = info.Skinning;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
+    drawCall.Surface.Skinning = info.WithPrevBones ? DrawCall::SkinningMode::WithPrevBones : DrawCall::SkinningMode::Active;
+    drawCall.Surface.SkinningBones = info.SkinningBones;
+    drawCall.Surface.SkinningBonesOffset = info.SkinningBonesOffset;
+    drawCall.Surface.PrevBonesOffset = info.PrevBonesOffset;
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
 
@@ -425,7 +463,7 @@ enum class InternalBufferType
     VB0 = 0,
 };
 
-MArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI)
+MArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MType* resultType, int32 typeI)
 {
     // [Deprecated in v1.10]
     ScopeLock lock(GetModelBase()->Locker);
@@ -444,7 +482,7 @@ MArray* SkinnedMesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int3
     auto count = GetVertexCount();
 
     // Convert into managed array
-    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), count);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(resultType), count);
     void* managedArrayPtr = MCore::Array::GetAddress(result);
     switch ((InternalBufferType)typeI)
     {

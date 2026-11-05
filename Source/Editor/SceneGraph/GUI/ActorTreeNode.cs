@@ -276,13 +276,12 @@ namespace FlaxEditor.SceneGraph.GUI
                             else
                                 _highlights.Clear();
                             var font = Style.Current.FontSmall;
-                            var textRect = TextRect;
                             for (int i = 0; i < ranges.Length; i++)
                             {
                                 var range = ranges[i];
                                 var start = font.GetCharPosition(text, range.StartIndex);
                                 var end = font.GetCharPosition(text, range.EndIndex);
-                                _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+                                _highlights.Add(new Rectangle(start.X, 0, end.X - start.X, 0));
                             }
                             hasFilter = true;
                         }
@@ -307,14 +306,13 @@ namespace FlaxEditor.SceneGraph.GUI
                 else
                     _highlights.Clear();
                 var font = Style.Current.FontSmall;
-                var textRect = TextRect;
                 var text = Text;
                 for (int i = 0; i < ranges.Length; i++)
                 {
                     var range = ranges[i];
                     var start = font.GetCharPosition(text, range.StartIndex);
                     var end = font.GetCharPosition(text, range.EndIndex);
-                    _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+                    _highlights.Add(new Rectangle(start.X, 0, end.X - start.X, 0));
                 }
                 isThisVisible = true;
             }
@@ -497,8 +495,13 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 var style = Style.Current;
                 var color = style.ProgressNormal * 0.6f;
+                var textRect = TextRect;
                 for (int i = 0; i < _highlights.Count; i++)
-                    Render2D.FillRectangle(_highlights[i], color);
+                {
+                    var rect = _highlights[i];
+                    rect = new Rectangle(rect.X + textRect.X, rect.Y + textRect.Y, rect.Width, textRect.Height);
+                    Render2D.FillRectangle(rect, color);
+                }
             }
         }
 

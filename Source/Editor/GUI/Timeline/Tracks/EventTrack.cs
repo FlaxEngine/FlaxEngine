@@ -146,12 +146,12 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <summary>
         /// The event parameters data sizes collection.
         /// </summary>
-        public int[] EventParamsSizes = Utils.GetEmptyArray<int>();
+        public int[] EventParamsSizes = Array.Empty<int>();
 
         /// <summary>
         /// The event parameters types collection.
         /// </summary>
-        public Type[] EventParamsTypes = Utils.GetEmptyArray<Type>();
+        public Type[] EventParamsTypes = Array.Empty<Type>();
 
         /// <summary>
         /// The event key data.
@@ -380,7 +380,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             }
             else
             {
-                EventParamsTypes = Utils.GetEmptyArray<Type>();
+                EventParamsTypes = Array.Empty<Type>();
             }
             OnEventParamsChanged();
         }

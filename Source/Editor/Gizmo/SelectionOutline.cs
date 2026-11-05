@@ -139,15 +139,11 @@ namespace FlaxEditor.Gizmo
             DrawSelectionDepth(context, renderContext.Task, customDepth);
             _actors.Clear();
 
-            var near = renderContext.View.Near;
-            var far = renderContext.View.Far;
-            var projection = renderContext.View.Projection;
-
             // Render outline
             _material.SetParameterValue("OutlineColor0", _color0);
             _material.SetParameterValue("OutlineColor1", _color1);
             _material.SetParameterValue("CustomDepth", customDepth);
-            _material.SetParameterValue("ViewInfo", new Float4(1.0f / projection.M11, 1.0f / projection.M22, far / (far - near), (-far * near) / (far - near) / far));
+            _material.SetParameterValue("ViewInfo", renderContext.View.ViewInfo);
             Renderer.DrawPostFxMaterial(context, ref renderContext, _material, output, input.View());
 
             // Cleanup

@@ -14,7 +14,7 @@ namespace FlaxEngine
         public static bool ChangeSceneAsync(Guid sceneAssetId)
         {
             UnloadAllScenesAsync();
-            return LoadSceneAsync(sceneAssetId);
+            return Internal_LoadSceneAsync(ref sceneAssetId);
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace FlaxEngine
         /// <returns>True if action fails (given asset is not a scene asset, missing data, scene loading error), otherwise false.</returns>
         public static bool LoadScene(SceneReference sceneAsset)
         {
-            return LoadScene(sceneAsset.ID);
+            return Internal_LoadScene(ref sceneAsset.ID);
         }
 
         /// <summary>
@@ -44,7 +44,30 @@ namespace FlaxEngine
         /// <returns>True if failed (given asset is not a scene asset, missing data), otherwise false.</returns>
         public static bool LoadSceneAsync(SceneReference sceneAsset)
         {
-            return LoadSceneAsync(sceneAsset.ID);
+            return Internal_LoadSceneAsync(ref sceneAsset.ID);
+        }
+
+        /// <summary>
+        /// Begins preloading scene in the background. Intended to use by scene streaming systems that want to prepare scene but not add to the level yet.
+        /// Loads scene asset, deserializes actors and scripts, setup objects hierarchy with transformations and initializes them (incl. calling OnAwake for scripts).
+        /// Preloaded scene is not added to the loaded scenes and not active in the game (no BeginPlay/OnEnable/OnStart called yet). Use <see cref="LoadScene(Guid)"/> or <see cref="LoadSceneAsync(Guid)"/> to finish loading preloaded scene and add it to the level.
+        /// Preloaded scene can be normally unloaded via <see cref="UnloadScene(Guid)"/> to release resources if it's not needed anymore.
+        /// </summary>
+        /// <param name="sceneAsset">The asset with the scene to preload.</param>
+        /// <returns>True if preloading cannot be done, otherwise false.</returns>
+        public static bool PreloadSceneAsync(SceneReference sceneAsset)
+        {
+            return Internal_PreloadSceneAsync(ref sceneAsset.ID);
+        }
+
+        /// <summary>
+        /// Unloads given scene.
+        /// </summary>
+        /// <param name="sceneAsset">The asset with the scene to unload.</param>
+        /// <returns>True if action cannot be done, otherwise false.</returns>
+        public static bool UnloadScene(SceneReference sceneAsset)
+        {
+            return Internal_UnloadScene(ref sceneAsset.ID);
         }
 
         /// <summary>

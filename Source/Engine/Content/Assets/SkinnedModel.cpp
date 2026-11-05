@@ -8,7 +8,7 @@
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/RenderTools.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
@@ -197,9 +197,9 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source, bo
 
         // Add to cache
         _skeletonMappingCache.Add(source, mappingData);
-        source->OnUnloaded.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        source->Unloaded.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-        source->OnReloading.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        source->Reloading.Bind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
     }
     mapping.SourceSkeleton = mappingData.SourceSkeleton;
@@ -233,6 +233,25 @@ BoundingBox SkinnedModel::GetBox(int32 lodIndex) const
     if (LODs.Count() == 0)
         return BoundingBox::Zero;
     return LODs[lodIndex].GetBox();
+}
+
+void SkinnedModel::Draw(const RenderContext& renderContext, const SkinnedMeshBones& pose, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int8 sortOrder) const
+{
+    if (!CanBeRendered() || !pose)
+        return;
+
+    // Select a proper LOD index (model may be culled)
+    const BoundingBox box = GetBox(world);
+    BoundingSphere sphere;
+    BoundingSphere::FromBox(box, sphere);
+    int32 lodIndex = RenderTools::ComputeModelLOD(this, sphere.Center - renderContext.View.Origin, (float)sphere.Radius, renderContext);
+    if (lodIndex == -1)
+        return;
+    lodIndex += renderContext.View.ModelLODBias;
+    lodIndex = ClampLODIndex(lodIndex);
+
+    // Draw
+    LODs[lodIndex].Draw(renderContext, pose, material, world, flags, receiveDecals, DrawPass::Default, 0, sortOrder);
 }
 
 void SkinnedModel::Draw(const RenderContext& renderContext, const SkinnedMesh::DrawInfo& info)
@@ -737,9 +756,9 @@ void SkinnedModel::ClearSkeletonMapping()
 {
     for (const auto& e : _skeletonMappingCache)
     {
-        e.Key->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key->Unloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-        e.Key->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key->Reloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
         Allocator::Free((void*)e.Value.NodesMapping.Get());
     }
@@ -754,9 +773,9 @@ void SkinnedModel::OnSkeletonMappingSourceAssetUnloaded(Asset* obj)
     ASSERT(found);
 
     // Unlink event
-    obj->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+    obj->Unloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-    obj->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+    obj->Reloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
 
     // Clear cache

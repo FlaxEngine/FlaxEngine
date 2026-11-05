@@ -31,7 +31,7 @@ VS2PS VS(Render2DVertex input)
 	if ((int)input.CustomDataAndClipOrigin.y & RENDER2D_FEATURE_VERTEX_SNAPPING)
 		input.Position = (float2)(int2)input.Position;
 
-	output.Position = PROJECT_POINT(float4(input.Position, 0, 1), ViewProjection);
+	output.Position = PROJECT_POINT(float4(input.Position, DEPTH_RANGE_MIN, 1), ViewProjection);
 	output.Color = input.Color;
 	output.TexCoord = input.TexCoord;
 	output.ClipOriginAndPos = float4(input.CustomDataAndClipOrigin.zw, input.Position);
@@ -115,21 +115,12 @@ float4 GetSample(float weight, float offset, float2 uv)
 	     + Image.Sample(SamplerLinearClamp, uv - uvOffset) * weight;
 }
 
-// 1:-1 to 0:1
-float2 ClipToUv(float2 clipPos)
-{
-	return clipPos * float2(0.5, -0.5) + float2(0.5, 0.5);
-}
-
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Downscale(Quad_VS2PS input) : SV_Target0
 {
-	float2 boundsPos = input.TexCoord * Bounds.zw + Bounds.xy;
-
-	float4 clipPos = PROJECT_POINT(float4(boundsPos, 0, 1), ViewProjection);
-	clipPos.xy /= clipPos.w;
-
-	float2 uvPos = ClipToUv(clipPos.xy);
+    float2 boundsPos = input.TexCoord * Bounds.zw + Bounds.xy;
+    float3 clipPos = ProjectWorldToClip(float3(boundsPos, DEPTH_RANGE_MIN), ViewProjection);
+    float2 uvPos = ProjectClipToUV(clipPos.xy);
 
 	// TODO: use 4-tap box blur to reduce aliasing when downscaling
 
@@ -166,5 +157,5 @@ float4 PS_Blur(Quad_VS2PS input) : SV_Target0
 		}
 	}
 
-	return float4(result.rgb, 1);
+	return result;
 }

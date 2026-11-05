@@ -150,28 +150,38 @@ namespace Flax.Build
                             var toolchain = platform.TryGetToolchain(architecture);
                             var targetBuildOptions = GetBuildOptions(target, platform, toolchain, architecture, configuration, project.WorkspaceRootPath);
                             targetBuildOptions.Flags |= BuildFlags.GenerateProject;
-                            var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
-                            foreach (var module in modules)
+                            try
                             {
-                                // This merges private module build options into global target - not the best option but helps with syntax highlighting and references collecting
-                                module.Key.Setup(targetBuildOptions);
-                                module.Key.SetupEnvironment(targetBuildOptions);
-                            }
+                                var modules = CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
+                                foreach (var module in modules)
+                                {
+                                    // This merges private module build options into global target - not the best option but helps with syntax highlighting and references collecting
+                                    module.Key.Setup(targetBuildOptions);
+                                    module.Key.SetupEnvironment(targetBuildOptions);
+                                }
 
-                            project.Configurations.Add(new Project.ConfigurationData
+                                project.Configurations.Add(new Project.ConfigurationData
+                                {
+                                    Name = configurationText + '|' + architectureName,
+                                    Text = configurationText,
+                                    Platform = targetPlatform,
+                                    PlatformName = platformName,
+                                    Architecture = architecture,
+                                    ArchitectureName = architectureName,
+                                    Configuration = configuration,
+                                    ConfigurationName = configurationName,
+                                    Target = target,
+                                    TargetBuildOptions = targetBuildOptions,
+                                    Modules = modules,
+                                });
+                            }
+                            catch (Exception ex)
                             {
-                                Name = configurationText + '|' + architectureName,
-                                Text = configurationText,
-                                Platform = targetPlatform,
-                                PlatformName = platformName,
-                                Architecture = architecture,
-                                ArchitectureName = architectureName,
-                                Configuration = configuration,
-                                ConfigurationName = configurationName,
-                                Target = target,
-                                TargetBuildOptions = targetBuildOptions,
-                                Modules = modules,
-                            });
+                                Log.Warning($"Unsupported project '{project.Name}' configuration {configurationName} to {platformName}");
+                                Log.Verbose(ex.Message);
+                                Log.Verbose(ex.StackTrace);
+                                //Log.Exception(ex);
+                            }
                         }
                     }
                 }
@@ -207,7 +217,7 @@ namespace Flax.Build
                 if (Configuration.ProjectFormatCLion)
                     projectFormats.Add(ProjectFormat.CMake);
                 if (Configuration.ProjectFormatRider)
-                    projectFormats.Add(ProjectFormat.VisualStudio2022);
+                    projectFormats.Add(ProjectFormat.VisualStudio2026);
                 if (!string.IsNullOrEmpty(Configuration.ProjectFormatCustom))
                     projectFormats.Add(ProjectFormat.Custom);
                 if (projectFormats.Count == 0)
@@ -218,7 +228,7 @@ namespace Flax.Build
                     !projectFormats.Contains(ProjectFormat.VisualStudio2022) &&
                     !projectFormats.Contains(ProjectFormat.VisualStudio))
                 {
-                    projectFormats.Add(ProjectFormat.VisualStudio2022);
+                    projectFormats.Add(ProjectFormat.VisualStudio2026);
                 }
 
                 foreach (ProjectFormat projectFormat in projectFormats)
@@ -692,6 +702,32 @@ namespace Flax.Build
                     {
                         Log.Verbose("Solution -> " + solution.Path);
                         nativeProjectGenerator.GenerateSolution(solution);
+
+                        // Clean up obsolete solution file with different extension if present
+                        if (solution.Path.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var oldSln = Path.ChangeExtension(solution.Path, "sln");
+                            if (File.Exists(oldSln))
+                            {
+                                Log.Verbose("Removing obsolete solution file " + oldSln);
+                                File.Delete(oldSln);
+                            }
+                            var oldDotSettingsUser = oldSln + ".DotSettings.user";
+                            if (File.Exists(oldDotSettingsUser))
+                                File.Delete(oldDotSettingsUser);
+                        }
+                        else if (solution.Path.EndsWith(".sln", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var oldSlnx = Path.ChangeExtension(solution.Path, "slnx");
+                            if (File.Exists(oldSlnx))
+                            {
+                                Log.Verbose("Removing obsolete solution file " + oldSlnx);
+                                File.Delete(oldSlnx);
+                            }
+                            var oldDotSettingsUser = oldSlnx + ".DotSettings.user";
+                            if (File.Exists(oldDotSettingsUser))
+                                File.Delete(oldDotSettingsUser);
+                        }
                     }
                 }
             }

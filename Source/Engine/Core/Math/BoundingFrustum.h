@@ -58,14 +58,6 @@ public:
     }
 
     /// <summary>
-    /// Gets the matrix that describes this bounding frustum.
-    /// </summary>
-    FORCE_INLINE Matrix GetMatrix()
-    {
-        return _matrix;
-    }
-
-    /// <summary>
     /// Gets the inverted matrix to that describes this bounding frustum.
     /// </summary>
     /// <param name="result">The result matrix.</param>

@@ -29,7 +29,7 @@ public:
     {
     }
 
-    static void GetDeviceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
+    static void GetDeviceExtensions(Array<const char*>& extensions)
     {
     }
 

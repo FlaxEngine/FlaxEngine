@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Flax.Build
 {
@@ -248,14 +247,13 @@ namespace Flax.Build
                 // Read option prefix
                 if (i == length)
                     break;
-                var wholeQuote = commandLine[i] == '\"';
+                var wholeQuote = IsQuote(commandLine[i]);
                 if (wholeQuote)
                     i++;
                 if (i == length)
                     break;
-                if (commandLine[i] == '-')
-                    i++;
-                else if (commandLine[i] == '/')
+                var hasArgPrefix = commandLine[i] == '-' || commandLine[i] == '/';
+                if (hasArgPrefix)
                     i++;
 
                 // Skip white space
@@ -266,6 +264,8 @@ namespace Flax.Build
                 int nameStart = i;
                 while (i < length && commandLine[i] != '-' && commandLine[i] != '=' && !char.IsWhiteSpace(commandLine[i]))
                     i++;
+                if (wholeQuote && IsQuote(commandLine[i]))
+                    i--;
                 int nameEnd = i;
                 string name = commandLine.Substring(nameStart, nameEnd - nameStart);
 
@@ -283,7 +283,7 @@ namespace Flax.Build
                     });
                     if (wholeQuote)
                         i++;
-                    if (i < length && commandLine[i] != '\"')
+                    if (i < length && !IsQuote(commandLine[i]))
                         i++;
                     continue;
                 }
@@ -291,22 +291,22 @@ namespace Flax.Build
                 // Read value
                 i++;
                 int valueStart, valueEnd;
-                if (commandLine.Length > i + 1 && commandLine[i] == '\\' && commandLine[i + 1] == '\"')
+                if (commandLine.Length > i + 1 && commandLine[i] == '\\' && IsQuote(commandLine[i + 1]))
                 {
                     valueStart = i + 2;
                     i++;
-                    while (i + 1 < length && commandLine[i] != '\\' && commandLine[i + 1] != '\"')
+                    while (i + 1 < length && commandLine[i] != '\\' && !IsQuote(commandLine[i + 1]))
                         i++;
                     valueEnd = i;
                     i += 2;
                     if (wholeQuote)
                     {
-                        while (i < length && commandLine[i] != '\"')
+                        while (i < length && !IsQuote(commandLine[i]))
                             i++;
                         i++;
                     }
                 }
-                else if (commandLine[i] == '\"' || commandLine[i] == '\'')
+                else if (IsQuote(commandLine[i]))
                 {
                     var quoteChar = commandLine[i];
                     valueStart = i + 1;
@@ -317,7 +317,7 @@ namespace Flax.Build
                     i++;
                     if (wholeQuote)
                     {
-                        while (i < length && commandLine[i] != '\"')
+                        while (i < length && !IsQuote(commandLine[i]))
                             i++;
                         i++;
                     }
@@ -325,7 +325,7 @@ namespace Flax.Build
                 else if (wholeQuote)
                 {
                     valueStart = i;
-                    while (i < length && commandLine[i] != '\"')
+                    while (i < length && !IsQuote(commandLine[i]))
                         i++;
                     valueEnd = i;
                     i++;
@@ -522,6 +522,11 @@ namespace Flax.Build
                     throw new Exception(string.Format("Failed to set configuration property {0} with argument {1} to value \"{2}\"", member.Name, option.Name, option.Value), ex);
                 }
             }
+        }
+
+        private static bool IsQuote(char c)
+        {
+            return c == '\"' || c == '\'';
         }
     }
 }

@@ -10,6 +10,7 @@ template<int Size>
 class GPUPipelineStatePermutations
 {
 public:
+    enum { StaticSize = Size };
     GPUPipelineState* States[Size];
 
 public:
@@ -97,13 +98,13 @@ public:
     }
 
 public:
-    bool Create(GPUPipelineState::Description& desc, GPUShader* shader, const StringAnsiView& psName)
+    bool Create(GPUPipelineState::Description& desc, GPUShader* shader, const StringAnsiView& psName, int32 permutationOffset = 0)
     {
         for (int i = 0; i < Size; i++)
         {
             ASSERT(Base::States[i]);
 
-            desc.PS = shader->GetPS(psName, i);
+            desc.PS = shader->GetPS(psName, i + permutationOffset);
             if (Base::States[i]->Init(desc))
                 return true;
         }

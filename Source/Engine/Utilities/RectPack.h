@@ -107,6 +107,11 @@ public:
         return Width != 0;
     }
 
+    int32 Count() const
+    {
+        return Nodes.Count() - FreeNodes.Count();
+    }
+
     /// <summary>
     /// Initializes the atlas of a given size. Clears any previously added nodes. This won't invoke OnFree for atlas tiles.
     /// </summary>

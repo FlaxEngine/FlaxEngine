@@ -47,7 +47,7 @@ ShaderCompilerD3D::ShaderCompilerD3D(ShaderProfile profile)
 {
 }
 
-#ifdef GPU_USE_SHADERS_DEBUG_LAYER
+#ifdef GPU_ENABLE_SHADERS_DEBUG_LAYER
 
 namespace
 {
@@ -321,7 +321,7 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
         if (ProcessShader(_context, _constantBuffers, reflector.Get(), desc, bindings))
             return true;
 
-#ifdef GPU_USE_SHADERS_DEBUG_LAYER
+#ifdef GPU_ENABLE_SHADERS_DEBUG_LAYER
         // Generate debug information
         if (ProcessDebugInfo(_context, meta, permutationIndex, shaderBuffer, shaderBufferSize))
             return true;

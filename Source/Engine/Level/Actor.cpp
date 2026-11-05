@@ -19,7 +19,6 @@
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -134,7 +133,7 @@ Actor::Actor(const SpawnParams& params)
 
 SceneRendering* Actor::GetSceneRendering() const
 {
-    return &GetScene()->Rendering;
+    return _scene ? &_scene->Rendering : nullptr;
 }
 
 void Actor::SetSceneInHierarchy(Scene* scene)
@@ -1500,15 +1499,8 @@ void Actor::InitializeHierarchy()
         Children[i]->InitializeHierarchy();
 }
 
-void Actor::Draw(RenderContext& renderContext)
-{
-}
-
 void Actor::Draw(RenderContextBatch& renderContextBatch)
 {
-    // Default impl calls single-context
-    for (RenderContext& renderContext : renderContextBatch.Contexts)
-        Draw(renderContext);
 }
 
 #if USE_EDITOR

@@ -32,6 +32,7 @@ namespace FlaxEditor.Windows.Assets
             new ScriptType(typeof(Texture)),
             new ScriptType(typeof(CubeTexture)),
             new ScriptType(typeof(GPUTexture)),
+            new ScriptType(typeof(GPUBuffer)),
             new ScriptType(typeof(ChannelMask)),
             new ScriptType(typeof(bool)),
             new ScriptType(typeof(int)),

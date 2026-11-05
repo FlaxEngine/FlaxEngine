@@ -45,7 +45,7 @@ API_ENUM() enum class PhysicsSolverType
     ProjectedGaussSeidelIterativeSolver = 0,
 
     /// <summary>
-    /// Non linear iterative solver. This kind of solver can lead to improved convergence and handle large mass ratios, long chains and jointed systems better. It is slightly more expensive than the default solver and can introduce more energy to correct joint and contact errors.
+    /// Non-linear iterative solver. This kind of solver can lead to improved convergence and handle large mass ratios, long chains and jointed systems better. It is slightly more expensive than the default solver and can introduce more energy to correct joint and contact errors.
     /// </summary>
     TemporalGaussSeidelSolver = 1,
 };
@@ -53,7 +53,7 @@ API_ENUM() enum class PhysicsSolverType
 /// <summary>
 /// Physics simulation settings container.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API PhysicsSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API PhysicsSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicsSettings);
 

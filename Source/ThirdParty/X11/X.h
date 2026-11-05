@@ -1,6 +1,6 @@
 /* Definitions for the X window system likely to be used by applications */
 
-#ifndef X_H
+#if !defined(X_H) && !defined(_MSC_VER)
 #define X_H
 
 /***********************************************************

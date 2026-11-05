@@ -55,6 +55,7 @@ public class Platform : EngineModule
         case TargetPlatform.PS4:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Unix"));
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Platform"));
+            options.PrivateIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/Platforms/PS4/Binaries/ThirdParty/x64/include/mono-2.0"));
             break;
         case TargetPlatform.PS5:
             options.SourcePaths.Add(Path.Combine(FolderPath, "Unix"));

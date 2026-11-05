@@ -20,9 +20,11 @@ private:
         PipelineStateCache MotionVectors;
         PipelineStateCache MotionVectorsSkinned;
         PipelineStateCache MotionVectorsSkinnedPerBone;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
         PipelineStateCache QuadOverdrawSkinned;
+        PipelineStateCache Wireframe;
+        PipelineStateCache WireframeSkinned;
 #endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useLightmap, const bool useSkinning, const bool perBoneMotionBlur)
@@ -37,9 +39,11 @@ private:
                 return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
             case DrawPass::MotionVectors:
                 return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
+            case DrawPass::Wireframe:
+                return useSkinning ? &WireframeSkinned : &Wireframe;
 #endif
             default:
                 return nullptr;
@@ -55,9 +59,11 @@ private:
             DepthSkinned.Release();
             MotionVectors.Release();
             MotionVectorsSkinned.Release();
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             QuadOverdraw.Release();
             QuadOverdrawSkinned.Release();
+            Wireframe.Release();
+            WireframeSkinned.Release();
 #endif
         }
     };
@@ -75,9 +81,8 @@ public:
 
 public:
     // [MaterialShader]
-    DrawPass GetDrawModes() const override;
     bool CanUseLightmap() const override;
-    bool CanUseInstancing(InstancingHandler& handler) const override;
+    bool CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const override;
     void Bind(BindParameters& params) override;
     void Unload() override;
 

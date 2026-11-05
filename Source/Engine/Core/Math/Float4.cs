@@ -184,6 +184,40 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Float4" /> struct.
         /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        public Float4(Vector3 value)
+        {
+            X = (float)value.X;
+            Y = (float)value.Y;
+            Z = (float)value.Z;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Float4" /> struct.
+        /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        public Float4(Double3 value)
+        {
+            X = (float)value.X;
+            Y = (float)value.Y;
+            Z = (float)value.Z;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Float4" /> struct.
+        /// </summary>
+        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        public Float4(Vector4 value)
+        {
+            X = (float)value.X;
+            Y = (float)value.Y;
+            Z = (float)value.Z;
+            W = (float)value.W;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Float4" /> struct.
+        /// </summary>
         /// <param name="values">The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
@@ -976,7 +1010,7 @@ namespace FlaxEngine
         /// Returns the absolute value of a vector.
         /// </summary>
         /// <param name="v">The value.</param>
-        /// <returns> A vector which components are less or equal to 0.</returns>
+        /// <returns> A vector which components are absolute values of that vector.</returns>
         public static Float4 Abs(Float4 v)
         {
             return new Float4(Math.Abs(v.X), Math.Abs(v.Y), Math.Abs(v.Z), Math.Abs(v.W));

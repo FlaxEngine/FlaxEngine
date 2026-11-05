@@ -27,6 +27,8 @@ WGPUCompareFunction ToCompareFunction(GPUSamplerCompareFunction value)
         return WGPUCompareFunction_Undefined; // Disabled comparision
     case GPUSamplerCompareFunction::Less:
         return WGPUCompareFunction_Less;
+    case GPUSamplerCompareFunction::Greater:
+        return WGPUCompareFunction_Greater;
     default:
         return WGPUCompareFunction_Undefined;
     }

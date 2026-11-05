@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "RendererPass.h"
-#if USE_EDITOR
+#include "Engine/Renderer/RendererPass.h"
+#if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Core/Collections/Dictionary.h"
 #endif
 
@@ -13,13 +13,12 @@
 class GBufferPass : public RendererPass<GBufferPass>
 {
 private:
-
-    AssetReference<Shader> _gBufferShader;
+    AssetReference<Shader> _shader;
     GPUPipelineState* _psDebug = nullptr;
     GPUPipelineState* _psLinearToSrgb = nullptr;
     AssetReference<Model> _skyModel;
     AssetReference<Model> _boxModel;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     class LightmapUVsDensityMaterialShader* _lightmapUVsDensity = nullptr;
     class VertexColorsMaterialShader* _vertexColors = nullptr;
     class LODPreviewMaterialShader* _lodPreview = nullptr;
@@ -57,7 +56,7 @@ public:
     /// <returns>Rendered cubemap or null if not ready or failed.</returns>
     GPUTextureView* RenderSkybox(RenderContext& renderContext, GPUContext* context);
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     // Temporary cache for faster debug previews drawing (used only during frame rendering).
     static Dictionary<GPUBuffer*, const ModelLOD*> IndexBufferToModelLOD;
     static CriticalSection Locker;

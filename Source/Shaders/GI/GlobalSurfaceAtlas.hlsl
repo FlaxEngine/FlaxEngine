@@ -1,7 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/Collisions.hlsl"
+#include "./Flax/Math/Collisions.hlsl"
 
 #if CAN_USE_GATHER
 #define CAN_USE_GLOBAL_SURFACE_ATLAS 1
@@ -24,6 +24,9 @@
 #undef GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD
 #define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_WEIGHT_ENABLED 0
 #define GLOBAL_SURFACE_ATLAS_TILE_NORMAL_THRESHOLD 0
+#endif
+#ifndef GLOBAL_SURFACE_ATLAS_SAMPLER
+#define GLOBAL_SURFACE_ATLAS_SAMPLER SamplerLinearClamp
 #endif
 
 struct GlobalSurfaceTile
@@ -119,9 +122,9 @@ struct GlobalSurfaceAtlasData
 
 float3 SampleGlobalSurfaceAtlasTex(Texture2D atlas, float2 atlasUV, float4 bilinearWeights)
 {
-    float4 sampleX = atlas.GatherRed(SamplerLinearClamp, atlasUV);
-    float4 sampleY = atlas.GatherGreen(SamplerLinearClamp, atlasUV);
-    float4 sampleZ = atlas.GatherBlue(SamplerLinearClamp, atlasUV);
+    float4 sampleX = atlas.GatherRed(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
+    float4 sampleY = atlas.GatherGreen(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
+    float4 sampleZ = atlas.GatherBlue(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
     return float3(dot(sampleX, bilinearWeights), dot(sampleY, bilinearWeights), dot(sampleZ, bilinearWeights));
 }
 
@@ -145,22 +148,24 @@ float4 SampleGlobalSurfaceAtlasTile(const GlobalSurfaceAtlasData data, GlobalSur
     float2 atlasUV = tileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
 
     // Calculate bilinear weights
-    float2 bilinearWeightsUV = frac(atlasUV * data.Resolution + 0.5f);
+    float texelPrecisionOffset = 1.0f / 512.0f; // https://www.reedbeta.com/blog/texture-gathers-and-coordinate-precision/
+    float2 bilinearWeightsUV = frac(atlasUV * data.Resolution + 0.5f + texelPrecisionOffset);
     float4 bilinearWeights;
-    bilinearWeights.x = (1.0 - bilinearWeightsUV.x) * (bilinearWeightsUV.y);
+    bilinearWeights.x = (1 - bilinearWeightsUV.x) * (bilinearWeightsUV.y);
     bilinearWeights.y = (bilinearWeightsUV.x) * (bilinearWeightsUV.y);
     bilinearWeights.z = (bilinearWeightsUV.x) * (1 - bilinearWeightsUV.y);
     bilinearWeights.w = (1 - bilinearWeightsUV.x) * (1 - bilinearWeightsUV.y);
 
     // Tile depth weight based on sample position occlusion
-    float4 tileZ = depth.Gather(SamplerLinearClamp, atlasUV);
+    float4 tileZ = depth.Gather(GLOBAL_SURFACE_ATLAS_SAMPLER, atlasUV);
     float depthThreshold = 2.0f * surfaceThreshold / tile.ViewBoundsSize.z;
     float4 depthVisibility = 1.0f;
     UNROLL
     for (uint i = 0; i < 4; i++)
     {
-        depthVisibility[i] = 1.0f - saturate((abs(tileDepth - tileZ[i]) - depthThreshold) / (0.5f * depthThreshold));
-        if (tileZ[i] >= 1.0f)
+        float z = DEPTH_01(tileZ[i]);
+        depthVisibility[i] = 1.0f - saturate((abs(tileDepth - z) - depthThreshold) / (0.5f * depthThreshold));
+        if (z >= 1.0f)
             depthVisibility[i] = 0.0f;
     }
     float sampleWeight = dot(depthVisibility, bilinearWeights);

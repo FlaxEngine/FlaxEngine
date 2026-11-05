@@ -5,8 +5,6 @@
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Content/Assets/AnimationGraph.h"
-#include "Engine/Graphics/Models/SkinnedMeshDrawData.h"
-#include "Engine/Renderer/DrawCall.h"
 #include "Engine/Core/Delegate.h"
 
 /// <summary>
@@ -80,9 +78,25 @@ private:
         uint32 Usages;
     };
 
-    GeometryDrawStateData _drawState;
-    SkinnedMeshDrawData _skinningData;
+    struct SkinnedBones
+    {
+        uint32 GlobalBufferOffset; // In bytes
+        uint16 BonesCount;
+        uint16 IsAllocated : 1;
+        uint16 IsDirty : 1;
+        uint16 IsPrevBones : 1;
+        uint16 IsPrevFlushed : 1;
+        uint16 HasPrevBones : 1;
+
+        SkinnedBones();
+        ~SkinnedBones();
+
+        void Update(const SkeletonData& skeleton, const Array<Matrix>& nodesPose, bool perBoneMotionBlur, bool reset = false);
+        void Flush();
+    };
+
     AnimationUpdateMode _actualMode;
+    SkinnedBones _bones;
     uint32 _counter;
     Real _lastMinDstSqr;
     bool _isDuringUpdateEvent = false;
@@ -216,13 +230,19 @@ public:
 
     /// <summary>
     /// Validates and creates a proper skinning data.
+    /// [Deprecated in v1.13]
     /// </summary>
-    API_FUNCTION() void SetupSkinningData();
+    API_FUNCTION() DEPRECATED("Not used anymore. Does nothing.") void SetupSkinningData();
 
     /// <summary>
     /// Creates and setups the skinning data (writes the identity bones transformations).
     /// </summary>
     API_FUNCTION() void PreInitSkinningData();
+
+    /// <summary>
+    /// Gets the skeleton bones data used for skinning. It contains the reference to GPU buffer with final transformations of the skeleton nodes (bones) that are used for skinning the mesh inside vertex shader.
+    /// </summary>
+    API_PROPERTY() SkinnedMeshBones GetSkinnedMeshBones() const;
 
     /// <summary>
     /// Gets the per-node final transformations (skeleton pose).
@@ -395,6 +415,7 @@ public:
     /// <summary>
     /// Plays the animation on the slot in Anim Graph.
     /// </summary>
+    /// <remarks>If animation is paused, it will be resumed. If animation is not playing, it will be started. If animation is playing, it will be blended out (call StopSlotAnimation before to do an immediate transition).</remarks>
     /// <param name="slotName">The name of the slot.</param>
     /// <param name="anim">The animation to play.</param>
     /// <param name="speed">The playback speed.</param>
@@ -412,7 +433,7 @@ public:
     /// Stops the animation playback on the slot in Anim Graph.
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to check. Null to use slot name only.</param>
+    /// <param name="anim">The animation to check. Null to use slot name only. Can be used to explicitly stop a specific animation (if it's playing right now, otherwise doesn't stop other one).</param>
     API_FUNCTION() void StopSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
     /// <summary>
@@ -474,7 +495,6 @@ private:
 public:
     // [ModelInstanceActor]
     bool HasContentLoaded() const override;
-    void Draw(RenderContext& renderContext) override;
     void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;

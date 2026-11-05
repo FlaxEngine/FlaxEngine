@@ -25,6 +25,12 @@ typedef StringAsANSI<> UnixString;
 typedef StringAsUTF8<> UnixString;
 #endif
 
+#if PLATFORM_CONSOLE || PLATFORM_WEB
+#define MAX_PATH 256 // Shorter path limit on fixed environments
+#else
+#define MAX_PATH 4096
+#endif
+
 const DateTime UnixEpoch(1970, 1, 1);
 
 bool UnixFileSystem::CreateDirectory(const StringView& path)
@@ -89,8 +95,9 @@ bool DeleteUnixPathTree(const char* path)
             continue;
 
         // Determinate a full path of an entry
-        char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
+        char full_path[MAX_PATH];
+        if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(full_path))
+            continue;
         strcpy(full_path, path);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);
@@ -199,8 +206,9 @@ bool UnixFileSystem::GetChildDirectories(Array<String>& results, const String& p
             continue;
 
         // Determinate a full path of an entry
-        char fullPath[256];
-        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(fullPath));
+        char fullPath[MAX_PATH];
+        if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(fullPath))
+            continue;
         strcpy(fullPath, pathStr);
         strcat(fullPath, "/");
         strcat(fullPath, entry->d_name);
@@ -353,9 +361,9 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
             continue;
 
         // Determinate a full path of an entry
-        char fullPath[256];
-        const int32 pathLength = strlen(entry->d_name);
-        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(fullPath));
+        char fullPath[MAX_PATH];
+        if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(fullPath))
+            continue;
         strcpy(fullPath, path);
         strcat(fullPath, "/");
         strcat(fullPath, entry->d_name);
@@ -419,8 +427,9 @@ bool UnixFileSystem::getFilesFromDirectoryAll(Array<String>& results, const char
             continue;
 
         // Determinate a full path of an entry
-        char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
+        char full_path[MAX_PATH];
+        if (pathLength + strlen(entry->d_name) + 2 > ARRAY_COUNT(full_path))
+            continue;
         strcpy(full_path, path);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);

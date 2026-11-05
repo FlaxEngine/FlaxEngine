@@ -39,8 +39,8 @@ namespace FlaxEditor.Surface
                         DefaultValues = new object[]
                         {
                             "State",
-                            Utils.GetEmptyArray<byte>(),
-                            Utils.GetEmptyArray<byte>(),
+                            Array.Empty<byte>(),
+                            Array.Empty<byte>(),
                         },
                         Size = new Float2(100, 0),
                     },
@@ -54,7 +54,7 @@ namespace FlaxEditor.Surface
                         Size = new Float2(100, 0),
                         DefaultValues = new object[]
                         {
-                            Utils.GetEmptyArray<byte>(),
+                            Array.Empty<byte>(),
                         },
                     },
                 }

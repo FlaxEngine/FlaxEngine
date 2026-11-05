@@ -37,6 +37,9 @@ namespace FlaxEditor.States
         /// <inheritdoc />
         public override bool CanEnterPlayMode => true;
 
+        /// <inheritdoc />
+        public override bool CanCookGame => true;
+
         /// <summary>
         /// Occurs when play mode is starting (before scene duplicating).
         /// </summary>

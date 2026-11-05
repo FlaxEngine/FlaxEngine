@@ -5,8 +5,8 @@
 #include "MaterialShader.h"
 #include "Engine/Core/Types/Span.h"
 #include "Engine/Renderer/GI/DynamicDiffuseGlobalIllumination.h"
-#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
+#include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
 
 // Material shader features are plugin-based functionalities that are reusable between different material domains.
 struct MaterialShaderFeature
@@ -73,7 +73,7 @@ struct LightmapFeature : MaterialShaderFeature
 // Material shader feature that adds Global Illumination sampling feature (light probes).
 struct GlobalIlluminationFeature : MaterialShaderFeature
 {
-    enum { SRVs = 3 };
+    enum { SRVs = 4 };
 
     PACK_STRUCT(struct Data {
         DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;

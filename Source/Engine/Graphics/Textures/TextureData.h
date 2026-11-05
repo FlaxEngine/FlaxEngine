@@ -132,7 +132,7 @@ public:
     /// <param name="mipIndex">The mip index (zero-based).</param>
     /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool GetPixels(API_PARAM(Out) Array<Color32>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0);
+    API_FUNCTION() bool GetPixels(API_PARAM(Out) Array<Color32>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0) const;
 
     /// <summary>
     /// Gets the texture pixels as Color array.
@@ -142,5 +142,5 @@ public:
     /// <param name="mipIndex">The mip index (zero-based).</param>
     /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool GetPixels(API_PARAM(Out) Array<Color>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0);
+    API_FUNCTION() bool GetPixels(API_PARAM(Out) Array<Color>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0) const;
 };

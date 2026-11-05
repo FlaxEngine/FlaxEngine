@@ -156,6 +156,9 @@ public:
     void InitState(const BehaviorUpdateContext& context) override;
     void ReleaseState(const BehaviorUpdateContext& context) override;
     BehaviorUpdateResult Update(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 
 private:
     struct State
@@ -407,21 +410,24 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeConditionalDecorator
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeKnowledgeConditionalDecorator, BehaviorTreeDecorator);
     API_AUTO_SERIALIZATION();
 
-    // The first value from behavior's knowledge (blackboard, goal or sensor) to use for comparision.
+    // The first value from behavior's knowledge (blackboard, goal or sensor) to use for comparison.
     API_FIELD(Attributes="EditorOrder(0)")
     BehaviorKnowledgeSelectorAny ValueA;
 
-    // The second value to use for comparision (constant).
+    // The second value to use for comparison (constant).
     API_FIELD(Attributes="EditorOrder(10)")
     float ValueB = 0.0f;
 
-    // Values comparision mode.
+    // Values comparison mode.
     API_FIELD(Attributes="EditorOrder(20)")
     BehaviorValueComparison Comparison = BehaviorValueComparison::Equal;
 
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -432,21 +438,24 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeValuesConditionalDec
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeKnowledgeValuesConditionalDecorator, BehaviorTreeDecorator);
     API_AUTO_SERIALIZATION();
 
-    // The first value from behavior's knowledge (blackboard, goal or sensor) to use for comparision.
+    // The first value from behavior's knowledge (blackboard, goal or sensor) to use for comparison.
     API_FIELD(Attributes="EditorOrder(0)")
     BehaviorKnowledgeSelectorAny ValueA;
 
-    // The second value from behavior's knowledge (blackboard, goal or sensor) to use for comparision.
+    // The second value from behavior's knowledge (blackboard, goal or sensor) to use for comparison.
     API_FIELD(Attributes="EditorOrder(10)")
     BehaviorKnowledgeSelectorAny ValueB;
 
-    // Values comparision mode.
+    // Values comparison mode.
     API_FIELD(Attributes="EditorOrder(20)")
     BehaviorValueComparison Comparison = BehaviorValueComparison::Equal;
 
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -468,6 +477,9 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeBooleanDecorator : p
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -493,6 +505,9 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeHasTagDecorator : public Beha
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };
 
 /// <summary>
@@ -510,4 +525,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeHasGoalDecorator : public Beh
 public:
     // [BehaviorTreeNode]
     bool CanUpdate(const BehaviorUpdateContext& context) override;
+#if USE_EDITOR
+    String GetDebugInfo(const BehaviorUpdateContext& context) const override;
+#endif
 };

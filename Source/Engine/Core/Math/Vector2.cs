@@ -1236,7 +1236,7 @@ namespace FlaxEngine
         /// Returns the absolute value of a vector.
         /// </summary>
         /// <param name="v">The value.</param>
-        /// <returns> A vector which components are less or equal to 0.</returns>
+        /// <returns> A vector which components are absolute values of that vector.</returns>
         public static Vector2 Abs(Vector2 v)
         {
             return new Vector2(Math.Abs(v.X), Math.Abs(v.Y));

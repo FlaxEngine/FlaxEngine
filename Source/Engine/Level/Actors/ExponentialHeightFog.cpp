@@ -8,7 +8,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Renderer/GBufferPass.h"
@@ -21,20 +21,19 @@ ExponentialHeightFog::ExponentialHeightFog(const SpawnParams& params)
     _drawCategory = SceneRendering::PreRender;
 
     // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Fog"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lighting/Fog"));
     if (_shader == nullptr)
     {
         LOG(Fatal, "Cannot load fog shader.");
     }
 #if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<ExponentialHeightFog, &ExponentialHeightFog::OnShaderReloading>(this);
+    _shader.Get()->Reloading.Bind<ExponentialHeightFog, &ExponentialHeightFog::OnShaderReloading>(this);
 #endif
 }
 
-void ExponentialHeightFog::Draw(RenderContext& renderContext)
+void ExponentialHeightFog::Draw(RenderContextBatch& renderContextBatch)
 {
-    // Render only when shader is valid and fog can be rendered
-    // Do not render exponential fog in orthographic views
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Fog)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && _shader
@@ -55,7 +54,7 @@ void ExponentialHeightFog::Draw(RenderContext& renderContext)
             psDesc.BlendMode.DestBlendAlpha = BlendingMode::Blend::Zero;
             psDesc.BlendMode.BlendOpAlpha = BlendingMode::Operation::Add;
             psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-            if (_psFog.Create(psDesc, _shader->GetShader(), "PS_Fog"))
+            if (_psFog.Create(psDesc, _shader->GPU, "PS_Fog"))
             {
                 LOG(Warning, "Cannot create graphics pipeline state object for '{0}'.", ToString());
                 return;
@@ -129,9 +128,9 @@ bool ExponentialHeightFog::IntersectsItself(const Ray& ray, Real& distance, Vect
     return false;
 }
 
-void ExponentialHeightFog::GetVolumetricFogOptions(VolumetricFogOptions& result) const
+void ExponentialHeightFog::GetVolumetricFogOptions(const RenderView& view, VolumetricFogOptions& result) const
 {
-    const float height = (float)GetPosition().Y;
+    const float height = (float)(GetPosition().Y - view.Origin.Y);
     const float density = FogDensity / 1000.0f;
     const float heightFalloff = FogHeightFalloff / 1000.0f;
 
@@ -146,7 +145,7 @@ void ExponentialHeightFog::GetVolumetricFogOptions(VolumetricFogOptions& result)
 
 void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const
 {
-    const float height = (float)GetPosition().Y;
+    const float height = (float)(GetPosition().Y - view.Origin.Y);
     const float density = FogDensity / 1000.0f;
     const float heightFalloff = FogHeightFalloff / 1000.0f;
     const float viewHeight = view.Position.Y;
@@ -198,7 +197,7 @@ void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderCon
     data.ExponentialHeightFog = renderContext.List->Fog.ExponentialHeightFogData;
     data.VolumetricFog = renderContext.List->Fog.VolumetricFogData;
     data.TemporalAAJitter = renderContext.View.TemporalAAJitter;
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     ASSERT_LOW_LAYER(cb->GetSize() == sizeof(Data));
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);

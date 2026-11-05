@@ -24,7 +24,7 @@ namespace FlaxEditor.Options
         [DefaultValue(1.0f), Limit(0.01f, 100.0f)]
         [EditorDisplay("General"), EditorOrder(101), Tooltip("The mouse wheel sensitivity applied to zoom in orthographic mode.")]
         public float MouseWheelSensitivity { get; set; } = 1.0f;
-        
+
         /// <summary>
         /// Gets or sets whether to invert the Y rotation of the mouse in the editor viewport.
         /// </summary>
@@ -131,17 +131,10 @@ namespace FlaxEditor.Options
         public float PanningSpeed { get; set; } = 0.8f;
 
         /// <summary>
-        /// Gets or sets the default editor viewport grid scale.
-        /// </summary>
-        [DefaultValue(50.0f), Limit(25.0f, 500.0f, 5.0f)]
-        [EditorDisplay("Defaults"), EditorOrder(220), Tooltip("The default editor viewport grid scale.")]
-        public float ViewportGridScale { get; set; } = 50.0f;
-        
-        /// <summary>
         /// Gets or sets the use persistence over defaults setting
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Defaults"), EditorOrder(230), Tooltip("Allow persistence setting from last session to override default settings")]
+        [EditorDisplay("Defaults"), EditorOrder(230), Tooltip("Allow persistence setting from last session to override default settings.")]
         public bool UsePersistenceOverDefaults { get; set; } = true;
 
         /// <summary>
@@ -212,6 +205,6 @@ namespace FlaxEditor.Options
         /// </summary>
         [DefaultValue(1f), Limit(0.0f, 2.0f)]
         [EditorDisplay("Direction Gizmo"), EditorOrder(504), Tooltip("The brightness of the of the direction gizmo in the main viewport.")]
-        public float DirectionGizmoBrightness{ get; set; } = 1f;
+        public float DirectionGizmoBrightness { get; set; } = 1f;
     }
 }

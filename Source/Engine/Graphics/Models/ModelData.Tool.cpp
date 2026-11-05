@@ -10,11 +10,12 @@
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
 #include "Engine/Tools/ModelTool/VertexTriangleAdjacency.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/MessageBox.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include <ThirdParty/meshoptimizer/meshoptimizer.h>
 #define USE_MIKKTSPACE 1
-#include "ThirdParty/MikkTSpace/mikktspace.h"
+#include <ThirdParty/MikkTSpace/mikktspace.h>
 #if USE_ASSIMP
 #define USE_SPATIAL_SORT 1
 #define ASSIMP_BUILD_NO_EXPORT
@@ -24,6 +25,26 @@
 #define USE_SPATIAL_SORT 0
 #endif
 #include <stack>
+
+bool InitedMeshOpt = false;
+
+void* MeshOptAllocate(size_t size)
+{
+    return Allocator::Allocate(size);
+}
+
+void MeshOptDeallocate(void* ptr)
+{
+    Allocator::Free(ptr);
+}
+
+void InitMeshOpt()
+{
+    if (InitedMeshOpt)
+        return;
+    InitedMeshOpt = true;
+    meshopt_setAllocator(MeshOptAllocate, MeshOptDeallocate);
+}
 
 #if PLATFORM_WINDOWS
 
@@ -193,6 +214,7 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
 #if USE_SPATIAL_SORT
                  , const Assimp::SpatialSort& spatialSort
                  , std::vector<unsigned int>& spatialSortCache
+                 , float posEpsilon
 #endif
 )
 {
@@ -204,7 +226,7 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
 
 #if USE_SPATIAL_SORT
     const Float3 vPosition = mesh.Positions[vertexIndex];
-    spatialSort.FindPositions(*(aiVector3D*)&vPosition, 1e-5f, spatialSortCache);
+    spatialSort.FindPositions(*(aiVector3D*)&vPosition, posEpsilon, spatialSortCache);
     if (spatialSortCache.empty())
         return INVALID_INDEX;
 
@@ -298,6 +320,14 @@ void MeshData::BuildIndexBuffer()
     Assimp::SpatialSort vertexFinder;
     vertexFinder.Fill((const aiVector3D*)Positions.Get(), vertexCount, sizeof(Float3));
     std::vector<unsigned int> spatialSortCache;
+
+    // Ensure that the weld radius stays above float precision based on the mesh's largest coordinate
+    float maxAbs = 0.0f;
+    for (int32 i = 0; i < vertexCount; i++)
+    {
+        maxAbs = Math::Max(maxAbs, Positions[i].GetAbsolute().MaxValue());
+    }
+    const float posEpsilon = Math::Max(1e-5f, maxAbs * 1e-6f);
 #endif
 
     // Build index buffer
@@ -306,7 +336,7 @@ void MeshData::BuildIndexBuffer()
         // Find duplicated vertex before the current one
         const int32 reuseVertexIndex = FindVertex(*this, vertexIndex, 0, vertexIndex, mapping
 #if USE_SPATIAL_SORT
-                                                  , vertexFinder, spatialSortCache
+                                                  , vertexFinder, spatialSortCache, posEpsilon
 #endif
         );
         if (reuseVertexIndex == INVALID_INDEX)
@@ -576,6 +606,7 @@ bool MeshData::GenerateTangents(float smoothingAngle)
     Tangents.Resize(vertexCount, false);
     smoothingAngle = Math::Clamp(smoothingAngle, 0.0f, 45.0f);
 
+    // TODO: use meshoptimizer 1.2 with new meshopt_generateTangents
 #if USE_MIKKTSPACE
     SMikkTSpaceInterface callbacks = {
         GetNumFaces,
@@ -932,6 +963,23 @@ void MeshData::ImproveCacheLocality()
     const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
     if (time > 0.5f) // Don't log if generation was fast enough
         LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("optimized indices"));
+}
+
+void MeshData::Optimize()
+{
+    if (Indices.IsEmpty() || Positions.IsEmpty())
+        return;
+    PROFILE_CPU();
+    InitMeshOpt();
+
+    // Vertex cache optimization (https://meshoptimizer.org/#vertex-cache-optimization)
+    Array<uint32> tmpIndices;
+    tmpIndices.Resize(Indices.Count());
+    meshopt_optimizeVertexCache(tmpIndices.Get(), Indices.Get(), Indices.Count(), Positions.Count());
+
+    // Overdraw optimization (https://meshoptimizer.org/#overdraw-optimization)
+    const float overdrawThreshold = 1.05f;
+    meshopt_optimizeOverdraw(Indices.Get(), tmpIndices.Get(), Indices.Count(), (const float*)Positions.Get(), Positions.Count(), sizeof(Float3), overdrawThreshold);
 }
 
 float MeshData::CalculateTrianglesArea() const

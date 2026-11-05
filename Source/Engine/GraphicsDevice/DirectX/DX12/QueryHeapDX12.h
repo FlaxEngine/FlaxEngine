@@ -75,6 +75,8 @@ private:
         /// </summary>
         bool Open = false;
 
+        uint8 TTL = 0;
+
         /// <summary>
         /// Checks if this query batch contains a given element contains the element.
         /// </summary>
@@ -146,14 +148,17 @@ public:
     /// Stops tracking the current batch of begin/end query calls that will be resolved together. This implicitly starts a new batch.
     /// </summary>
     /// <param name="context">The context.</param>
-    void EndQueryBatchAndResolveQueryData(GPUContextDX12* context);
+    void EndFrame(GPUContextDX12* context);
 
     /// <summary>
     /// Checks if can alloc a new query (without rolling the existing batch).
     /// </summary>
     /// <param name="count">How many elements to allocate?</param>
     /// <returns>True if can alloc new query within the same batch.</returns>
-    bool CanAlloc(int32 count = 1) const;
+    bool CanAlloc(int32 count = 1) const
+    {
+        return _currentBatch.Open && _currentIndex + count <= _queryHeapCount;
+    }
 
     /// <summary>
     /// Allocates the query heap element.

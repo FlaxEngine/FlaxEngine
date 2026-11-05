@@ -7,7 +7,9 @@
 #include "NetworkChannelType.h"
 #include "NetworkSettings.h"
 #include "NetworkInternal.h"
+#include "NetworkStats.h"
 #include "FlaxEngine.Gen.h"
+#include "INetworkDriver.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -272,14 +274,21 @@ void NetworkMessage::ReadNetworkName(StringAnsiView& name)
 
 void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
+    CHECK(client && client->State == NetworkConnectionState::Connecting);
+
     // Read client connection data
-    NetworkMessageHandshake msgData;
+    NetworkMessageHandshake msgData = {};
     event.Message.ReadStructure(msgData);
     NetworkClientConnectionData connectionData;
     connectionData.Client = client;
     connectionData.Result = 0;
     connectionData.Platform = (PlatformType)msgData.Platform;
     connectionData.Architecture = (ArchitectureType)msgData.Architecture;
+    if (event.Message.Position + msgData.PayloadDataSize > event.Message.BufferSize)
+    {
+        LOG(Warning, "Invalid payload data size from client id={1}", connectionData.Result, event.Sender.ConnectionId);
+        return;
+    }
     connectionData.PayloadData.Resize(msgData.PayloadDataSize);
     event.Message.ReadBytes(connectionData.PayloadData.Get(), msgData.PayloadDataSize);
     if (msgData.EngineProtocolVersion != NETWORK_PROTOCOL_VERSION ||
@@ -300,7 +309,7 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
     // Update client based on connection result
     if (connectionData.Result != 0)
     {
-        LOG(Info, "Connection blocked with result {0} from client id={1}.", connectionData.Result, event.Sender.ConnectionId);
+        LOG(Info, "Connection blocked with result {0} from client id={1}", connectionData.Result, event.Sender.ConnectionId);
         client->State = NetworkConnectionState::Disconnecting;
         peer->Disconnect(event.Sender);
         client->State = NetworkConnectionState::Disconnected;
@@ -318,8 +327,8 @@ void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, Netwo
 
 void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
-    ASSERT_LOW_LAYER(NetworkManager::IsClient());
-    NetworkMessageHandshakeReply msgData;
+    CHECK(NetworkManager::IsClient());
+    NetworkMessageHandshakeReply msgData = {};
     event.Message.ReadStructure(msgData);
     if (msgData.Result != 0)
     {
@@ -340,7 +349,7 @@ void OnNetworkMessageHandshakeReply(NetworkEvent& event, NetworkClient* client, 
 void OnNetworkMessageKey(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     // Read key data
-    NetworkMessageKey msgData;
+    NetworkMessageKey msgData = {};
     event.Message.ReadStructure(msgData);
     Guid id;
     StringAnsiView name;
@@ -731,11 +740,19 @@ void NetworkManagerService::Update()
     LastUpdateTime = currentTime;
     NetworkManager::Frame++;
     NetworkInternal::NetworkReplicatorPreUpdate();
+    const auto& settings = *NetworkSettings::Get();
     // TODO: convert into TaskGraphSystems and use async jobs
+
+    // Reset client budget (for DDoS protection)
+    for (NetworkClient* client : NetworkManager::Clients)
+    {
+        client->_messageCounter = 0;
+    }
 
     // Process network messages
     NetworkEvent event;
     bool eventIsValid = true;
+    int32 messagesCount = 0;
     while (peer->PopEvent(event) && eventIsValid)
     {
         switch (event.EventType)
@@ -753,7 +770,7 @@ void NetworkManagerService::Update()
                 NetworkManager::ClientConnecting(connectionData); // Allow client to validate connection or inject custom connection data
                 if (connectionData.Result != 0)
                 {
-                    LOG(Info, "Connection blocked with result {0}.", connectionData.Result);
+                    LOG(Info, "Connection blocked with result {0}", connectionData.Result);
                     NetworkManager::Stop();
                     break;
                 }
@@ -773,8 +790,16 @@ void NetworkManagerService::Update()
             }
             else
             {
+                // Validate client doesn't exist yet
+                NetworkClient* client = NetworkManager::GetClient(event.Sender);
+                if (client)
+                {
+                    LOG(Info, "Client id={0} already connected", event.Sender.ConnectionId);
+                    break;
+                }
+
                 // Create incoming client
-                auto client = New<NetworkClient>(NextClientId++, event.Sender);
+                client = New<NetworkClient>(NextClientId++, event.Sender);
                 NetworkManager::Clients.Add(client);
             }
             break;
@@ -808,27 +833,54 @@ void NetworkManagerService::Update()
             break;
         case NetworkEventType::Message:
         {
-            // Process network message
+            // Get client
             NetworkClient* client = NetworkManager::GetClient(event.Sender);
             if (!client && NetworkManager::Mode != NetworkManagerMode::Client)
             {
                 LOG(Error, "Unknown client");
                 break;
             }
+            if (client)
+            {
+                // Avoid network flooding by specific client
+                client->_messageCounter++;
+                if (client->_messageCounter > settings.MaxMessagesPerUpdatePerClient && settings.MaxMessagesPerUpdatePerClient > 0)
+                {
+                    peer->RecycleMessage(event.Message);
+                    NetworkDriverStats stats = peer->NetworkDriver->GetStats(event.Sender);
+                    LOG(Warning, "Client id={} has sent too many messages! ({})", event.Sender.ConnectionId, client->_messageCounter);
+                    LOG(Warning, "  Peer stats: TotalDataSent={}, TotalDataReceived={}, RTT={}", stats.TotalDataSent, stats.TotalDataReceived, stats.RTT);
+                    // TODO: disconnect client if it keeps flooding (eg. track rolling bytes/second)
+                    break;
+                }
+            }
+
+            // Process network message
             uint8 id = *event.Message.Buffer;
             if (id < (uint8)NetworkMessageIDs::MAX)
             {
                 MessageHandlers[id](event, client, peer);
+                if (EnumHasAnyFlags(event.Message.Flags, NetworkMessageFlags::HasError))
+                {
+                    LOG(Warning, "Error occurred while processing message id={0} from connection {1}", id, event.Sender.ConnectionId);
+                }
             }
             else
             {
                 LOG(Warning, "Unknown message id={0} from connection {1}", id, event.Sender.ConnectionId);
             }
-        }
             peer->RecycleMessage(event.Message);
             break;
+        }
         default:
             eventIsValid = false;
+            break;
+        }
+
+        // Avoid network flooding
+        if (messagesCount >= settings.MaxMessagesPerUpdate && settings.MaxMessagesPerUpdate > 0)
+        {
+            LOG(Warning, "Reached network message limit! {}", messagesCount);
             break;
         }
     }

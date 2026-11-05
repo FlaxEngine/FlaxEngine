@@ -46,12 +46,15 @@ public class Engine : EngineModule
         {
         case TargetPlatform.PS4:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Engine"));
+            options.PublicDependencies.Add("OnlinePlatformPS4");
             break;
         case TargetPlatform.PS5:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS5", "Engine", "Engine"));
+            options.PublicDependencies.Add("OnlinePlatformPS5");
             break;
         case TargetPlatform.Switch:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Engine"));
+            options.PublicDependencies.Add("OnlinePlatformSwitch");
             break;
         }
     }

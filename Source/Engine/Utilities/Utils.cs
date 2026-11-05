@@ -91,16 +91,14 @@ namespace FlaxEngine
 
         /// <summary>
         /// Gets the empty array of the given type (shared one).
+        /// [Deprecated in v1.13]
         /// </summary>
         /// <typeparam name="T">The type.</typeparam>
         /// <returns>The empty array object.</returns>
+        [Obsolete("Use Array.Empty instead.")]
         public static T[] GetEmptyArray<T>()
         {
-#if USE_NETCORE
             return Array.Empty<T>();
-#else
-            return Enumerable.Empty<T>() as T[];
-#endif
         }
 
         /// <summary>
@@ -190,11 +188,7 @@ namespace FlaxEngine
         /// <returns>List of assemblies</returns>
         public static Assembly[] GetAssemblies()
         {
-#if USE_NETCORE
             return AssemblyLoadContext.Default.Assemblies.Concat(NativeInterop.scriptingAssemblyLoadContext.Assemblies).ToArray();
-#else
-            return AppDomain.CurrentDomain.GetAssemblies();
-#endif
         }
 
         /// <summary>
@@ -235,24 +229,14 @@ namespace FlaxEngine
         /// <returns>Path in the filesystem</returns>
         public static string GetAssemblyLocation(Assembly assembly)
         {
-#if USE_NETCORE
             var location = assembly.Location;
             if (!string.IsNullOrEmpty(location))
                 return location;
             if (Interop.NativeInterop.AssemblyLocations.TryGetValue(assembly.FullName, out location))
                 return location;
             return null;
-#else
-            return assembly.Location;
-#endif
         }
 
-#if USE_MONO
-        internal static T[] ExtractArrayFromList<T>(List<T> list)
-        {
-            return list != null ? (T[])Internal_ExtractArrayFromList(list) : null;
-        }
-#else
         private class ExtractArrayFromListContext<T>
         {
             public static FieldInfo itemsField;
@@ -271,7 +255,6 @@ namespace FlaxEngine
 
             return (T[])ExtractArrayFromListContext<T>.itemsField.GetValue(list); // boxing is slower;
         }
-#endif
 
         internal static Float2[] ConvertCollection(Vector2[] v)
         {
@@ -353,13 +336,6 @@ namespace FlaxEngine
             }
             return result;
         }
-
-#if USE_NETCORE
-#else
-        [LibraryImport("FlaxEngine", EntryPoint = "UtilsInternal_ExtractArrayFromList")]
-        [return: MarshalUsing(typeof(FlaxEngine.SystemArrayMarshaller))]
-        internal static partial Array Internal_ExtractArrayFromList([MarshalUsing(typeof(FlaxEngine.GCHandleMarshaller))] object list);
-#endif
 
         /// <summary>
         /// Reads the color from the binary stream.

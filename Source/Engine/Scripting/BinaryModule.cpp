@@ -63,7 +63,7 @@ String ScriptingTypeHandle::ToString(bool withAssembly) const
 
 const ScriptingType& ScriptingTypeHandle::GetType() const
 {
-    ASSERT_LOW_LAYER(Module);
+    ASSERT(Module);
     return Module->Types[TypeIndex];
 }
 
@@ -71,7 +71,7 @@ const ScriptingType& ScriptingTypeHandle::GetType() const
 
 MClass* ScriptingTypeHandle::GetClass() const
 {
-    ASSERT_LOW_LAYER(Module && Module->Types[TypeIndex].ManagedClass);
+    ASSERT(Module && Module->Types[TypeIndex].ManagedClass);
     return Module->Types[TypeIndex].ManagedClass;
 }
 

@@ -59,7 +59,7 @@
 #define GContext CARD32
 #define Atom CARD32
 #define VisualID CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 #define Picture CARD32
@@ -131,8 +131,8 @@ typedef struct {
     Window  window B32;
     Window  owner B32;
     Atom    selection B32;
-    Time    timestamp B32;
-    Time    selectionTimestamp B32;
+    XXTime    timestamp B32;
+    XXTime    selectionTimestamp B32;
     CARD32  pad2 B32;
     CARD32  pad3 B32;
 } xXFixesSelectionNotifyEvent;
@@ -153,7 +153,7 @@ typedef struct {
     CARD16  sequenceNumber B16;
     Window  window B32;
     CARD32  cursorSerial B32;
-    Time    timestamp;
+    XXTime    timestamp;
     Atom    name B32;	    /* Version 2 */
     CARD32  pad1 B32;
     CARD32  pad2 B32;
@@ -544,7 +544,7 @@ typedef struct {
 #undef GContext
 #undef Atom
 #undef VisualID
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef KeySym
 

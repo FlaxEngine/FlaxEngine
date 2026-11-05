@@ -58,7 +58,6 @@
 #include <execinfo.h>
 #endif
 
-CPUInfo UnixCpu;
 int ClockSource;
 uint64 ProgramSizeMemory;
 Guid DeviceId;
@@ -1819,11 +1818,6 @@ bool LinuxPlatform::Is64BitPlatform()
 #endif
 }
 
-CPUInfo LinuxPlatform::GetCPUInfo()
-{
-    return UnixCpu;
-}
-
 MemoryStats LinuxPlatform::GetMemoryStats()
 {
     const uint64 pageSize = getpagesize();
@@ -1985,12 +1979,13 @@ bool LinuxPlatform::Init()
 	ProgramSizeMemory = Platform::GetProcessMemoryStats().UsedPhysicalMemory;
 
     // Set info about the CPU
+    extern CPUInfo CpuInfo;
     cpu_set_t cpus;
     CPU_ZERO(&cpus);
     if (sched_getaffinity(0, sizeof(cpus), &cpus) == 0)
     {
         int32 numberOfCores = 0;
-        struct CpuInfo
+        struct CpuData
         {
             int32 Core;
             int32 Package;
@@ -2060,21 +2055,21 @@ bool LinuxPlatform::Init()
             Allocator::Free(pairs);
         }
 
-        UnixCpu.ProcessorPackageCount = packagesCount;
-        UnixCpu.ProcessorCoreCount = Math::Max(numberOfCores, 1);
-        UnixCpu.LogicalProcessorCount = CPU_COUNT(&cpus);
+        CpuInfo.ProcessorPackageCount = packagesCount;
+        CpuInfo.ProcessorCoreCount = Math::Max(numberOfCores, 1);
+        CpuInfo.LogicalProcessorCount = CPU_COUNT(&cpus);
     }
     else
     {
-        UnixCpu.ProcessorPackageCount = 1;
-        UnixCpu.ProcessorCoreCount = 1;
-        UnixCpu.LogicalProcessorCount = 1;
+        CpuInfo.ProcessorPackageCount = 1;
+        CpuInfo.ProcessorCoreCount = 1;
+        CpuInfo.LogicalProcessorCount = 1;
     }
 
     // Get cache sizes
-    UnixCpu.L1CacheSize = 0;
-    UnixCpu.L2CacheSize = 0;
-    UnixCpu.L3CacheSize = 0;
+    CpuInfo.L1CacheSize = 0;
+    CpuInfo.L2CacheSize = 0;
+    CpuInfo.L3CacheSize = 0;
     for (int32 cacheLevel = 1; cacheLevel <= 3; cacheLevel++)
     {
         sprintf(fileNameBuffer, "/sys/devices/system/cpu/cpu0/cache/index%d/size", cacheLevel);
@@ -2092,13 +2087,13 @@ bool LinuxPlatform::Init()
             switch (cacheLevel)
             {
             case 1:
-                UnixCpu.L1CacheSize = res;
+                CpuInfo.L1CacheSize = res;
                 break;
             case 2:
-                UnixCpu.L2CacheSize = res;
+                CpuInfo.L2CacheSize = res;
                 break;
             case 3:
-                UnixCpu.L3CacheSize = res;
+                CpuInfo.L3CacheSize = res;
                 break;
             }
             fclose(file);
@@ -2106,14 +2101,14 @@ bool LinuxPlatform::Init()
     }
 
     // Get page size
-    UnixCpu.PageSize = sysconf(_SC_PAGESIZE);
+    CpuInfo.PageSize = sysconf(_SC_PAGESIZE);
 
     // Get clock speed
-    UnixCpu.ClockSpeed = GetClockFrequency();
+    CpuInfo.ClockSpeed = GetClockFrequency();
 
     // Get cache line size
-    UnixCpu.CacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-    ASSERT(UnixCpu.CacheLineSize && Math::IsPowerOfTwo(UnixCpu.CacheLineSize));
+    CpuInfo.CacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+    ASSERT(CpuInfo.CacheLineSize && Math::IsPowerOfTwo(CpuInfo.CacheLineSize));
 
     // Get user name string
     char buffer[UNIX_APP_BUFF_SIZE];
@@ -2170,7 +2165,7 @@ bool LinuxPlatform::Init()
         DeviceId.C = (uint32)Platform::GetMemoryStats().TotalPhysicalMemory;
 
         // D - cpuid
-        DeviceId.D = (uint32)UnixCpu.ClockSpeed * UnixCpu.LogicalProcessorCount * UnixCpu.ProcessorCoreCount * UnixCpu.CacheLineSize;
+        DeviceId.D = (uint32)CpuInfo.ClockSpeed * CpuInfo.LogicalProcessorCount * CpuInfo.ProcessorCoreCount * CpuInfo.CacheLineSize;
     }
 
     // Skip setup if running in headless mode (X11 might not be available on servers)

@@ -21,9 +21,6 @@ public:
     typedef Dictionary<StringAnsi, MAssembly*> AssembliesDictionary;
 
 private:
-#if USE_MONO
-    MonoDomain* _monoDomain;
-#endif
     StringAnsi _domainName;
     AssembliesDictionary _assemblies;
 
@@ -34,16 +31,6 @@ public:
     }
 
 public:
-#if USE_MONO
-    /// <summary>
-    /// Gets native domain class.
-    /// </summary>
-    FORCE_INLINE MonoDomain* GetNative() const
-    {
-        return _monoDomain;
-    }
-#endif
-
     /// <summary>
     /// Gets current domain name
     /// </summary>

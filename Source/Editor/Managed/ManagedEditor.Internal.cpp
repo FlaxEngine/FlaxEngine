@@ -526,7 +526,7 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_SetAnimationTime(AnimatedModel* animat
         animatedModel->GraphInstance.State[0].Animation.TimePosition = time;
 }
 
-DEFINE_INTERNAL_CALL(MTypeObject*) CustomEditorsUtilInternal_GetCustomEditor(MTypeObject* targetType)
+DEFINE_INTERNAL_CALL(MType*) CustomEditorsUtilInternal_GetCustomEditor(MType* targetType)
 {
     return CustomEditorsUtil::GetCustomEditor(targetType);
 }

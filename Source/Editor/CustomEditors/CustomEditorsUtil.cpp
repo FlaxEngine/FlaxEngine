@@ -52,16 +52,15 @@ void OnAssemblyLoaded(MAssembly* assembly);
 void OnAssemblyUnloading(MAssembly* assembly);
 void OnBinaryModuleLoaded(BinaryModule* module);
 
-MTypeObject* CustomEditorsUtil::GetCustomEditor(MTypeObject* refType)
+MType* CustomEditorsUtil::GetCustomEditor(MType* type)
 {
-    if (!refType)
+    if (!type)
         return nullptr;
-    MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
     Entry result;
     if (Cache.TryGet(type, result))
     {
         if (result.CustomEditorType)
-            return INTERNAL_TYPE_GET_OBJECT(result.CustomEditorType);
+            return result.CustomEditorType;
         MClass* editor = result.CustomEditor ? result.CustomEditor : result.DefaultEditor;
         if (editor)
             return MUtils::GetType(editor);
@@ -127,12 +126,8 @@ void OnAssemblyLoaded(MAssembly* assembly)
             continue;
 
         // Check if attribute references a valid class
-        MTypeObject* refType = nullptr;
-        customEditorTypeField->GetValue(attribute, &refType);
-        if (refType == nullptr)
-            continue;
-
-        MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
+        MType* type = nullptr;
+        customEditorTypeField->GetValue(attribute, &type);
         if (type == nullptr)
             continue;
         MClass* typeClass = MCore::Type::GetClass(type);

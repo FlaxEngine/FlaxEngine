@@ -10,10 +10,11 @@
 /// <summary>
 /// High-level network client object (local or connected to the server).
 /// </summary>
-API_CLASS(sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkClient final : public ScriptingObject
+API_CLASS(Sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkClient final : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkClient);
     friend class NetworkManager;
+    friend class NetworkManagerService;
     explicit NetworkClient(uint32 id, NetworkConnection connection);
 
 public:
@@ -37,4 +38,7 @@ public:
     {
         return String::Format(TEXT("NetworkClient Id={0}, ConnectionId={1}"), ClientId, Connection.ConnectionId);
     }
+
+private:
+    uint16 _messageCounter = 0;
 };

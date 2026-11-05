@@ -251,6 +251,9 @@ namespace FlaxEditor.Viewport.Previews
                     Parent = previewLODsMode,
                 };
                 previewLODsMode.Parent = this;
+
+                // Hide not needed buttons
+                ViewWidgetButtonMenu.GetChildMenu("View Layers").Visible = false;
             }
         }
 

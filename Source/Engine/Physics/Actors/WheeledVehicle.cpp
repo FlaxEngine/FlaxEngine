@@ -577,6 +577,24 @@ void WheeledVehicle::OnTransformChanged()
     }
 }
 
+void WheeledVehicle::OnEnable()
+{
+    RigidBody::OnEnable();
+
+#if USE_EDITOR
+    GetSceneRendering()->AddPhysicsDebug(this);
+#endif
+}
+
+void WheeledVehicle::OnDisable()
+{
+#if USE_EDITOR
+    GetSceneRendering()->RemovePhysicsDebug(this);
+#endif
+
+    RigidBody::OnDisable();
+}
+
 void WheeledVehicle::BeginPlay(SceneBeginData* data)
 {
     RigidBody::BeginPlay(data);
@@ -584,18 +602,10 @@ void WheeledVehicle::BeginPlay(SceneBeginData* data)
 #if WITH_VEHICLE
     Setup();
 #endif
-
-#if USE_EDITOR
-    GetSceneRendering()->AddPhysicsDebug(this);
-#endif
 }
 
 void WheeledVehicle::EndPlay()
 {
-#if USE_EDITOR
-    GetSceneRendering()->RemovePhysicsDebug(this);
-#endif
-
 #if WITH_VEHICLE
     if (_vehicle)
     {

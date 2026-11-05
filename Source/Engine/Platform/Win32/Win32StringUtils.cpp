@@ -164,8 +164,15 @@ Char* StringUtils::Copy(Char* dst, const Char* src)
 
 Char* StringUtils::Copy(Char* dst, const Char* src, int32 count)
 {
-    wcsncpy(dst, src, count - 1);
-    dst[count - 1] = 0;
+    if (count != 0)
+    {
+        wcsncpy(dst, src, count - 1);
+        dst[count - 1] = 0;
+    }
+    else
+    {
+        dst[0] = 0;
+    }
     return dst;
 }
 

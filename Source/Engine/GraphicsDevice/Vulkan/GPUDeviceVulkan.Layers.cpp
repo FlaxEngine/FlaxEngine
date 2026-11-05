@@ -1,16 +1,19 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUDeviceVulkan.h"
+#include "GPUAdapterVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "Config.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Core/Collections/Sorting.h"
+#if VULKAN_USE_PERF_SDK
+#include "Engine/Platform/FileSystem.h"
+#endif
 
 #if GRAPHICS_API_VULKAN
 
-// TODO: expose it as a command line or engine parameter to end-user
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
 VulkanValidationLevel ValidationLevel = VulkanValidationLevel::ErrorsAndWarningsPerf;
 #else
 VulkanValidationLevel ValidationLevel = VulkanValidationLevel::Disabled;
@@ -18,7 +21,6 @@ VulkanValidationLevel ValidationLevel = VulkanValidationLevel::Disabled;
 
 #if VULKAN_USE_DEBUG_LAYER
 
-// TODO: expose it as a command line or engine parameter to end-user
 #define VULKAN_USE_KHRONOS_STANDARD_VALIDATION 1 // uses VK_LAYER_KHRONOS_validation
 #define VULKAN_USE_LUNARG_STANDARD_VALIDATION 1 // uses VK_LAYER_LUNARG_standard_validation
 
@@ -217,7 +219,187 @@ static bool ListContains(const Array<StringAnsi>& list, const char* name)
     return false;
 }
 
-void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils)
+#if VULKAN_USE_PERF_SDK
+
+namespace
+{
+    typedef int NVPA_Status;
+    typedef unsigned char NVPA_Bool;
+
+    struct NVPW_VK_Profiler_GetRequiredInstanceExtensions_Params
+    {
+        size_t structSize;
+        void* pPriv;
+        const char* const* ppInstanceExtensionNames;
+        size_t numInstanceExtensionNames;
+        uint32 apiVersion;
+        NVPA_Bool isOfficiallySupportedVersion;
+    };
+
+    struct NVPW_VK_Profiler_GetRequiredDeviceExtensions_Params
+    {
+        size_t structSize;
+        void* pPriv;
+        const char* const* ppDeviceExtensionNames;
+        size_t numDeviceExtensionNames;
+        uint32 apiVersion;
+        NVPA_Bool isOfficiallySupportedVersion;
+        VkInstance instance;
+        VkPhysicalDevice physicalDevice;
+        void* pfnGetInstanceProcAddr;
+    };
+
+    struct NVPW_InitializeHost_Params
+    {
+        size_t structSize;
+        void* pPriv;
+    };
+
+    typedef NVPA_Status(*PFN_NVPW_VK_Profiler_GetRequiredInstanceExtensions)(NVPW_VK_Profiler_GetRequiredInstanceExtensions_Params* pParams);
+    typedef NVPA_Status(*PFN_NVPW_VK_Profiler_GetRequiredDeviceExtensions)(NVPW_VK_Profiler_GetRequiredDeviceExtensions_Params* pParams);
+    typedef NVPA_Status(*PFN_NVPW_InitializeHost)(NVPW_InitializeHost_Params* pParams);
+
+    struct NvPerfHostApi
+    {
+        String Path;
+        void* Module = nullptr;
+        PFN_NVPW_VK_Profiler_GetRequiredInstanceExtensions GetRequiredInstanceExtensions = nullptr;
+        PFN_NVPW_VK_Profiler_GetRequiredDeviceExtensions GetRequiredDeviceExtensions = nullptr;
+    };
+
+    NvPerfHostApi PerfSDK;
+}
+
+bool GPUDeviceVulkan::UsePerfSDK = false;
+
+void GPUDeviceVulkan::PerfSDKInit()
+{
+    // Check if PerfSDK path has been set and is correct
+    if (Platform::GetEnvironmentVariable(TEXT("NVPERF_SDK_PATH"), PerfSDK.Path) || PerfSDK.Path.IsEmpty() || !FileSystem::DirectoryExists(PerfSDK.Path))
+        return;
+
+    // The Nsight Perf SDK host library is named 'nvperf_grfx_host.dll' (see nvperf_host_impl.h). Older/other
+    // packages used 'nvperf.dll'. Try the modern name first, then fall back, so the engine can query the
+    // Range Profiler's REQUIRED Vulkan instance/device extensions at device creation. Without these the
+    // VkDevice is created with only the mini-trace fallback extensions and NVPW_VK_Profiler_Queue_BeginSession
+    // fails with NVPA_STATUS_INVALID_CONTEXT_STATE.
+    const String binDir = PerfSDK.Path / TEXT("NvPerf") / TEXT("bin") / TEXT("x64");
+    const Char* dllNames[] = { TEXT("nvperf_grfx_host.dll"), TEXT("nvperf.dll") };
+    String loadedPath;
+    for (const Char* dllName : dllNames)
+    {
+        const String dllPath = binDir / dllName;
+        PerfSDK.Module = Platform::LoadLibrary(dllPath.Get());
+        if (PerfSDK.Module)
+        {
+            loadedPath = dllPath;
+            break;
+        }
+    }
+    if (!PerfSDK.Module)
+    {
+        LOG(Warning, "Nsight PerfSDK: failed to load NvPerf host library from '{0}' (tried nvperf_grfx_host.dll and nvperf.dll)", binDir);
+        return;
+    }
+
+    // Initialize host library
+    auto initializeHost = (PFN_NVPW_InitializeHost)Platform::GetProcAddress(PerfSDK.Module, "NVPW_InitializeHost");
+    if (initializeHost)
+    {
+        NVPW_InitializeHost_Params initParams = {};
+        initParams.structSize = sizeof(NVPW_InitializeHost_Params);
+        const NVPA_Status initStatus = initializeHost(&initParams);
+        if (initStatus != 0)
+        {
+            LOG(Warning, "Nsight PerfSDK: NVPW_InitializeHost failed (status={0})", (int32)initStatus);
+            return;
+        }
+    }
+    else
+    {
+        LOG(Warning, "Nsight PerfSDK: NVPW_InitializeHost not found in host library");
+        return;
+    }
+    PerfSDK.GetRequiredInstanceExtensions = (PFN_NVPW_VK_Profiler_GetRequiredInstanceExtensions)Platform::GetProcAddress(PerfSDK.Module, "NVPW_VK_Profiler_GetRequiredInstanceExtensions");
+    PerfSDK.GetRequiredDeviceExtensions = (PFN_NVPW_VK_Profiler_GetRequiredDeviceExtensions)Platform::GetProcAddress(PerfSDK.Module, "NVPW_VK_Profiler_GetRequiredDeviceExtensions");
+    LOG(Info, "Nsight PerfSDK: loaded NvPerf host library '{0}' (GetRequiredInstanceExtensions={1}, GetRequiredDeviceExtensions={2}).", loadedPath, PerfSDK.GetRequiredInstanceExtensions ? 1 : 0, PerfSDK.GetRequiredDeviceExtensions ? 1 : 0);
+
+    // Inform PerfSDK plugin that the Vulkan backend has been setup to use it
+    Platform::SetEnvironmentVariable(TEXT("VULKAN_USE_PERF_SDK"), TEXT("*"));
+    UsePerfSDK = true;
+
+    // The Vulkan loader reads VK_LOADER_LAYERS_DISABLE / VK_LOADER_DRIVERS_DISABLE exactly once, when it
+    // initializes its global config (the first call into vulkan-1.dll, i.e. volkInitialize). Setting them later
+    // (e.g. during instance-extension enumeration) is silently ignored. NvPerf's Vulkan Range Profiler is not
+    // compatible with object-wrapping layers, so the implicit capture/overlay/Optimus layers must be gone from
+    // the device dispatch chain before the loader caches its config, otherwise BeginSession fails with
+    // NVPA_STATUS_INVALID_CONTEXT_STATE. Likewise the non-NVIDIA ICD must be dropped so there is no multi-ICD
+    // trampoline. Always force these values when PerfSDK is active: a partial user-provided
+    // VK_LOADER_LAYERS_DISABLE (e.g. ~implicit~) still leaves validation/capture wrappers and breaks BeginSession.
+    String existingLayersDisable;
+    Platform::GetEnvironmentVariable(TEXT("VK_LOADER_LAYERS_DISABLE"), existingLayersDisable);
+    if (!existingLayersDisable.IsEmpty() && existingLayersDisable != TEXT("*"))
+        LOG(Warning, "Nsight PerfSDK: overriding VK_LOADER_LAYERS_DISABLE='{0}' with '*' for Range Profiler.", existingLayersDisable);
+    Platform::SetEnvironmentVariable(TEXT("VK_LOADER_LAYERS_DISABLE"), TEXT("*"));
+#if PLATFORM_WINDOWS
+    _wputenv_s(TEXT("VK_LOADER_LAYERS_DISABLE"), TEXT("*"));
+#endif
+    LOG(Info, "Nsight PerfSDK: disabled all Vulkan layers before loader init (VK_LOADER_LAYERS_DISABLE=*).");
+
+    // Intel's ICD manifest is igvk64.json (does NOT contain "intel" in the filename), so *intel* alone is not enough.
+    const Char* disablePatterns = TEXT("*igvk*,*igd*,*intel*,*Intel*,*amd*,*amdvlk*,*radeon*");
+    String existingDriversDisable;
+    Platform::GetEnvironmentVariable(TEXT("VK_LOADER_DRIVERS_DISABLE"), existingDriversDisable);
+    if (!existingDriversDisable.IsEmpty() && existingDriversDisable != disablePatterns)
+        LOG(Warning, "Nsight PerfSDK: overriding VK_LOADER_DRIVERS_DISABLE for Range Profiler.");
+    Platform::SetEnvironmentVariable(TEXT("VK_LOADER_DRIVERS_DISABLE"), disablePatterns);
+#if PLATFORM_WINDOWS
+    _wputenv_s(TEXT("VK_LOADER_DRIVERS_DISABLE"), disablePatterns);
+#endif
+    LOG(Info, "Nsight PerfSDK: disabled non-NVIDIA Vulkan ICDs before loader init (VK_LOADER_DRIVERS_DISABLE={0}).", String(disablePatterns));
+}
+
+void GPUDeviceVulkan::PerfSDKInitDeviceInfo(VkDeviceCreateInfo& deviceInfo, const Array<const char*>& deviceExtensions, VkPhysicalDeviceFeatures2* enabledFeatures2)
+{
+    // Chains required feature structs onto VkDeviceCreateInfo for enabled PerfSDK extensions
+    const uint32 deviceApiMajorMinor = VK_MAKE_VERSION(VK_VERSION_MAJOR(Adapter->GpuProps.apiVersion), VK_VERSION_MINOR(Adapter->GpuProps.apiVersion), 0);
+    if (deviceApiMajorMinor >= VK_API_VERSION_1_2)
+    {
+        void* next = const_cast<void*>(deviceInfo.pNext);
+        PhysicalDeviceFeatures12.bufferDeviceAddress = VK_TRUE;
+        PhysicalDeviceFeatures12.pNext = next;
+
+        if (enabledFeatures2)
+        {
+            enabledFeatures2->pNext = &PhysicalDeviceFeatures12;
+            deviceInfo.pNext = enabledFeatures2;
+            deviceInfo.pEnabledFeatures = nullptr;
+        }
+        else
+        {
+            deviceInfo.pNext = &PhysicalDeviceFeatures12;
+        }
+
+        LOG(Info, "Nsight PerfSDK: enabled Vulkan bufferDeviceAddress feature.");
+        return;
+    }
+
+    if (ListContains(deviceExtensions, "VK_EXT_buffer_device_address"))
+    {
+        static VkPhysicalDeviceBufferDeviceAddressFeaturesEXT bufferDeviceAddressFeatures;
+        void* next = const_cast<void*>(deviceInfo.pNext);
+        bufferDeviceAddressFeatures = {};
+        bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
+        bufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+        bufferDeviceAddressFeatures.pNext = next;
+        deviceInfo.pNext = &bufferDeviceAddressFeatures;
+        LOG(Info, "Nsight PerfSDK: enabled VK_EXT_buffer_device_address feature.");
+    }
+}
+
+#endif
+
+void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils, bool useDebugLayer)
 {
     VkResult result;
     outDebugUtils = false;
@@ -281,10 +463,13 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
-    // TODO: expose as a command line parameter or sth
-    const bool useVkTrace = false;
     bool vkTrace = false;
-    if (useVkTrace)
+#if VULKAN_USE_DEBUG_LAYER
+    if (!useDebugLayer)
+        ValidationLevel = VulkanValidationLevel::Disabled;
+    const bool useVkTrace = false;
+
+    if (useVkTrace && useDebugLayer)
     {
         const char* VkTraceName = "VK_LAYER_LUNARG_vktrace";
         if (ContainsLayer(globalLayerExtensions, VkTraceName))
@@ -294,9 +479,8 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
-#if VULKAN_USE_DEBUG_LAYER
 #if VULKAN_ENABLE_API_DUMP
-	if (!vkTrace)
+	if (!vkTrace && useDebugLayer)
 	{
 		const char* VkApiDumpName = "VK_LAYER_LUNARG_api_dump";
 		if (FindLayerInList(globalLayerExtensions, VkApiDumpName))
@@ -404,6 +588,29 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
         }
     }
 
+#if VULKAN_USE_PERF_SDK
+    if (UsePerfSDK && PerfSDK.GetRequiredInstanceExtensions)
+    {
+        NVPW_VK_Profiler_GetRequiredInstanceExtensions_Params params = {};
+        params.structSize = sizeof(NVPW_VK_Profiler_GetRequiredInstanceExtensions_Params);
+        params.apiVersion = VULKAN_API_VERSION;
+        const NVPA_Status status = PerfSDK.GetRequiredInstanceExtensions(&params);
+        if (status == 0)
+        {
+            for (size_t i = 0; i < params.numInstanceExtensionNames; i++)
+            {
+                const char* name = params.ppInstanceExtensionNames[i];
+                const bool available = ListContains(foundUniqueExtensions, name);
+                LOG(Info, "Nsight PerfSDK: Range Profiler requires instance extension '{0}' (available={1}).", String(name), available ? 1 : 0);
+                if (available)
+                    outInstanceExtensions.Add(name);
+            }
+        }
+        else
+            LOG(Warning, "Nsight PerfSDK: NVPW_VK_Profiler_GetRequiredInstanceExtensions failed (status={0}); instance will be missing Range Profiler extensions.", (int32)status);
+    }
+#endif
+
     TrimDuplicates(outInstanceLayers);
     if (outInstanceLayers.HasItems())
     {
@@ -433,7 +640,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
     }
 }
 
-void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers)
+void GPUDeviceVulkan::GetDeviceExtensions(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions)
 {
     Array<LayerExtension> deviceLayerExtensions;
     deviceLayerExtensions.AddDefault(1);
@@ -494,70 +701,19 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     {
         IsDebugToolAttached = true;
     }
-#if VULKAN_USE_DEBUG_LAYER
-    bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
-#if VULKAN_USE_KHRONOS_STANDARD_VALIDATION
-    const char* vkLayerKhronosValidation = "VK_LAYER_KHRONOS_validation";
-    hasKhronosStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerKhronosValidation);
-    if (hasKhronosStandardValidationLayer)
-    {
-        outDeviceLayers.Add(vkLayerKhronosValidation);
-    }
-#endif
-#if VULKAN_USE_LUNARG_STANDARD_VALIDATION
-    if (!hasKhronosStandardValidationLayer)
-    {
-        const char* vkLayerLunargStandardValidation = "VK_LAYER_LUNARG_standard_validation";
-        hasLunargStandardValidationLayer = ContainsLayer(deviceLayerExtensions, vkLayerLunargStandardValidation);
-        if (hasLunargStandardValidationLayer)
-        {
-            outDeviceLayers.Add(vkLayerLunargStandardValidation);
-        }
-    }
-#endif
-    if (!hasKhronosStandardValidationLayer && !hasLunargStandardValidationLayer)
-    {
-        for (uint32 i = 0; GValidationLayers[i] != nullptr; i++)
-        {
-            const char* validationLayer = GValidationLayers[i];
-            if (ContainsLayer(deviceLayerExtensions, validationLayer))
-            {
-                outDeviceLayers.Add(validationLayer);
-            }
-        }
-    }
-#endif
 
     // Find all extensions
     Array<const char*> availableExtensions;
+    availableExtensions.Resize(deviceLayerExtensions[0].Extensions.Count());
+    for (int32 i = 0; i < deviceLayerExtensions[0].Extensions.Count(); i++)
     {
-        for (int32 i = 0; i < deviceLayerExtensions[0].Extensions.Count(); i++)
-        {
-            availableExtensions.Add(deviceLayerExtensions[0].Extensions[i].extensionName);
-        }
-
-        for (int32 layerIndex = 0; layerIndex < outDeviceLayers.Count(); layerIndex++)
-        {
-            int32 findLayerIndex;
-            for (findLayerIndex = 1; findLayerIndex < deviceLayerExtensions.Count(); findLayerIndex++)
-            {
-                if (!StringUtils::Compare(deviceLayerExtensions[findLayerIndex].Layer.layerName, outDeviceLayers[layerIndex]))
-                {
-                    break;
-                }
-            }
-
-            if (findLayerIndex < deviceLayerExtensions.Count())
-            {
-                deviceLayerExtensions[findLayerIndex].GetExtensions(availableExtensions);
-            }
-        }
+        availableExtensions[i] = deviceLayerExtensions[0].Extensions[i].extensionName;
     }
     TrimDuplicates(availableExtensions);
 
     // Pick extensions to use
     Array<const char*> platformExtensions;
-    VulkanPlatform::GetDeviceExtensions(platformExtensions, outDeviceLayers);
+    VulkanPlatform::GetDeviceExtensions(platformExtensions);
     for (const char* extension : platformExtensions)
     {
         if (ListContains(availableExtensions, extension))
@@ -574,21 +730,38 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
         }
     }
 
+#if VULKAN_USE_PERF_SDK
+    if (UsePerfSDK && PerfSDK.GetRequiredDeviceExtensions && Adapter->IsNVIDIA())
+    {
+        NVPW_VK_Profiler_GetRequiredDeviceExtensions_Params params = {};
+        params.structSize = sizeof(NVPW_VK_Profiler_GetRequiredDeviceExtensions_Params);
+        params.apiVersion = Adapter->GpuProps.apiVersion;
+        params.instance = Instance;
+        params.physicalDevice = gpu;
+        params.pfnGetInstanceProcAddr = (void*)vkGetInstanceProcAddr;
+        const NVPA_Status status = PerfSDK.GetRequiredDeviceExtensions(&params);
+        if (status == 0)
+        {
+            for (size_t i = 0; i < params.numDeviceExtensionNames; i++)
+            {
+                const char* name = params.ppDeviceExtensionNames[i];
+                const bool available = ListContains(availableExtensions, name);
+                LOG(Info, "Nsight PerfSDK: Range Profiler requires device extension '{0}' (available={1}).", String(name), available ? 1 : 0);
+                if (available)
+                    outDeviceExtensions.Add(name);
+            }
+        }
+        else
+            LOG(Warning, "Nsight PerfSDK: NVPW_VK_Profiler_GetRequiredDeviceExtensions failed (status={0}); device will be missing Range Profiler extensions.", (int32)status);
+    }
+#endif
+
     if (outDeviceExtensions.HasItems())
     {
         LOG(Info, "Using device extensions:");
         for (const char* extension : outDeviceExtensions)
         {
             LOG(Info, "- {0}", String(extension));
-        }
-    }
-
-    if (outDeviceLayers.HasItems())
-    {
-        LOG(Info, "Using device layers:");
-        for (const char* layer : outDeviceLayers)
-        {
-            LOG(Info, "- {0}", String(layer));
         }
     }
 }

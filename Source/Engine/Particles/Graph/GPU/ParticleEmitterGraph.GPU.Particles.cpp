@@ -185,6 +185,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupParameters(Box* box, Node* node, V
             case MaterialParameterType::GPUTextureCube:
             case MaterialParameterType::GPUTextureVolume:
             case MaterialParameterType::GPUTexture:
+            case MaterialParameterType::GPUBuffer:
                 value = Value(VariantType::Object, param->ShaderName);
                 break;
             default:
@@ -461,7 +462,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupParticles(Box* box, Node* node, Va
 
         // Peek the function output (function->Outputs maps the functions outputs to output nodes indices)
         const int32 outputIndex = box->ID - 16;
-        if (outputIndex < 0 || outputIndex >= function->Outputs.Count())
+        if (!function->Outputs.IsValidIndex(outputIndex) || !graph->Nodes.IsValidIndex(function->Outputs[outputIndex]))
         {
             OnError(node, box, TEXT("Invalid function output box."));
             value = Value::Zero;

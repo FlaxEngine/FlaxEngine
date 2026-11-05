@@ -14,14 +14,16 @@ String Ray::ToString() const
 
 Ray Ray::GetPickRay(float x, float y, const Viewport& viewport, const Matrix& vp)
 {
+#if REVERSE_Z
+    Vector3 nearPoint(x, y, 1.0f);
+    Vector3 farPoint(x, y, 0.0f);
+#else
     Vector3 nearPoint(x, y, 0.0f);
     Vector3 farPoint(x, y, 1.0f);
-
+#endif
     nearPoint = Vector3::Unproject(nearPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
     farPoint = Vector3::Unproject(farPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
-
     Vector3 direction = farPoint - nearPoint;
     direction.Normalize();
-
     return Ray(nearPoint, direction);
 }

@@ -1349,6 +1349,8 @@ void MacWindow::SetCursor(CursorType type)
     case CursorType::Hidden:
         [NSCursor hide];
         return;
+    case CursorType::Image:
+        // TODO: custom cursor support
     default:
         cursor = [NSCursor arrowCursor];
         break;
@@ -1363,7 +1365,7 @@ void MacWindow::SetCursor(CursorType type)
     }
 }
 
-void MacWindow::SetIcon(TextureData& icon)
+void MacWindow::SetIcon(const TextureData& icon)
 {
     // Get pixels
     Array<Color32> colorData;

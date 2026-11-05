@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR
-
 #include "MaterialComplexity.h"
+
+#if GPU_ENABLE_DEVELOPMENT
+
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
@@ -13,8 +14,8 @@
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/Lightmaps.h"
@@ -36,9 +37,9 @@ bool MaterialComplexityMaterialShader::WrapperShader::IsReady() const
     return MaterialAsset && MaterialAsset->IsReady();
 }
 
-bool MaterialComplexityMaterialShader::WrapperShader::CanUseInstancing(InstancingHandler& handler) const
+bool MaterialComplexityMaterialShader::WrapperShader::CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const
 {
-    return MaterialAsset && MaterialAsset->CanUseInstancing(handler);
+    return MaterialAsset && MaterialAsset->CanUseInstancing(renderContext, handler);
 }
 
 DrawPass MaterialComplexityMaterialShader::WrapperShader::GetDrawModes() const
@@ -173,7 +174,7 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
         {
             _ps = GPUDevice::Instance->CreatePipelineState();
             auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-            psDesc.PS = _shader->GetShader()->GetPS("PS");
+            psDesc.PS = _shader->GPU->GetPS("PS");
             _ps->Init(psDesc);
         }
         context->BindSR(0, lightBuffer);

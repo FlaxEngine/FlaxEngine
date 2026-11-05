@@ -29,6 +29,10 @@
 #include "Engine/Threading/Threading.h"
 #include "CommandSignatureDX12.h"
 
+// Inline into this module to leave it as a header-only
+#include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.h>
+#include <ThirdParty/D3D12MemoryAllocator/D3D12MemAlloc.cpp>
+
 static bool CheckDX12Support(IDXGIAdapter* adapter)
 {
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
@@ -41,6 +45,17 @@ static bool CheckDX12Support(IDXGIAdapter* adapter)
     }
     return false;
 #endif
+}
+
+void* D3D12MA_Allocate(size_t Size, size_t Alignment, void* pPrivateData)
+{
+    PROFILE_MEM(GraphicsCommands);
+    return Platform::Allocate(Size, Alignment);
+}
+
+void D3D12MA_Free(void* pMemory, void* pPrivateData)
+{
+    Platform::Free(pMemory);
 }
 
 GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets)
@@ -140,10 +155,15 @@ RootSignatureDX12::RootSignatureDX12()
     InitSampler(2, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP);
     // Point Wrap
     InitSampler(3, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_WRAP);
+#if REVERSE_Z
+    auto comparisionFunc = D3D12_COMPARISON_FUNC_GREATER;
+#else
+    auto comparisionFunc = D3D12_COMPARISON_FUNC_LESS;
+#endif
     // Shadow
-    InitSampler(4, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_COMPARISON_FUNC_LESS_EQUAL);
+    InitSampler(4, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, comparisionFunc);
     // Shadow PCF
-    InitSampler(5, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_COMPARISON_FUNC_LESS_EQUAL);
+    InitSampler(5, D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, comparisionFunc);
 
     // Init
     _desc.NumParameters = ARRAY_COUNT(_parameters);
@@ -386,36 +406,39 @@ GPUDevice* GPUDeviceDX12::Create()
 #endif
 
     // Debug Layer
-#if GPU_ENABLE_DIAGNOSTICS
-    ComPtr<ID3D12Debug> debugLayer;
-    D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer));
-    if (debugLayer)
+#if GPU_ENABLE_DEBUG_LAYER
+    if (CommandLine::Options.GPUDebug.IsTrue())
     {
-        debugLayer->EnableDebugLayer();
-        LOG(Info, "DirectX debugging layer enabled");
-    }
+        ComPtr<ID3D12Debug> debugLayer;
+        D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer));
+        if (debugLayer)
+        {
+            debugLayer->EnableDebugLayer();
+            LOG(Info, "DirectX debugging layer enabled");
+        }
 #if 0
 #ifdef __ID3D12Debug1_FWD_DEFINED__
-    ComPtr<ID3D12Debug1> debugLayer1;
-    D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer1));
-    if (debugLayer1)
-    {
-        // GPU-based validation and synchronized validation for debugging only
-        debugLayer1->SetEnableGPUBasedValidation(true);
-        debugLayer1->SetEnableSynchronizedCommandQueueValidation(true);
-    }
+        ComPtr<ID3D12Debug1> debugLayer1;
+        D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer1));
+        if (debugLayer1)
+        {
+            // GPU-based validation and synchronized validation for debugging only
+            debugLayer1->SetEnableGPUBasedValidation(true);
+            debugLayer1->SetEnableSynchronizedCommandQueueValidation(true);
+        }
 #endif
 #endif
 #ifdef __ID3D12DeviceRemovedExtendedDataSettings_FWD_DEFINED__
-    ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
-    D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings));
-    if (dredSettings)
-    {
-        // Turn on AutoBreadcrumbs and Page Fault reporting
-        dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-        dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-    }
+        ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
+        D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings));
+        if (dredSettings)
+        {
+            // Turn on AutoBreadcrumbs and Page Fault reporting
+            dredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            dredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        }
 #endif
+    }
 #endif
 
     // Create DXGI factory (CreateDXGIFactory2 is supported on Windows 8.1 or newer)
@@ -563,14 +586,43 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
 {
 }
 
+GPUDevice::QueueInfo GPUDeviceDX12::GetNativeQueue() const
+{
+    return { _commandQueue->GetCommandQueue() };
+}
+
+GPUMemoryStats GPUDeviceDX12::GetMemoryStats()
+{
+    GPUMemoryStats stats;
+    D3D12MA::Budget localBudget, nonLocalBudget;
+    Allocator->GetBudget(&localBudget, &nonLocalBudget);
+    if (Allocator->IsUMA())
+    {
+        // UMA (Unified Memory Architecture) means no dedicated video memory and the system memory is shared between CPU and GPU
+        stats.UsedSystemMemory = localBudget.UsageBytes;
+        stats.TotalSystemMemory = localBudget.BudgetBytes;
+    }
+    else
+    {
+        // Discrete GPU
+        stats.UsedDedicatedMemory = localBudget.UsageBytes;
+        stats.TotalDedicatedMemory = localBudget.BudgetBytes;
+        stats.UsedSystemMemory = nonLocalBudget.UsageBytes;
+        stats.TotalSystemMemory = nonLocalBudget.BudgetBytes;
+    }
+    return stats;
+}
+
 bool GPUDeviceDX12::Init()
 {
+    HRESULT hr;
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     // Create DirectX device
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
     params.Version = D3D12_SDK_VERSION;
-#if GPU_ENABLE_DIAGNOSTICS
-    params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
+#if GPU_ENABLE_DEBUG_LAYER
+    if (_debugLayer)
+        params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
 #elif !BUILD_RELEASE
     params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_INSTRUMENTED;
 #endif
@@ -653,23 +705,23 @@ bool GPUDeviceDX12::Init()
 #endif
 #else
     // Get DXGI adapter
-    IDXGIAdapter1* adapter;
+    IDXGIAdapter1* dxgiAdapter;
     ASSERT(_factoryDXGI);
-    if (_factoryDXGI->EnumAdapters1(_adapter->Index, &adapter) == DXGI_ERROR_NOT_FOUND || adapter == nullptr)
+    if (_factoryDXGI->EnumAdapters1(_adapter->Index, &dxgiAdapter) == DXGI_ERROR_NOT_FOUND || dxgiAdapter == nullptr)
     {
         LOG(Warning, "Cannot get the adapter.");
         return true;
     }
-    UpdateOutputs(adapter);
+    UpdateOutputs(dxgiAdapter);
 
     // Create DirectX device
-    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
+    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(dxgiAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
 
 #if PLATFORM_WINDOWS
     // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
     IUnknown* unknown = nullptr;
     const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, { 0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78 } };
-    HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
+    hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
     if (SUCCEEDED(hr) && unknown)
     {
         IsDebugToolAttached = true;
@@ -697,10 +749,10 @@ bool GPUDeviceDX12::Init()
     }
 
     // Debug Layer
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
     ComPtr<ID3D12InfoQueue> infoQueue;
-    HRESULT result = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
-    LOG_DIRECTX_RESULT(result);
+    if (_debugLayer)
+        _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
     if (infoQueue)
     {
         D3D12_INFO_QUEUE_FILTER filter;
@@ -720,6 +772,7 @@ bool GPUDeviceDX12::Init()
             D3D12_MESSAGE_ID_CREATEINPUTLAYOUT_EMPTY_LAYOUT,
             D3D12_MESSAGE_ID_RESOURCE_BARRIER_DUPLICATE_SUBRESOURCE_TRANSITIONS,
             D3D12_MESSAGE_ID_DRAW_EMPTY_SCISSOR_RECTANGLE,
+            D3D12_MESSAGE_ID_CREATEGRAPHICSPIPELINESTATE_RENDERTARGETVIEW_NOT_SET,
         };
 
         filter.DenyList.NumIDs = ARRAY_COUNT(disabledMessages);
@@ -750,7 +803,6 @@ bool GPUDeviceDX12::Init()
     VALIDATE_DIRECTX_CALL(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options)));
     LOG(Info, "Tiled Resources Tier: {0}", (int32)options.TiledResourcesTier);
     LOG(Info, "Resource Binding Tier: {0}", (int32)options.ResourceBindingTier);
-    LOG(Info, "Conservative Rasterization Tier: {0}", (int32)options.ConservativeRasterizationTier);
     LOG(Info, "Resource Heap Tier: {0}", (int32)options.ResourceHeapTier);
 
     // Init device limits
@@ -787,20 +839,24 @@ bool GPUDeviceDX12::Init()
             D3D12_FEATURE_DATA_FORMAT_SUPPORT formatInfo = { dxgiFormat };
             if (FAILED(_device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatInfo, sizeof(formatInfo))))
                 formatInfo.Support1 = D3D12_FORMAT_SUPPORT1_NONE;
-            const MSAALevel maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
             FormatSupport support = (FormatSupport)formatInfo.Support1;
             if (EnumHasAllFlags(support, FormatSupport::ShaderLoad))
                 support |= FormatSupport::UnorderedAccess;
+
+            // Query MSAA quality levels only for the formats that can be used as a multisampled render target.
+            MSAALevel maximumMultisampleCount = MSAALevel::None;
+            if (EnumHasAnyFlags(support, FormatSupport::MultisampleRenderTarget))
+                maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
+
             FeaturesPerFormat[i] = FormatFeatures(maximumMultisampleCount, support);
         }
 
         D3D12_FEATURE_DATA_D3D12_OPTIONS2 options2 = {};
         if (SUCCEEDED(_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS2, &options2, sizeof(options2))))
             limits.HasDepthBounds = !!options2.DepthBoundsTestSupported;
-
     }
 
-#if !BUILD_RELEASE
+#if USE_EDITOR || !BUILD_RELEASE
 	// Prevent the GPU from overclocking or under-clocking to get consistent timings
     if (CommandLine::Options.ShaderProfile.IsTrue())
     {
@@ -809,6 +865,16 @@ bool GPUDeviceDX12::Init()
 #endif
 
     // Setup resources
+    D3D12MA::ALLOCATION_CALLBACKS allocationCallbacks = {};
+    allocationCallbacks.pAllocate = &D3D12MA_Allocate;
+    allocationCallbacks.pFree = &D3D12MA_Free;
+    D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
+    allocatorDesc.pDevice = _device;
+    allocatorDesc.pAdapter = dxgiAdapter;
+    allocatorDesc.Flags = D3D12MA_RECOMMENDED_ALLOCATOR_FLAGS;
+    allocatorDesc.pAllocationCallbacks = &allocationCallbacks;
+    hr = D3D12MA::CreateAllocator(&allocatorDesc, &Allocator);
+    LOG_DIRECTX_RESULT_WITH_RETURN(hr, true);
     _commandQueue = New<CommandQueueDX12>(this, D3D12_COMMAND_LIST_TYPE_DIRECT);
     if (_commandQueue->Init())
         return true;
@@ -942,7 +1008,20 @@ void GPUDeviceDX12::RenderEnd()
 
     // Resolve the queries
     for (auto heap : QueryHeaps)
-        heap->EndQueryBatchAndResolveQueryData(_mainContext);
+        heap->EndFrame(_mainContext);
+}
+
+void GPUDeviceDX12::OnCrash()
+{
+    // Dump allocator stats
+    //D3D12MA::TotalStatistics statistics;
+    //Allocator->CalculateStatistics(&statistics);
+    D3D12MA::Budget localBudget, nonLocalBudget;
+    Allocator->GetBudget(&localBudget, &nonLocalBudget);
+    LOG(Info, "[D3D12 Memory] Local budget: {} / {} bytes (blocks: {}, allocs: {})", localBudget.UsageBytes, localBudget.BudgetBytes, localBudget.Stats.BlockCount, localBudget.Stats.AllocationCount);
+    LOG(Info, "[D3D12 Memory] Non-local budget: {} / {} bytes (blocks: {}, allocs: {})", nonLocalBudget.UsageBytes, nonLocalBudget.BudgetBytes, nonLocalBudget.Stats.BlockCount, nonLocalBudget.Stats.AllocationCount);
+
+    GPUDeviceDX::OnCrash();
 }
 
 GPUDeviceDX12::~GPUDeviceDX12()
@@ -987,7 +1066,7 @@ GPUQueryDX12 GPUDeviceDX12::AllocQuery(GPUQueryType type)
         // Allocate a new query heap
         PROFILE_MEM(GraphicsCommands);
         auto heap = New<QueryHeapDX12>();
-        int32 size = type == GPUQueryType::Occlusion ? 4096 : 1024;
+        int32 size = type == GPUQueryType::Timer ? 1024 : 4096;
         if (heap->Init(this, type, size))
         {
             Delete(heap);
@@ -1016,11 +1095,15 @@ void GPUDeviceDX12::Dispose()
     if (_state == DeviceState::Disposed)
         return;
 
+    // No GPU work to sync with if device failed to initialize
+    const bool isInitialized = _state == DeviceState::Ready;
+
     // Set current state
     _state = DeviceState::Disposing;
 
     // Wait for rendering end
-    WaitForGPU();
+    if (isInitialized)
+        WaitForGPU();
 
     // Pre dispose
     preDispose();
@@ -1048,8 +1131,11 @@ void GPUDeviceDX12::Dispose()
     RingHeap_Sampler.ReleaseGPU();
     UploadBuffer.ReleaseGPU();
     SAFE_DELETE(DrawIndirectCommandSignature);
+    SAFE_DELETE(DrawIndexedIndirectCommandSignature);
+    SAFE_DELETE(DispatchIndirectCommandSignature);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(_commandQueue);
+    SAFE_RELEASE(Allocator);
 
     // Clear DirectX stuff
     SAFE_DELETE(_adapter);
@@ -1140,16 +1226,17 @@ GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const String
     return New<GPUConstantBufferDX12>(this, size, name);
 }
 
-void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount)
+
+void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation, uint32 safeFrameCount)
 {
     if (resource == nullptr)
         return;
-
     ScopeLock lock(_res2DisposeLock);
 
     // Add to the list
     DisposeResourceEntry entry;
     entry.Resource = resource;
+    entry.Allocation = allocation;
     entry.TargetFrame = Engine::FrameCount + safeFrameCount;
     _res2Dispose.Add(entry);
 }
@@ -1169,6 +1256,8 @@ void GPUDeviceDX12::updateRes2Dispose()
         const DisposeResourceEntry& entry = _res2Dispose[i];
         if (entry.TargetFrame <= currentFrame)
         {
+            if (entry.Allocation)
+                entry.Allocation->Release();
             auto refs = entry.Resource->Release();
             if (refs != 0)
             {

@@ -6,13 +6,16 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Models/Types.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Graphics/RenderTask.h"
-#include "Engine/Level/Scene/SceneRendering.h"
+#include "Engine/Graphics/RenderContext.h"
+#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/FontAsset.h"
 #include "Engine/Render2D/FontManager.h"
 #include "Engine/Render2D/FontTextureAtlas.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
@@ -20,8 +23,8 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Graphics/RenderTools.h"
-#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Level/Scene/Scene.h"
+#include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Localization/Localization.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -361,56 +364,66 @@ bool TextRender::HasContentLoaded() const
     return (Material == nullptr || Material->IsLoaded()) && (Font == nullptr || Font->IsLoaded());
 }
 
-void TextRender::Draw(RenderContext& renderContext)
+void TextRender::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
         return; // TODO: Text rendering to Global SDF
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // TODO: Text rendering to Global Surface Atlas
     if (_isDirty)
         UpdateLayout();
+    if (_vb.Data.IsEmpty())
+        return;
     Matrix world;
     renderContext.View.GetWorldMatrix(_transform, world);
-    GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
-
-    const DrawPass drawModes = DrawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(ShadowsMode);
-    if (_vb.Data.Count() > 0 && drawModes != DrawPass::None)
+    auto drawState = renderContext.Buffers->GetGeometryDrawState(&GetScene()->Rendering, _sceneRenderingKey, this);
+    DrawPass drawModes = DrawModes;
+    if (drawState && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && renderContextBatch.Buffers->OcclusionCulling && !renderContextBatch.Buffers->OcclusionCulling->IsVisible(_box, *drawState))
     {
-        // Flush buffers
-        if (_buffersDirty)
-        {
-            _buffersDirty = false;
-            _ib.Flush();
-            _vb.Flush();
-        }
+        // Draw shadows-only (or cull)
+        drawModes &= DrawPass::Depth;
+        if (renderContextBatch.Contexts.Count() == 1 || drawModes == DrawPass::None)
+            return;
+    }
+    GEOMETRY_DRAW_STATE_EVENT_BEGIN(drawState, world);
 
-        // Setup draw call
-        DrawCall drawCall;
-        drawCall.World = world;
-        drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.ObjectRadius = (float)_sphere.Radius;
-        drawCall.Surface.GeometrySize = _localBox.GetSize();
-        drawCall.Surface.PrevWorld = _drawState.PrevWorld;
-        drawCall.PerInstanceRandom = GetPerInstanceRandom();
-        drawCall.SetStencilValue(_layer);
-        drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
-        drawCall.Geometry.VertexBuffers[0] = _vb.GetBuffer();
-        drawCall.InstanceCount = 1;
-
-        // Submit draw calls
-        for (const auto& e : _drawChunks)
-        {
-            const DrawPass chunkDrawModes = drawModes & e.Material->GetDrawModes();
-            if (chunkDrawModes == DrawPass::None)
-                continue;
-            drawCall.Draw.IndicesCount = e.IndicesCount;
-            drawCall.Draw.StartIndex = e.StartIndex;
-            drawCall.Material = e.Material;
-            renderContext.List->AddDrawCall(renderContext, chunkDrawModes, GetStaticFlags(), drawCall, true, SortOrder);
-        }
+    // Flush buffers
+    if (_buffersDirty)
+    {
+        _buffersDirty = false;
+        _ib.Flush();
+        _vb.Flush();
     }
 
-    GEOMETRY_DRAW_STATE_EVENT_END(_drawState, world);
+    // Setup draw call
+    BoundingSphere bounds = _sphere;
+    bounds.Center -= renderContext.View.Origin;
+    DrawCall drawCall;
+    drawCall.World = world;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = (float)bounds.Radius;
+    drawCall.Surface.GeometrySize = _localBox.GetSize();
+    drawCall.Surface.PrevWorld = drawState ? drawState->PrevWorld : world;
+    drawCall.PerInstanceRandom = GetPerInstanceRandom();
+    drawCall.SetStencilValue(_layer);
+    drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
+    drawCall.Geometry.VertexBuffers[0] = _vb.GetBuffer();
+    drawCall.InstanceCount = 1;
+
+    // Submit draw calls
+    for (const auto& e : _drawChunks)
+    {
+        const DrawPass chunkDrawModes = drawModes & e.Material->GetDrawModes();
+        if (chunkDrawModes == DrawPass::None)
+            continue;
+        drawCall.Draw.IndicesCount = e.IndicesCount;
+        drawCall.Draw.StartIndex = e.StartIndex;
+        drawCall.Material = e.Material;
+        renderContext.List->AddDrawCall(renderContextBatch, chunkDrawModes, GetStaticFlags(), ShadowsMode, bounds, drawCall, true, SortOrder);
+    }
+
+    GEOMETRY_DRAW_STATE_EVENT_END(drawState, world);
 }
 
 #if USE_EDITOR

@@ -105,7 +105,7 @@ namespace Flax.Build.Platforms
                 var editorFolder = configuration.Architecture == TargetArchitecture.x64 ? "Win64" : (configuration.Architecture == TargetArchitecture.ARM64 ? "ARM64" : "Win32");
                 vcUserFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='{0}'\">", configuration.Name));
                 vcUserFileContent.AppendLine(string.Format("    <LocalDebuggerCommand>{0}\\FlaxEditor.exe</LocalDebuggerCommand>", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName)));
-                vcUserFileContent.AppendLine("    <LocalDebuggerCommandArguments>-project \"$(SolutionDir)\" -skipCompile</LocalDebuggerCommandArguments>");
+                vcUserFileContent.AppendLine("    <LocalDebuggerCommandArguments>-project=\"$(SolutionDir)\" -skipCompile</LocalDebuggerCommandArguments>");
                 vcUserFileContent.AppendLine("    <LocalDebuggerWorkingDirectory>$(SolutionDir)</LocalDebuggerWorkingDirectory>");
                 vcUserFileContent.AppendLine("    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>");
                 vcUserFileContent.AppendLine("    </PropertyGroup>");

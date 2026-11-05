@@ -34,6 +34,34 @@ class Material;
 class MaterialBase;
 
 /// <summary>
+/// Contains information about current GPU memory usage and budget.
+/// </summary>
+API_STRUCT(NoDefault) struct GPUMemoryStats
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(GPUMemoryStats);
+
+    /// <summary>
+    /// Amount of used dedicated video memory in bytes. Memory local to the device, and represents the fastest available memory to the GPU.
+    /// </summary>
+    API_FIELD() uint64 UsedDedicatedMemory = 0;
+
+    /// <summary>
+    /// Total amount of dedicated memory budget in bytes. Memory local to the device, and represents the fastest available memory to the GPU.
+    /// </summary>
+    API_FIELD() uint64 TotalDedicatedMemory = 0;
+
+    /// <summary>
+    /// Amount of used system video memory in bytes. Memory non-local to the device, and may have slower performance than the dedicated/local.
+    /// </summary>
+    API_FIELD() uint64 UsedSystemMemory = 0;
+
+    /// <summary>
+    /// Total amount of system memory budget in bytes. Memory non-local to the device, and may have slower performance than the dedicated/local.
+    /// </summary>
+    API_FIELD() uint64 TotalSystemMemory = 0;
+};
+
+/// <summary>
 /// Graphics device object for rendering on GPU.
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUDevice : public ScriptingObject
@@ -115,6 +143,17 @@ public:
     };
 
     /// <summary>
+    /// Collection of internal graphics API command queue pointers. Depend on the platform.
+    /// </summary>
+    struct QueueInfo
+    {
+        // The main graphics command queue (ID3D12CommandQueue* or VkQueue as void*). Null if not applicable.
+        void* MainQueue = nullptr;
+        // Vulkan queue family index for MainQueue. Zero for non-Vulkan backends.
+        uint32 MainQueueFamilyIndex = 0;
+    };
+
+    /// <summary>
     /// The singleton instance of the graphics device.
     /// </summary>
     API_FIELD(ReadOnly) static GPUDevice* Instance;
@@ -124,6 +163,9 @@ protected:
     DeviceState _state;
     bool _isRendering;
     bool _wasVSyncUsed;
+#if GPU_ENABLE_DEBUG_LAYER
+    bool _debugLayer;
+#endif
     int32 _drawGpuEventIndex;
     RendererType _rendererType;
     ShaderProfile _shaderProfile;
@@ -134,6 +176,7 @@ protected:
     PrivateData* _res;
     Array<GPUResource*> _resources;
     CriticalSection _resourcesLock;
+    RenderTask* _lastVSyncTask = nullptr;
 
     void OnRequestingExit();
 
@@ -272,9 +315,19 @@ public:
     API_PROPERTY() virtual void* GetNativePtr() const = 0;
 
     /// <summary>
-    /// Gets the amount of memory usage by all the GPU resources (in bytes).
+    /// Gets the native command queue info of the underlying graphics device. It contains a low-level platform-specific data.
+    /// </summary>
+    virtual QueueInfo GetNativeQueue() const;
+
+    /// <summary>
+    /// Gets the amount of memory usage by all the GPU resources (in bytes). Returned value is estimated based on resources created by the engine and might not be accurate. Use GPUMemoryStats for more detailed memory budget usage.
     /// </summary>
     API_PROPERTY() uint64 GetMemoryUsage() const;
+
+    /// <summary>
+    /// Gets the current GPU memory stats.
+    /// </summary>
+    API_PROPERTY() virtual GPUMemoryStats GetMemoryStats();
 
     /// <summary>
     /// Gets the list with all active GPU resources.
@@ -416,6 +469,11 @@ protected:
     /// Called during Draw method before rendering end. Can be used to submit commands to the GPU before closing GPU command list.
     /// </summary>
     virtual void RenderEnd();
+
+    /// <summary>
+    /// Called when program crashed due to GPU error (out of memory, hang, error - see Engine::FatalError). By default, it logs all GPU resources to the log. Can be used to update platform-specific stats or extract crash-info.
+    /// </summary>
+    virtual void OnCrash();
 
 public:
     /// <summary>

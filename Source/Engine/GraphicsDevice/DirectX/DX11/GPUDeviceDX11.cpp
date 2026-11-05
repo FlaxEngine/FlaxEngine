@@ -25,6 +25,7 @@
 bool EnableNvapi = false;
 #endif
 #if COMPILE_WITH_AGS
+#define AGS_EXCLUDE_DIRECTX_12
 #include <ThirdParty/AGS/amd_ags.h>
 #include "Engine/Engine/Globals.h"
 #include "FlaxEngine.Gen.h"
@@ -87,13 +88,45 @@ static D3D11_STENCIL_OP ToDX11(StencilOperation value)
     }
 }
 
+static RendererType GetRendererType(GPUAdapterDX* adapter)
+{
+    switch (adapter->MaxFeatureLevel)
+    {
+    case D3D_FEATURE_LEVEL_10_0:
+        return RendererType::DirectX10;
+    case D3D_FEATURE_LEVEL_10_1:
+        return RendererType::DirectX10_1;
+    case D3D_FEATURE_LEVEL_11_0:
+    case D3D_FEATURE_LEVEL_11_1:
+        return RendererType::DirectX11;
+    default:
+        return RendererType::Unknown;
+    }
+}
+
+static ShaderProfile GetShaderProfile(GPUAdapterDX* adapter)
+{
+    switch (adapter->MaxFeatureLevel)
+    {
+    case D3D_FEATURE_LEVEL_10_0:
+    case D3D_FEATURE_LEVEL_10_1:
+        return ShaderProfile::DirectX_SM4;
+    case D3D_FEATURE_LEVEL_11_0:
+    case D3D_FEATURE_LEVEL_11_1:
+        return ShaderProfile::DirectX_SM5;
+    default:
+        return ShaderProfile::Unknown;
+    }
+}
+
 static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureLevel, D3D_FEATURE_LEVEL* featureLevel)
 {
     ID3D11Device* device = nullptr;
     ID3D11DeviceContext* context = nullptr;
     uint32 deviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#if GPU_ENABLE_DIAGNOSTICS
-    deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#if GPU_ENABLE_DEBUG_LAYER
+    if (CommandLine::Options.GPUDebug.IsTrue())
+        deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
     // Pick the first level
@@ -134,7 +167,11 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
         context->Release();
         return true;
     }
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
+    if ((deviceFlags & D3D11_CREATE_DEVICE_DEBUG) != D3D11_CREATE_DEVICE_DEBUG)
+        return false;
+
+    // Retry without debug layer
     deviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
     if (SUCCEEDED(D3D11CreateDevice(
         adapter,
@@ -335,7 +372,7 @@ GPUDevice* GPUDeviceDX11::Create()
 }
 
 GPUDeviceDX11::GPUDeviceDX11(IDXGIFactory* dxgiFactory, GPUAdapterDX* adapter)
-    : GPUDeviceDX(getRendererType(adapter), getShaderProfile(adapter), adapter)
+    : GPUDeviceDX(::GetRendererType(adapter), ::GetShaderProfile(adapter), adapter)
     , _factoryDXGI(dxgiFactory)
 {
     Platform::MemoryClear(RasterizerStates, sizeof(RasterizerStates));
@@ -513,9 +550,12 @@ bool GPUDeviceDX11::Init()
 
     // Get flags and device type base on current configuration
     uint32 flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#if GPU_ENABLE_DIAGNOSTICS
-    flags |= D3D11_CREATE_DEVICE_DEBUG;
-    LOG(Info, "DirectX debugging layer enabled");
+#if GPU_ENABLE_DEBUG_LAYER
+    if (_debugLayer)
+    {
+        flags |= D3D11_CREATE_DEVICE_DEBUG;
+        LOG(Info, "DirectX debugging layer enabled");
+    }
 #endif
 
     // Create DirectX device
@@ -550,11 +590,10 @@ bool GPUDeviceDX11::Init()
 #endif
     {
         HRESULT createResult = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext);
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
         if (createResult == DXGI_ERROR_SDK_COMPONENT_MISSING)
         {
-            // The Direct3D debug layer is an optional Windows component. Development builds
-            // should remain usable when it is not installed, just like adapter probing above.
+            // The Direct3D debug layer is an optional Windows component
             flags &= ~D3D11_CREATE_DEVICE_DEBUG;
             createResult = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext);
             if (SUCCEEDED(createResult))
@@ -692,9 +731,10 @@ bool GPUDeviceDX11::Init()
     }
 
     // Init debug layer
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
     ComPtr<ID3D11InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    if (_debugLayer)
+        _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
     if (infoQueue)
     {
         D3D11_INFO_QUEUE_FILTER filter;
@@ -738,7 +778,11 @@ bool GPUDeviceDX11::Init()
         samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         samplerDesc.MipLODBias = 0.0f;
         samplerDesc.MaxAnisotropy = 1;
+#if REVERSE_Z
+        samplerDesc.ComparisonFunc = D3D11_COMPARISON_GREATER;
+#else
         samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+#endif
 
         // Linear Clamp
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -881,7 +925,7 @@ void GPUDeviceDX11::Dispose()
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(_adapter);
     SAFE_RELEASE(_imContext);
-#if GPU_ENABLE_DIAGNOSTICS && 0
+#if GPU_ENABLE_DEBUG_LAYER && 0
     ID3D11Debug* debugLayer = nullptr;
     _device->QueryInterface(IID_PPV_ARGS(&debugLayer));
     if (debugLayer)
@@ -910,10 +954,11 @@ void GPUDeviceDX11::DrawEnd()
 {
     GPUDeviceDX::DrawEnd();
 
-#if GPU_ENABLE_DIAGNOSTICS && LOG_ENABLE
+#if GPU_ENABLE_DEBUG_LAYER && LOG_ENABLE
     // Flush debug messages queue
     ComPtr<ID3D11InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    if (_debugLayer)
+        _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
     if (infoQueue)
     {
         Array<uint8> data;
@@ -953,13 +998,13 @@ void GPUDeviceDX11::DrawEnd()
     }
 #endif
 
-    // Auto-return finished queries back to the pool
+    // Auto-return finished queries back to the pool (or leaked queries)
     auto* queries = _queries.Get();
     int32 queriesCount = _queries.Count();
     for (int32 i = 0; i < queriesCount; i++)
     {
         auto& query = queries[i];
-        if (query.State == GPUQueryDataDX11::Finished)
+        if (query.State == GPUQueryDataDX11::Finished || (query.State == GPUQueryDataDX11::End && --query.TTL == 0))
         {
             query.State = GPUQueryDataDX11::Ready;
             query.Result = 0;
@@ -982,7 +1027,8 @@ bool GPUDeviceDX11::GetQueryResult(uint64 queryID, uint64& result, bool wait)
         result = query.Result;
         return true;
     }
-    ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::End);
+    if (query.State != GPUQueryDataDX11::End)
+        return false;
     auto context = GetIM();
 
 RETRY:
@@ -1015,9 +1061,19 @@ RETRY:
             }
         }
     }
+    else if (q.Type == (uint16)GPUQueryType::Occlusion)
+    {
+        UINT64 data;
+        hasData = context->GetData(query.Query, &data, sizeof(data), 0) == S_OK;
+        if (hasData)
+            result = data;
+    }
     else
     {
-        hasData = context->GetData(query.Query, &result, sizeof(uint64), 0) == S_OK;
+        BOOL data;
+        hasData = context->GetData(query.Query, &data, sizeof(data), 0) == S_OK;
+        if (hasData)
+            result = data ? 1 : 0;
     }
 
     if (!hasData && wait)

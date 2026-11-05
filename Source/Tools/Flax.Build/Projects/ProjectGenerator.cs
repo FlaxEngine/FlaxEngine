@@ -82,34 +82,10 @@ namespace Flax.Build.Projects
         /// <returns>The generator.</returns>
         public static ProjectGenerator Create(ProjectFormat format, TargetType type)
         {
-            // Pick the newest installed Visual Studio version
+            // Visual Studio default project format is Visual Studio 2026 (.slnx)
             if (format == ProjectFormat.VisualStudio)
             {
-                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2026))
-                {
-                    format = ProjectFormat.VisualStudio2026;
-                }
-                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
-                {
-                    format = ProjectFormat.VisualStudio2022;
-                }
-                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
-                {
-                    format = ProjectFormat.VisualStudio2019;
-                }
-                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2017))
-                {
-                    format = ProjectFormat.VisualStudio2017;
-                }
-                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2015))
-                {
-                    format = ProjectFormat.VisualStudio2015;
-                }
-                else
-                {
-                    Log.Warning("Failed to find default Visual Studio installation");
-                    format = ProjectFormat.VisualStudio2015;
-                }
+                format = ProjectFormat.VisualStudio2026;
             }
 
             switch (format)

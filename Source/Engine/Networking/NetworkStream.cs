@@ -11,7 +11,7 @@ namespace FlaxEngine.Networking
         /// Writes raw bytes into the message.
         /// </summary>
         /// <param name="bytes">The bytes that will be written.</param>
-        /// <param name="length">The amount of bytes to write from the bytes pointer.</param>
+        /// <param name="length">The amount of bytes to write from the pointer.</param>
         public void WriteBytes(byte* bytes, int length)
         {
             WriteData(new IntPtr(bytes), length);
@@ -20,8 +20,7 @@ namespace FlaxEngine.Networking
         /// <summary>
         /// Reads raw bytes from the message into the given byte array.
         /// </summary>
-        /// <param name="buffer">The buffer pointer that will be used to store the bytes. Should be of the same length as length or longer.
-        /// </param>
+        /// <param name="buffer">The buffer pointer that will be used to store the bytes. Should be of the same length as length or longer.</param>
         /// <param name="length">The minimal amount of bytes that the buffer contains.</param>
         public void ReadBytes(byte* buffer, int length)
         {
@@ -256,10 +255,23 @@ namespace FlaxEngine.Networking
             var stringLength = ReadInt32();
             if (stringLength == 0)
                 return string.Empty;
-            var dataLength = stringLength * sizeof(char);
-            var bytes = stackalloc char[stringLength];
-            ReadBytes((byte*)bytes, dataLength);
-            return new string(bytes, 0, stringLength);
+            if (stringLength < 200)
+            {
+                var bytes = stackalloc char[stringLength];
+                ReadBytes((byte*)bytes, stringLength * sizeof(char));
+                if ((Flags & NetworkMessageFlags.HasError) != 0)
+                    return null;
+                return new string(bytes, 0, stringLength);
+            }
+            else
+            {
+                var bytes = new char[stringLength];
+                fixed (char* bytesPtr = bytes)
+                    ReadBytes((byte*)bytesPtr, stringLength * sizeof(char));
+                if ((Flags & NetworkMessageFlags.HasError) != 0)
+                    return null;
+                return new string(bytes, 0, stringLength);
+            }
         }
 
         /// <summary>
@@ -285,8 +297,12 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteVector2(Vector2 value)
         {
-            WriteSingle((float)value.X);
-            WriteSingle((float)value.Y);
+#if USE_LARGE_WORLDS
+            var tmp = new Float2(value);
+            WriteBytes((byte*)&tmp, sizeof(Float2));
+#else
+            WriteBytes((byte*)&value, sizeof(Float2));
+#endif
         }
 
         /// <summary>
@@ -302,9 +318,12 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteVector3(Vector3 value)
         {
-            WriteSingle((float)value.X);
-            WriteSingle((float)value.Y);
-            WriteSingle((float)value.Z);
+#if USE_LARGE_WORLDS
+            var tmp = new Float3(value);
+            WriteBytes((byte*)&tmp, sizeof(Float3));
+#else
+            WriteBytes((byte*)&value, sizeof(Float3));
+#endif
         }
 
         /// <summary>
@@ -320,10 +339,12 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteVector4(Vector4 value)
         {
-            WriteSingle((float)value.X);
-            WriteSingle((float)value.Y);
-            WriteSingle((float)value.Z);
-            WriteSingle((float)value.W);
+#if USE_LARGE_WORLDS
+            var tmp = new Float4(value);
+            WriteBytes((byte*)&tmp, sizeof(Float4));
+#else
+            WriteBytes((byte*)&value, sizeof(Float4));
+#endif
         }
 
         /// <summary>
@@ -339,8 +360,7 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteFloat2(Float2 value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
+            WriteBytes((byte*)&value, sizeof(Float2));
         }
 
         /// <summary>
@@ -356,9 +376,7 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteFloat3(Float3 value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
-            WriteSingle(value.Z);
+            WriteBytes((byte*)&value, sizeof(Float3));
         }
 
         /// <summary>
@@ -374,10 +392,7 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteFloat4(Float4 value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
-            WriteSingle(value.Z);
-            WriteSingle(value.W);
+            WriteBytes((byte*)&value, sizeof(Float4));
         }
 
         /// <summary>
@@ -393,10 +408,8 @@ namespace FlaxEngine.Networking
         /// </summary>
         public void WriteQuaternion(Quaternion value)
         {
-            WriteSingle(value.X);
-            WriteSingle(value.Y);
-            WriteSingle(value.Z);
-            WriteSingle(value.W);
+            // TODO: use NetworkQuaternion to match C++
+            WriteBytes((byte*)&value, sizeof(Quaternion));
         }
 
         /// <summary>
@@ -404,7 +417,10 @@ namespace FlaxEngine.Networking
         /// </summary>
         public Quaternion ReadQuaternion()
         {
-            return new Quaternion(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
+            // TODO: use NetworkQuaternion to match C++
+            Quaternion result = Quaternion.Identity;
+            ReadBytes((byte*)&result, sizeof(Quaternion));
+            return result;
         }
 
         /// <summary>

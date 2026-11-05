@@ -79,7 +79,7 @@ bool FFX_SSSR_AdvanceRay(float3 origin, float3 direction, float3 inv_direction, 
 }
 
 float2 FFX_SSSR_GetMipResolution(float2 screen_dimensions, int mip_level) {
-    return screen_dimensions * pow(0.5, mip_level);
+    return screen_dimensions * pow(0.5, (float)mip_level);
 }
 
 // Requires origin and direction of the ray to be in screen space [0, 1] x [0, 1]
@@ -95,11 +95,11 @@ float3 FFX_SSSR_HierarchicalRaymarch(Texture2D depthBuffer, uint hzbMips, float 
 
     // Offset to the bounding boxes uv space to intersect the ray with the center of the next pixel.
     // This means we ever so slightly over shoot into the next region. 
-    float2 uv_offset = 0.005 * exp2(most_detailed_mip) / screen_size;
+    float2 uv_offset = 0.005 * exp2((float)most_detailed_mip) / screen_size;
     uv_offset = select(direction.xy < 0, -uv_offset, uv_offset);
 
     // Offset applied depending on current mip resolution to move the boundary to the left/right upper/lower border depending on ray direction.
-    float2 floor_offset = select(direction.xy < 0, 0, 1);
+    float2 floor_offset = select(direction.xy < 0, float2(0, 0), float2(1, 1));
     
     // Initially advance ray to avoid immediate self intersections.
     float current_t;
@@ -111,7 +111,12 @@ float3 FFX_SSSR_HierarchicalRaymarch(Texture2D depthBuffer, uint hzbMips, float 
     while (i < max_traversal_intersections && current_mip >= most_detailed_mip) {
         float2 current_mip_position = current_mip_resolution * position.xy;
         float surface_z = depthBuffer.Load(int3(current_mip_position, current_mip)).x;
-        if (position.z - surface_z > depthDiffError) overDiffError++; // Count number of times we were under the depth by more than the allowed error
+#ifdef FFX_SSSR_INVERTED_DEPTH_RANGE
+        // Count number of times we were under the depth by more than the allowed error
+        if (surface_z - position.z > depthDiffError) overDiffError++;
+#else
+        if (position.z - surface_z > depthDiffError) overDiffError++;
+#endif
         bool skipped_tile = FFX_SSSR_AdvanceRay(origin, direction, inv_direction, current_mip_position, current_mip_resolution_inv, floor_offset, uv_offset, surface_z, position, current_t);
         ++i;
         if (!skipped_tile || current_mip < (int)hzbMips) // Never go too low depth resolution to avoid blocky artifacts

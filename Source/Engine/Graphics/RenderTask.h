@@ -8,7 +8,6 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Renderer/RendererAllocation.h"
 #include "RenderView.h"
 
 class GPUDevice;
@@ -64,6 +63,11 @@ public:
     /// Gets or sets a value indicating whether task is enabled.
     /// </summary>
     API_FIELD() bool Enabled = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether task is doing composition over other task (eg. layered cameras stacking for local co-op).
+    /// </summary>
+    API_FIELD() bool IsComposite = false;
 
     /// <summary>
     /// The order of the task. Used for tasks rendering order. Lower first, higher later.
@@ -201,12 +205,17 @@ API_ENUM() enum class RenderingUpscaleLocation
     /// <summary>
     /// The up-scaling happens directly to the output buffer (backbuffer) after post processing and anti-aliasing.
     /// </summary>
-    AfterAntiAliasingPass = 0,
+    AfterAntiAliasing = 0,
     
     /// <summary>
     /// The up-scaling happens before the post processing after scene rendering (after geometry, lighting, volumetrics, transparency and SSR/SSAO).
     /// </summary>
-    BeforePostProcessingPass = 1,
+    BeforePostProcessing = 1,
+
+    /// <summary>
+    /// The up-scaling happens during anti-aliasing. For example, when using Temporal Anti-Aliasing (TAA) it work as Temporal Anti-Aliasing Upsampling (TAAU) to both remove aliasing and upscale the image.
+    /// </summary>
+    DuringAntiAliasing = 2,
 };
 
 /// <summary>
@@ -278,9 +287,14 @@ public:
     API_FIELD() float RenderScale = 1.0f;
 
     /// <summary>
+    /// The texture mip level bias for materials. Positive values make textures appear blurrier; negative values sharpen.
+    /// </summary>
+    API_FIELD() float MaterialTextureMipBias = 0.0f;
+
+    /// <summary>
     /// The image resolution upscale location within rendering pipeline. Unused if RenderingPercentage is 1.
     /// </summary>
-    API_FIELD() RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::AfterAntiAliasingPass;
+    API_FIELD() RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::DuringAntiAliasing;
 
 public:
     /// <summary>
@@ -402,11 +416,13 @@ public:
     /// <summary>
     /// Gets the rendering render task viewport (before upsampling).
     /// </summary>
+    /// <remarks>Includes rendering scale and ViewportRect sizing (but no viewport offset, origin at 0,0).</remarks>
     API_PROPERTY() Viewport GetViewport() const;
 
     /// <summary>
     /// Gets the rendering output viewport (after upsampling).
     /// </summary>
+    /// <remarks>Includes ViewportRect placement within output. Doesn't contain any render scale.</remarks>
     API_PROPERTY() Viewport GetOutputViewport() const;
 
     /// <summary>
@@ -451,97 +467,4 @@ public:
 public:
     // [SceneRenderTask]
     void OnBegin(GPUContext* context) override;
-};
-
-/// <summary>
-/// The high-level renderer context. Used to collect the draw calls for the scene rendering. Can be used to perform a custom rendering.
-/// </summary>
-API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContext
-{
-    DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContext);
-
-    /// <summary>
-    /// The render buffers.
-    /// </summary>
-    API_FIELD() RenderBuffers* Buffers = nullptr;
-
-    /// <summary>
-    /// The render list.
-    /// </summary>
-    API_FIELD() RenderList* List = nullptr;
-
-    /// <summary>
-    /// The scene rendering task that is a source of renderable objects (optional).
-    /// </summary>
-    API_FIELD() SceneRenderTask* Task = nullptr;
-
-    /// <summary>
-    /// The proxy render view used to synchronize objects level of detail during rendering (eg. during shadow maps rendering passes). It's optional.
-    /// </summary>
-    API_FIELD() RenderView* LodProxyView = nullptr;
-
-    /// <summary>
-    /// The render view.
-    /// </summary>
-    API_FIELD() RenderView View;
-
-    /// <summary>
-    /// The GPU access locking critical section to protect data access when performing multi-threaded rendering.
-    /// </summary>
-    static CriticalSection GPULocker;
-
-    RenderContext() = default;
-    RenderContext(SceneRenderTask* task) noexcept;
-};
-
-/// <summary>
-/// The high-level renderer context batch that encapsulates multiple rendering requests within a single task (eg. optimize main view scene rendering and shadow projections at once).
-/// </summary>
-API_STRUCT(NoDefault) struct FLAXENGINE_API RenderContextBatch
-{
-    DECLARE_SCRIPTING_TYPE_MINIMAL(RenderContextBatch);
-
-    /// <summary>
-    /// The render buffers.
-    /// </summary>
-    API_FIELD() RenderBuffers* Buffers = nullptr;
-
-    /// <summary>
-    /// The scene rendering task that is a source of renderable objects (optional).
-    /// </summary>
-    API_FIELD() SceneRenderTask* Task = nullptr;
-
-    /// <summary>
-    /// The all render views collection for the current rendering (main view, shadow projections, etc.).
-    /// </summary>
-    API_FIELD() Array<RenderContext, RendererAllocation> Contexts;
-
-    /// <summary>
-    /// The Job System labels to wait on, after draw calls collecting.
-    /// </summary>
-    API_FIELD() Array<int64, InlinedAllocation<8>> WaitLabels;
-
-    /// <summary>
-    /// Enables using async tasks via Job System when performing drawing.
-    /// </summary>
-    API_FIELD() bool EnableAsync = true;
-
-    RenderContextBatch() = default;
-    RenderContextBatch(SceneRenderTask* task);
-    RenderContextBatch(const RenderContext& context);
-
-    FORCE_INLINE RenderContext& GetMainContext()
-    {
-        return Contexts.Get()[0];
-    }
-
-    FORCE_INLINE const RenderContext& GetMainContext() const
-    {
-        return Contexts.Get()[0];
-    }
-
-    /// <summary>
-    /// Waits for all scheduled async jobs to complete and clears WaitLabels.
-    /// </summary>
-    void FlushWaitLabels();
 };

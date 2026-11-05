@@ -71,16 +71,14 @@ namespace Flax.Build
 
         /// <summary>
         /// Gets the empty array of the given type (shared one).
+        /// [Deprecated in v1.13]
         /// </summary>
         /// <typeparam name="T">The type.</typeparam>
         /// <returns>The empty array object.</returns>
+        [Obsolete("Use Array.Empty instead.")]
         public static T[] GetEmptyArray<T>()
         {
-#if USE_NETCORE
             return Array.Empty<T>();
-#else
-            return Enumerable.Empty<T>() as T[];
-#endif
         }
 
         /// <summary>

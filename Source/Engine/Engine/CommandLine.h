@@ -3,16 +3,15 @@
 #pragma once
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/Nullable.h"
-#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Command line options helper.
 /// </summary>
-class CommandLine
+class FLAXENGINE_API CommandLine
 {
 public:
-
     struct OptionsData
     {
         /// <summary>
@@ -49,20 +48,6 @@ public:
         /// -std (redirect log to standard output)
         /// </summary>
         Nullable<bool> Std;
-
-#if !BUILD_RELEASE
-
-        /// <summary>
-        /// -debug !ip:port! (Mono debugger address)
-        /// </summary>
-        Nullable<String> DebuggerAddress;
-
-        /// <summary>
-        /// -debugwait (instructs Mono debugger to wait for client attach for 5 seconds)
-        /// </summary>
-        Nullable<bool> WaitForDebugger;
-
-#endif
 
 #if PLATFORM_HAS_HEADLESS_MODE
 
@@ -114,11 +99,6 @@ public:
         Nullable<bool> Intel;
 
         /// <summary>
-        /// -monolog (enables advanced debugging for Mono runtime)
-        /// </summary>
-        Nullable<bool> MonoLog;
-
-        /// <summary>
         /// -mute (disables audio playback and uses Null Audio Backend)
         /// </summary>
         Nullable<bool> Mute;
@@ -144,7 +124,7 @@ public:
 
 #if USE_EDITOR
         /// <summary>
-        /// -project !path! (Startup project path)
+        /// -project=<path> (Startup project path)
         /// </summary>
         String Project;
 
@@ -174,7 +154,7 @@ public:
         Nullable<bool> ClearCookerCache;
 
         /// <summary>
-        /// The build preset (-build !preset.target! or -build !preset!) (run game building on startup and exit app on end).
+        /// The build preset (-build=<preset.target> or -build=<preset>) (run game building on startup and exit app on end).
         /// </summary>
         Nullable<String> Build;
 
@@ -194,7 +174,7 @@ public:
         Nullable<bool> Exit;
 
         /// <summary>
-        /// -play !guid! ( Scene to play, can be empty to use default )
+        /// -play=<guid> ( Scene to play, can be empty to use default )
         /// </summary>
         Nullable<String> Play;
 #endif
@@ -204,6 +184,11 @@ public:
         /// -shaderprofile (enables debugging data generation for shaders but leaves shader compiler optimizations active for performance profiling)
         /// </summary>
         Nullable<bool> ShaderProfile;
+
+        /// <summary>
+        /// -gpudebug (activates GPU Debug Layers and additional assertions for rendering validation)
+        /// </summary>
+        Nullable<bool> GPUDebug;
 #endif
     };
 
@@ -213,19 +198,46 @@ public:
     static OptionsData Options;
 
 public:
+    /// <summary>
+    /// The command line option data.
+    /// </summary>
+    struct FLAXENGINE_API Arg
+    {
+        // The name.
+        StringView Name;
+        // The value.
+        StringView Value;
+    };
 
     /// <summary>
-    /// Parses the input command line.
+    /// Gets the specific command line option value. Returns true if given argument has been set.
     /// </summary>
-    /// <param name="cmdLine">The command line.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    static bool Parse(const Char* cmdLine);
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg);
 
     /// <summary>
-    /// Parses the command line arguments string into string list of arguments.
+    /// Gets the specific command line option value. Returns true if given argument has been set and provides it's value (as string).
     /// </summary>
-    /// <param name="cmdLine">The command line.</param>
-    /// <param name="arguments">The parsed arguments</param>
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg, StringView& value);
+
+    /// <summary>
+    /// Gets the specific command line option value. Returns true if given argument has been set and provides it's value (as boolean). Returns ture if argument doesn't have specific value.
+    /// </summary>
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg, bool& value);
+
+    /// <summary>
+    /// Gets the specific command line option value. Returns true if given argument has been set and provides it's value (as integer).
+    /// </summary>
+    /// <returns>True if given argument has been provided in program command line.</returns>
+    static bool Get(const StringView& arg, int32& value);
+
+    /// <summary>
+    /// Parses the specified command line.
+    /// </summary>
+    /// <param name="cmdLine">The input command line.</param>
+    /// <param name="args">The parsed arguments</param>
     /// <returns>True if failed, otherwise false.</returns>
-    static bool ParseArguments(const StringView& cmdLine, Array<StringAnsi>& arguments);
+    static bool Parse(const StringView& cmdLine, Array<Arg, HeapAllocation>& args);
 };

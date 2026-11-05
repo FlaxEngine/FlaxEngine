@@ -57,6 +57,15 @@ public:
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Rectangle"/> struct.
+    /// </summary>
+    /// <param name="packed">The location and size packed.</param>
+    Rectangle(const Float4& packed)
+    {
+        Platform::MemoryCopy(this, &packed, sizeof(*this));
+    }
+
 public:
     String ToString() const;
 

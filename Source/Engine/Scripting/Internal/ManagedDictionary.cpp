@@ -1,7 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ManagedDictionary.h"
-
 #if USE_CSHARP
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
@@ -9,7 +8,8 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Internal/StdTypesContainer.h"
-Dictionary<ManagedDictionary::KeyValueType, MTypeObject*> ManagedDictionary::CachedTypes;
+
+Dictionary<ManagedDictionary::KeyValueType, MType*> ManagedDictionary::CachedTypes;
 #if !USE_MONO_AOT
 ManagedDictionary::MakeGenericTypeThunk ManagedDictionary::MakeGenericType;
 ManagedDictionary::CreateInstanceThunk ManagedDictionary::CreateInstance;
@@ -70,23 +70,19 @@ ManagedDictionary::ManagedDictionary(MObject* instance)
 #endif
 }
 
-MTypeObject* ManagedDictionary::GetClass(MType* keyType, MType* valueType)
+MType* ManagedDictionary::GetClass(MType* keyType, MType* valueType)
 {
     // Check if the generic type was generated earlier
     KeyValueType cacheKey = { keyType, valueType };
-    MTypeObject* dictionaryType;
+    MType* dictionaryType;
     if (CachedTypes.TryGet(cacheKey, dictionaryType))
         return dictionaryType;
 
-    MTypeObject* genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass);
-#if USE_NETCORE
+    MType* genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass);
     MArray* genericArgs = MCore::Array::New(MCore::TypeCache::IntPtr, 2);
-#else
-    MArray* genericArgs = MCore::Array::New(MCore::TypeCache::Object, 2);
-#endif
-    MTypeObject** genericArgsPtr = MCore::Array::GetAddress<MTypeObject*>(genericArgs);
-    genericArgsPtr[0] = INTERNAL_TYPE_GET_OBJECT(keyType);
-    genericArgsPtr[1] = INTERNAL_TYPE_GET_OBJECT(valueType);
+    MType** genericArgsPtr = MCore::Array::GetAddress<MType*>(genericArgs);
+    genericArgsPtr[0] = keyType;
+    genericArgsPtr[1] = valueType;
 
     MObject* exception = nullptr;
 #if !USE_MONO_AOT
@@ -95,7 +91,7 @@ MTypeObject* ManagedDictionary::GetClass(MType* keyType, MType* valueType)
     void* params[2];
     params[0] = genericType;
     params[1] = genericArgs;
-    dictionaryType = (MTypeObject*)MakeGenericType->Invoke(nullptr, params, &exception);
+    dictionaryType = (MType*)MakeGenericType->Invoke(nullptr, params, &exception);
 #endif
     if (exception)
     {
@@ -110,7 +106,7 @@ MTypeObject* ManagedDictionary::GetClass(MType* keyType, MType* valueType)
 ManagedDictionary ManagedDictionary::New(MType* keyType, MType* valueType)
 {
     ManagedDictionary result;
-    MTypeObject* dictionaryType = GetClass(keyType, valueType);
+    MType* dictionaryType = GetClass(keyType, valueType);
     if (!dictionaryType)
         return result;
 

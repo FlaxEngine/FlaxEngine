@@ -6,7 +6,7 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 
 bool SMAA::setupResources()
 {
@@ -33,18 +33,16 @@ bool SMAA::setupResources()
         _psNeighbor = GPUDevice::Instance->CreatePipelineState();
 
         // Load shader
-        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SMAA"));
+        _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/AntiAliasing/SMAA"));
         if (_shader == nullptr)
             return true;
-#if COMPILE_WITH_DEV_ENV
-        _shader.Get()->OnReloading.Bind<SMAA, &SMAA::OnShaderReloading>(this);
-#endif
+        BIND_SHADER_RELOADING(_shader, SMAA, OnShaderReloading);
     }
     if (!_shader->IsLoaded())
     {
         return true;
     }
-    const auto shader = _shader->GetShader();
+    const auto shader = _shader->GPU;
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline state
@@ -115,7 +113,7 @@ void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     data.RtSize.Y = 1.0f / tempDesc.Height;
     data.RtSize.Z = (float)tempDesc.Width;
     data.RtSize.W = (float)tempDesc.Height;
-    const auto cb = _shader->GetShader()->GetCB(0);
+    const auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 

@@ -2,7 +2,9 @@
 
 #pragma once
 
-#if USE_EDITOR
+#include "Engine/Graphics/Config.h"
+
+#if GPU_ENABLE_DEVELOPMENT
 
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/Material.h"
@@ -32,7 +34,7 @@ public:
     const MaterialInfo& GetInfo() const override;
     GPUShader* GetShader() const override;
     bool IsReady() const override;
-    bool CanUseInstancing(InstancingHandler& handler) const override;
+    bool CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const override;
     DrawPass GetDrawModes() const override;
     void Bind(BindParameters& params) override;
 };

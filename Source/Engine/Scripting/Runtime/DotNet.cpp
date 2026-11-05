@@ -1568,7 +1568,7 @@ void* MMethod::GetThunk()
 
 MMethod* MMethod::InflateGeneric() const
 {
-    // This seams to be unused on .NET (Mono required inflating generic class of the script)
+    // This seems to be unused on .NET (Mono required inflating generic class of the script)
     return const_cast<MMethod*>(this);
 }
 
@@ -1870,16 +1870,16 @@ bool InitHostfxr()
     int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &get_hostfxr_params);
     if (rc != 0)
     {
-        LOG(Error, "Failed to find hostfxr: {0:x} ({1})", (unsigned int)rc, String(get_hostfxr_params.dotnet_root));
+        LOG(Error, "Failed to find hostfxr: 0x{0:x} ({1})", (unsigned int)rc, String(get_hostfxr_params.dotnet_root));
 
         // Warn user about missing .Net
 #if PLATFORM_DESKTOP
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 8 or later SDK installation for {0} is required to run Flax Editor.", platformStr);
+        LOG(Fatal, "Missing .NET 10 or later SDK installation for {0} is required to run Flax Editor.", platformStr);
 #else
-        LOG(Fatal, "Missing .NET 8 or later Runtime installation for {0} is required to run this application.", platformStr);
+        LOG(Fatal, "Missing .NET 10 or later Runtime installation for {0} is required to run this application.", platformStr);
 #endif
         return true;
     }
@@ -2066,17 +2066,29 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     LOG(Info, "Loading C# assembly {0}", name);
 #endif
     String fileName = name;
+#ifdef USE_MONO_DLL_EXT
+    if (name.EndsWith(TEXT(".dll")))
+        fileName = fileName.Substring(fileName.Length() - 4);
+    if (!name.EndsWith(TEXT(USE_MONO_DLL_EXT)))
+        fileName += TEXT(USE_MONO_DLL_EXT);
+#else
     if (!name.EndsWith(TEXT(".dll")) && !name.EndsWith(TEXT(".exe")))
         fileName += TEXT(".dll");
-    String path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
+#endif
+    String path = Globals::ProjectFolder / fileName;
     if (!FileSystem::FileExists(path))
     {
-        path = Globals::ProjectFolder / String(TEXT("/Dotnet/shared/Microsoft.NETCore.App/")) / fileName;
+        path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
         if (!FileSystem::FileExists(path))
         {
-            path = fileName;
+            path = Globals::ProjectFolder / String(TEXT("/Dotnet/shared/Microsoft.NETCore.App/")) / fileName;
+            if (!FileSystem::FileExists(path))
+            {
+                path = fileName;
+            }
         }
     }
+    StringAsANSI<> pathAnsi(path.Get(), path.Length());
 
     // Load assembly
 #if DOTNET_HOST_MONO_DEBUG
@@ -2086,7 +2098,6 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     MonoImageOpenStatus status = MONO_IMAGE_IMAGE_INVALID;
     if (FileSystem::FileExists(path))
     {
-        StringAnsi pathAnsi(path);
 #if PLATFORM_IOS
         Array<byte> data;
         File::ReadAllBytes(path, data);
@@ -2098,6 +2109,10 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
             mono_image_close(assemblyImage);
         }
 #else
+#if PLATFORM_SWITCH
+        fileName.Clear();
+        path.Clear();
+#endif
         assembly = mono_assembly_open(pathAnsi.Get(), &status);
 #endif
     }
@@ -2298,7 +2313,7 @@ bool InitHostfxr()
     // Setup debugger
     {
         int32 debuggerLogLevel = 0;
-        if (CommandLine::Options.MonoLog.IsTrue() || DOTNET_HOST_MONO_DEBUG)
+        if (DOTNET_HOST_MONO_DEBUG)
         {
             LOG(Info, "Using detailed Mono logging");
             mono_trace_set_level_string("debug");
@@ -2309,9 +2324,10 @@ bool InitHostfxr()
             mono_trace_set_level_string("warning");
         }
 
-#if MONO_DEBUG_ENABLE && !PLATFORM_SWITCH
+#if 0
         StringAnsi debuggerIp = "127.0.0.1";
         uint16 debuggerPort = 41000 + Platform::GetCurrentProcessId() % 1000;
+        // Old DebuggerAddress arg: '-debug !ip:port! (Mono debugger address)'
         if (CommandLine::Options.DebuggerAddress.HasValue())
         {
             const auto& address = CommandLine::Options.DebuggerAddress.GetValue();
@@ -2327,8 +2343,9 @@ bool InitHostfxr()
             }
         }
 
+        bool waitForDebugger = true;
         char buffer[150];
-        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=%s,loglevel=%d", debuggerIp.Get(), debuggerPort, CommandLine::Options.WaitForDebugger ? "y,timeout=5000" : "n", debuggerLogLevel);
+        sprintf(buffer, "--debugger-agent=transport=dt_socket,address=%s:%d,embedding=1,server=y,suspend=%s,loglevel=%d", debuggerIp.Get(), debuggerPort, waitForDebugger ? "y,timeout=5000" : "n", debuggerLogLevel);
 
         const char* options[] = {
             "--soft-breakpoints",

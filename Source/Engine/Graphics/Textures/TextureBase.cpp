@@ -13,6 +13,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Streaming/Streaming.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/Threading.h"
 #if GPU_ENABLE_RESOURCE_NAMING && !USE_EDITOR
@@ -101,6 +102,30 @@ bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height
                 src += srcRowSize;
             }
         }
+        if (PixelFormatExtensions::IsBGRAOrder(format))
+        {
+            // BGRA -> RGBA
+            for (int32 y = 0; y < height; y++)
+            {
+                for (int32 x = 0; x < width; x++)
+                {
+                    auto& color = *((Color32*)(dst + y * RowPitch + x * sizeof(Color32)));
+                    color = Color32(color.B, color.G, color.R, color.A);
+                }
+            }
+        }
+        if (PixelFormatExtensions::IsSRGB(format))
+        {
+            // sRGB -> Linear
+            for (int32 y = 0; y < height; y++)
+            {
+                for (int32 x = 0; x < width; x++)
+                {
+                    auto& color = *((Color32*)(dst + y * RowPitch + x * sizeof(Color32)));
+                    color = Color32(Color::SrgbToLinear(Color(color)));
+                }
+            }
+        }
         break;
     default:
     {
@@ -118,7 +143,10 @@ bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height
             }
             return false;
         }
-        LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
+        if (PixelFormatExtensions::IsCompressed(format))
+            LOG(Error, "Unsupported texture data format {0}. Compressed texture data cannot be accessed directly without decompressing first.", ScriptingEnum::ToString(format));
+        else
+            LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
         return true;
     }
     }
@@ -221,7 +249,7 @@ void TextureData::Clear()
     Items.Resize(0, false);
 }
 
-bool TextureData::GetPixels(Array<Color32>& pixels, int32 mipIndex, int32 arrayIndex)
+bool TextureData::GetPixels(Array<Color32>& pixels, int32 mipIndex, int32 arrayIndex) const
 {
     if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
     {
@@ -232,7 +260,7 @@ bool TextureData::GetPixels(Array<Color32>& pixels, int32 mipIndex, int32 arrayI
     return true;
 }
 
-bool TextureData::GetPixels(Array<Color>& pixels, int32 mipIndex, int32 arrayIndex)
+bool TextureData::GetPixels(Array<Color>& pixels, int32 mipIndex, int32 arrayIndex) const
 {
     if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
     {
@@ -679,6 +707,9 @@ bool TextureBase::Init(InitData* initData)
         return true;
     }
 
+    // Speed up update texture uplaod to GPU by alocating texture async task now to run before next frame rendering
+    Streaming::UpdateResource(&_texture);
+
     return false;
 }
 
@@ -724,6 +755,17 @@ bool TextureBase::InitCSharp(void* ptr)
     }
 
     return Init(initData);
+}
+
+TextureData* TextureBase::GetTextureData()
+{
+    auto result = New<TextureData>();
+    if (GetTextureData(*result, false))
+    {
+        Delete(result);
+        result = nullptr;
+    }
+    return result;
 }
 
 #endif

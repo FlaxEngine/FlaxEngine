@@ -884,8 +884,8 @@ typedef enum SDL_GPUTextureFormat
 /**
  * Specifies how a texture is intended to be used by the client.
  *
- * A texture must have at least one usage flag. Note that some usage flag
- * combinations are invalid.
+ * A texture must have at least one usage flag. 
+ * Note that combining SAMPLER with STORAGE_READ flags is invalid.
  *
  * With regards to compute storage usage, READ | WRITE means that you can have
  * shader A that only writes into the texture and shader B that only reads
@@ -967,8 +967,10 @@ typedef enum SDL_GPUCubeMapFace
 /**
  * Specifies how a buffer is intended to be used by the client.
  *
- * A buffer must have at least one usage flag. Note that some usage flag
- * combinations are invalid.
+ * A buffer must have at least one usage flag.
+ * 
+ * If a buffer has multiple read usages, this may lead to a performance penalty 
+ * due to more conservative memory barriers, but it also may not necessarily affect the performance.
  *
  * Unlike textures, READ | WRITE can be used for simultaneous read-write
  * usage. The same data synchronization concerns as textures apply.
@@ -1409,6 +1411,7 @@ typedef struct SDL_GPUViewport
  *
  * \sa SDL_UploadToGPUTexture
  * \sa SDL_DownloadFromGPUTexture
+ * \sa SDL_GPUTransferBuffer
  */
 typedef struct SDL_GPUTextureTransferInfo
 {
@@ -1427,6 +1430,7 @@ typedef struct SDL_GPUTextureTransferInfo
  *
  * \sa SDL_UploadToGPUBuffer
  * \sa SDL_DownloadFromGPUBuffer
+ * \sa SDL_GPUTransferBuffer
  */
 typedef struct SDL_GPUTransferBufferLocation
 {
@@ -1442,6 +1446,7 @@ typedef struct SDL_GPUTransferBufferLocation
  * \since This struct is available since SDL 3.2.0.
  *
  * \sa SDL_CopyGPUTextureToTexture
+ * \sa SDL_GPUTexture
  */
 typedef struct SDL_GPUTextureLocation
 {
@@ -1463,6 +1468,7 @@ typedef struct SDL_GPUTextureLocation
  * \sa SDL_UploadToGPUTexture
  * \sa SDL_DownloadFromGPUTexture
  * \sa SDL_CreateGPUTexture
+ * \sa SDL_GPUTexture
  */
 typedef struct SDL_GPUTextureRegion
 {
@@ -1483,6 +1489,7 @@ typedef struct SDL_GPUTextureRegion
  * \since This struct is available since SDL 3.2.0.
  *
  * \sa SDL_BlitGPUTexture
+ * \sa SDL_GPUTexture
  */
 typedef struct SDL_GPUBlitRegion
 {
@@ -1707,6 +1714,7 @@ typedef struct SDL_GPUStencilOpState
  *
  * \since This struct is available since SDL 3.2.0.
  *
+ * \sa SDL_SetGPUBlendConstants
  * \sa SDL_GPUColorTargetDescription
  * \sa SDL_GPUBlendFactor
  * \sa SDL_GPUBlendOp
@@ -2098,6 +2106,11 @@ typedef struct SDL_GPUDepthStencilTargetInfo
  * \since This struct is available since SDL 3.2.0.
  *
  * \sa SDL_BlitGPUTexture
+ * \sa SDL_GPUBlitRegion
+ * \sa SDL_GPULoadOp
+ * \sa SDL_FColor
+ * \sa SDL_FlipMode
+ * \sa SDL_GPUFilter
  */
 typedef struct SDL_GPUBlitInfo {
     SDL_GPUBlitRegion source;       /**< The source region for the blit. */

@@ -26,6 +26,7 @@
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Platform/CPUInfo.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Threading/TaskGraph.h"
 #if USE_EDITOR
@@ -87,7 +88,8 @@ int32 Engine::OnInit(const Char* cmdLine)
 
     EngineService::Sort();
 
-    if (CommandLine::Parse(cmdLine))
+    extern bool InitCommandLine(const Char* cmdLine);
+    if (InitCommandLine(cmdLine))
     {
         Platform::Fatal(TEXT("Invalid command line."));
         return -1;
@@ -99,6 +101,14 @@ int32 Engine::OnInit(const Char* cmdLine)
     {
         Platform::Fatal(TEXT("Cannot init platform."));
         return -1;
+    }
+    int32 coreLimit;
+    if (CommandLine::Get(TEXT("CoreLimit"), coreLimit) && coreLimit > 0)
+    {
+        // Limit CPU cores availability for the engine
+        extern CPUInfo CpuInfo;
+        CpuInfo.ProcessorCoreCount = Math::Min<uint32>(CpuInfo.ProcessorCoreCount, coreLimit);
+        CpuInfo.LogicalProcessorCount = Math::Min<uint32>(CpuInfo.LogicalProcessorCount, coreLimit);
     }
 #if COMPILE_WITH_PROFILER
     InitProfilerMemory(cmdLine, 1);
@@ -384,6 +394,7 @@ void Engine::OnDraw()
     PROFILE_CPU_NAMED("Draw");
 
     // Begin frame rendering
+    Globals::RenderThreadID = Platform::GetCurrentThreadID();
     FrameCount++;
     const double time = Platform::GetTimeSeconds();
     auto device = GPUDevice::Instance;
@@ -636,34 +647,11 @@ void EngineImpl::InitPaths()
 #endif
 #if USE_EDITOR
     Globals::EngineContentFolder = Globals::StartupFolder / TEXT("Content");
-#if USE_MONO
-#if PLATFORM_WINDOWS
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Windows/Mono");
-#elif PLATFORM_LINUX
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Linux/Mono");
-#elif PLATFORM_MAC
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Source/Platforms/Editor/Mac/Mono");
-#else
-    #error "Please specify the Mono data location for Editor on this platform."
-#endif
-#endif
-#else
-#if USE_MONO
-    Globals::MonoPath = Globals::StartupFolder / TEXT("Mono");
-#endif
 #endif
     Globals::ProjectContentFolder = Globals::ProjectFolder / TEXT("Content");
 #if USE_EDITOR
     Globals::ProjectSourceFolder = Globals::ProjectFolder / TEXT("Source");
     Globals::ProjectCacheFolder = Globals::ProjectFolder / TEXT("Cache");
-#endif
-
-#if USE_MONO
-    // We must ensure that engine is located in folder which path contains only ANSI characters
-    // Why? Mono lib must have etc and lib folders at ANSI path
-    // But project can be located on Unicode path
-    if (!Globals::StartupFolder.IsANSI())
-        Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
 #endif
 
 #if !PLATFORM_SWITCH && !FLAX_TESTS

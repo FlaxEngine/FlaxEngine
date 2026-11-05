@@ -1,82 +1,60 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine/Engine/CommandLine.h"
-#include "Engine/Core/Types/StringView.h"
+#include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
 #include <ThirdParty/catch2/catch.hpp>
 
+namespace
+{
+    // Parses the command line and returns the value of the given argument (empty if not set), as text that Catch can print.
+    StringAnsi ParseValue(const String& commandLine, const StringView& name, int32* argsCount = nullptr)
+    {
+        Array<CommandLine::Arg> args;
+        CHECK(!CommandLine::Parse(commandLine, args));
+        if (argsCount)
+            *argsCount = args.Count();
+        for (const CommandLine::Arg& arg : args)
+        {
+            if (arg.Name == name)
+                return arg.Value.HasChars() ? StringAnsi(arg.Value) : StringAnsi::Empty;
+        }
+        return StringAnsi::Empty;
+    }
+}
+
 TEST_CASE("CommandLine")
 {
-    SECTION("Test Argument Parser")
+    SECTION("Test value with '=' (Flax.Build style)")
     {
-        SECTION("Single quoted word")
-        {
-            String input("\"word\"");
-            Array<StringAnsi> arguments;
-            CHECK(!CommandLine::ParseArguments(input, arguments));
-            CHECK(arguments.Count() == 1);
-            CHECK(arguments[0].Compare(StringAnsi("word")) == 0);
-        }
-        SECTION("Quotes at the beginning of the word")
-        {
-            String input("start\"word\"");
-            Array<StringAnsi> arguments;
-            CHECK(!CommandLine::ParseArguments(input, arguments));
-            CHECK(arguments.Count() == 1);
-            CHECK(arguments[0].Compare(StringAnsi("start\"word\"")) == 0);
-        }
-        SECTION("Quotes in the middle of the word")
-        {
-            String input("start\"word\"end");
-            Array<StringAnsi> arguments;
-            CHECK(!CommandLine::ParseArguments(input, arguments));
-            CHECK(arguments.Count() == 1);
-            CHECK(arguments[0].Compare(StringAnsi("start\"word\"end")) == 0);
-        }
-        SECTION("Quotes at the end of the word")
-        {
-            String input("\"word\"end");
-            Array<StringAnsi> arguments;
-            CHECK(!CommandLine::ParseArguments(input, arguments));
-            CHECK(arguments.Count() == 1);
-            CHECK(arguments[0].Compare(StringAnsi("\"word\"end")) == 0);
-        }
-        SECTION("Multiple words")
-        {
-            String input("The quick brown fox");
-            Array<StringAnsi> arguments;
-            CHECK(!CommandLine::ParseArguments(input, arguments));
-            CHECK(arguments.Count() == 4);
-            CHECK(arguments[0].Compare(StringAnsi("The")) == 0);
-            CHECK(arguments[1].Compare(StringAnsi("quick")) == 0);
-            CHECK(arguments[2].Compare(StringAnsi("brown")) == 0);
-            CHECK(arguments[3].Compare(StringAnsi("fox")) == 0);
-        }
-        SECTION("Multiple words with quotes")
-        {
-            String input("The \"quick brown fox\" jumps over the \"lazy\" dog");
-            Array<StringAnsi> arguments;
-            CHECK(!CommandLine::ParseArguments(input, arguments));
-            CHECK(arguments.Count() == 7);
-            CHECK(arguments[0].Compare(StringAnsi("The")) == 0);
-            CHECK(arguments[1].Compare(StringAnsi("quick brown fox")) == 0);
-            CHECK(arguments[2].Compare(StringAnsi("jumps")) == 0);
-            CHECK(arguments[3].Compare(StringAnsi("over")) == 0);
-            CHECK(arguments[4].Compare(StringAnsi("the")) == 0);
-            CHECK(arguments[5].Compare(StringAnsi("lazy")) == 0);
-            CHECK(arguments[6].Compare(StringAnsi("dog")) == 0);
-        }
-        SECTION("Flax.Build sample parameters")
-        {
-            String input("-log -mutex -workspace=\"C:\\path with spaces/to/FlaxEngine/\" -configuration=Debug -hotreload=\".HotReload.1\"");
-            Array<StringAnsi> arguments;
-            CHECK(!CommandLine::ParseArguments(input, arguments));
-            CHECK(arguments.Count() == 5);
-            CHECK(arguments[0].Compare(StringAnsi("-log")) == 0);
-            CHECK(arguments[1].Compare(StringAnsi("-mutex")) == 0);
-            CHECK(arguments[2].Compare(StringAnsi("-workspace=\"C:\\path with spaces/to/FlaxEngine/\"")) == 0);
-            CHECK(arguments[3].Compare(StringAnsi("-configuration=Debug")) == 0);
-            CHECK(arguments[4].Compare(StringAnsi("-hotreload=\".HotReload.1\"")) == 0);
-        }
+        int32 count = 0;
+        const String commandLine(TEXT("-log -workspace=\"C:\\path with spaces/to/FlaxEngine/\" -configuration=Debug"));
+        CHECK(ParseValue(commandLine, TEXT("workspace"), &count) == "C:\\path with spaces/to/FlaxEngine/");
+        CHECK(ParseValue(commandLine, TEXT("configuration")) == "Debug");
+        CHECK(count == 3);
+    }
+    SECTION("Test switches without a value")
+    {
+        int32 count = 0;
+        CHECK(ParseValue(TEXT("-std -nolog -d3d12"), TEXT("nolog"), &count) == "");
+        CHECK(count == 3);
+    }
+    SECTION("Test value after a space")
+    {
+        // The editor gets the project path as a separate, quoted value (eg. '-project "C:\path"')
+        CHECK(ParseValue(TEXT("-project \"C:\\Projects\\Game\""), TEXT("project")) == "C:\\Projects\\Game");
+        CHECK(ParseValue(TEXT("-project C:\\Projects\\Game"), TEXT("project")) == "C:\\Projects\\Game");
+
+        // A quoted value keeps its '-', space and apostrophe characters
+        CHECK(ParseValue(TEXT("-project \"C:\\Projects\\My-Game\""), TEXT("project")) == "C:\\Projects\\My-Game");
+        CHECK(ParseValue(TEXT("-project \"C:\\Flax Projects\\Game\""), TEXT("project")) == "C:\\Flax Projects\\Game");
+        CHECK(ParseValue(TEXT("-project \"C:\\Bob's Game\""), TEXT("project")) == "C:\\Bob's Game");
+
+        // The arguments after the value
+        int32 count = 0;
+        const String commandLine(TEXT("-project \"C:\\Flax Projects\\My-Game\" -std -play=Main"));
+        CHECK(ParseValue(commandLine, TEXT("project"), &count) == "C:\\Flax Projects\\My-Game");
+        CHECK(ParseValue(commandLine, TEXT("play")) == "Main");
+        CHECK(count == 3);
     }
 }

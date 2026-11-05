@@ -9,7 +9,7 @@
 /// <summary>
 /// Universal Windows Platform settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API UWPPlatformSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API UWPPlatformSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(UWPPlatformSettings);
     API_AUTO_SERIALIZATION();

@@ -5,20 +5,6 @@ using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
-    partial class GPUTexture
-    {
-        /// <summary>
-        /// Downloads the texture data to be accessible from CPU. For frequent access, use staging textures, otherwise current thread will be stalled to wait for the GPU frame to copy data into staging buffer.
-        /// </summary>
-        /// <returns>Downloaded texture data container, or nul if failed.</returns>
-        [Unmanaged]
-        public TextureData DownloadData()
-        {
-            var result = new TextureData();
-            return DownloadData(result) ? null : result;
-        }
-    }
-
     partial class TextureBase
     {
         /// <summary>
@@ -35,6 +21,16 @@ namespace FlaxEngine
         /// The maximum array size for the texture resources (supported by engine, the target platform can be lower capabilities).
         /// </summary>
         public const int MaxArraySize = 512;
+
+        /// <summary>
+        /// Loads the texture data from the asset.
+        /// </summary>
+        /// <remarks>Use with caution as this operation loads texture data from the file.</remarks>
+        /// <returns>The loaded texture data or null if failed.</returns>
+        public TextureData GetTextureData()
+        {
+            return Internal_GetTextureData(__unmanagedPtr);
+        }
 
         /// <summary>
         /// The texture data initialization container.
@@ -146,7 +142,7 @@ namespace FlaxEngine
                 if (initData.GenerateMipsLinear)
                     t.GenerateMips |= 2;
             }
-            var emptyArray = Utils.GetEmptyArray<byte>();
+            var emptyArray = Array.Empty<byte>();
             fixed (byte* data13 = (initData.Mips.Length > 13 ? initData.Mips[13].Data : emptyArray))
             fixed (byte* data12 = (initData.Mips.Length > 12 ? initData.Mips[12].Data : emptyArray))
             fixed (byte* data11 = (initData.Mips.Length > 11 ? initData.Mips[11].Data : emptyArray))

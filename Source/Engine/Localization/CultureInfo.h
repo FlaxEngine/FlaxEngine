@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Formatting.h"
+#include "Engine/Serialization/SerializationFwd.h"
 
 /// <summary>
 /// The information about a specific culture (aka locale). The information includes the names for the culture, the writing system, the calendar used, the sort order of strings, and formatting for dates and numbers.
@@ -21,6 +22,11 @@ private:
     String _englishName;
 
 public:
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CultureInfo"/> class.
+    /// </summary>
+    CultureInfo();
+
     /// <summary>
     /// Initializes a new instance of the <see cref="CultureInfo"/> class.
     /// </summary>
@@ -67,6 +73,7 @@ public:
 
     String ToString() const;
     bool operator==(const CultureInfo& other) const;
+    bool operator!=(const CultureInfo& other) const;
 };
 
 DEFINE_DEFAULT_FORMATTING_VIA_TO_STRING(CultureInfo);
@@ -75,4 +82,20 @@ namespace MUtils
 {
     extern void* ToManaged(const CultureInfo& value);
     extern CultureInfo ToNative(void* value);
+}
+
+inline uint32 GetHash(const CultureInfo& key)
+{
+    return (uint32)key.GetLCID();
+}
+
+namespace Serialization
+{
+    inline bool ShouldSerialize(const CultureInfo& v, const void* otherObj)
+    {
+        return !otherObj || v != *(CultureInfo*)otherObj;
+    }
+
+    FLAXENGINE_API void Serialize(ISerializable::SerializeStream& stream, const CultureInfo& v, const void* otherObj);
+    FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, CultureInfo& v, ISerializeModifier* modifier);
 }

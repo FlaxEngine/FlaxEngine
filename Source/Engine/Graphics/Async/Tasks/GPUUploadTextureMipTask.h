@@ -75,28 +75,9 @@ protected:
             dataSource += _slicePitch;
         }
 
+        UpdateResidency(texture);
+
         return Result::Ok;
-    }
-
-    void OnSync() override
-    {
-        auto texture = _texture.Get();
-        if (texture)
-        {
-            if (_mipIndex == texture->HighestResidentMipIndex() - 1)
-            {
-                // Mark the new mip as loaded
-                texture->SetResidentMipLevels(texture->ResidentMipLevels() + 1);
-            }
-            else
-            {
-                // Mark the new mip and all lower ones as loaded (eg. when loading Model SDF texture mips at once but out of order)
-                texture->SetResidentMipLevels(Math::Max(texture->ResidentMipLevels(), texture->MipLevels() - _mipIndex));
-            }
-        }
-
-        // Base
-        GPUTask::OnSync();
     }
 
     void OnEnd() override
@@ -105,5 +86,19 @@ protected:
 
         // Base
         GPUTask::OnEnd();
+    }
+
+    void UpdateResidency(GPUTexture* texture) const
+    {
+        if (_mipIndex == texture->HighestResidentMipIndex() - 1)
+        {
+            // Mark the new mip as loaded
+            texture->SetResidentMipLevels(texture->ResidentMipLevels() + 1);
+        }
+        else
+        {
+            // Mark the new mip and all lower ones as loaded (eg. when loading Model SDF texture mips at once but out of order)
+            texture->SetResidentMipLevels(Math::Max(texture->ResidentMipLevels(), texture->MipLevels() - _mipIndex));
+        }
     }
 };

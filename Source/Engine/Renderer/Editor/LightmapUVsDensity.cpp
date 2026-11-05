@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR
-
 #include "LightmapUVsDensity.h"
+
+#if GPU_ENABLE_DEVELOPMENT
+
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -11,7 +12,7 @@
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Foliage/Foliage.h"
 #include "Engine/ShadowsOfMordor/Builder.Config.h"
@@ -34,9 +35,7 @@ LightmapUVsDensityMaterialShader::LightmapUVsDensityMaterialShader()
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Editor/LightmapUVsDensity"));
     if (!_shader)
         return;
-#if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<LightmapUVsDensityMaterialShader, &LightmapUVsDensityMaterialShader::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, LightmapUVsDensityMaterialShader, OnShaderReloading);
     _gridTexture = Content::LoadAsyncInternal<Texture>(TEXT("Engine/Textures/Tiles_M"));
 }
 
@@ -56,7 +55,7 @@ const MaterialInfo& LightmapUVsDensityMaterialShader::GetInfo() const
 
 GPUShader* LightmapUVsDensityMaterialShader::GetShader() const
 {
-    return _shader->GetShader();
+    return _shader->GPU;
 }
 
 bool LightmapUVsDensityMaterialShader::IsReady() const
@@ -76,7 +75,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
     auto& drawCall = *params.DrawCall;
 
     // Setup
-    auto shader = _shader->GetShader();
+    auto shader = _shader->GPU;
     auto cb = shader->GetCB(0);
     if (!_ps->IsValid())
     {
@@ -102,9 +101,9 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
         data.LightmapTexelsPerWorldUnit = ShadowsOfMordor::LightmapTexelsPerWorldUnit;
         data.LightmapSize = 1024.0f;
-        data.LightmapArea = drawCall.Surface.LightmapUVsArea;
+        data.LightmapArea = drawCall.Surface.LightmapUVsArea.ToFloat4();
         const ModelLOD* drawCallModelLod;
-        float scaleInLightmap = drawCall.Surface.LODDitherFactor; // Reuse field
+        float scaleInLightmap = *(float*)&drawCall.Surface.SkinningBonesOffset; // Reuse field (the same bit-depth)
         if (scaleInLightmap < 0.0f)
             data.LightmapSize = -1.0f; // Not using lightmap
         else if (GBufferPass::IndexBufferToModelLOD.TryGet(drawCall.Geometry.IndexBuffer, drawCallModelLod))

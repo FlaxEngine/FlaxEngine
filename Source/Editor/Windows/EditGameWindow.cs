@@ -211,6 +211,7 @@ namespace FlaxEditor.Windows
             _pilotWidget.Text = string.Format("Piloting actor: {0} (click to stop)", actor.Name);
             _pilotWidget.PerformLayout();
             _pilotWidget.Parent.PerformLayout();
+            SelectTab();
         }
 
         /// <summary>

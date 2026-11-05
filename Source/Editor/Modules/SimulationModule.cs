@@ -287,7 +287,7 @@ namespace FlaxEditor.Modules
                 case Options.InterfaceOptions.PlayModeFocus.None: break;
 
                 case Options.InterfaceOptions.PlayModeFocus.GameWindow:
-                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestoreEditor:    
+                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestoreEditor:
                     gameWin.FocusGameViewport();
                     break;
 

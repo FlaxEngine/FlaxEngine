@@ -263,7 +263,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             return true;
         }
 
-#ifdef GPU_USE_SHADERS_DEBUG_LAYER
+#ifdef GPU_ENABLE_SHADERS_DEBUG_LAYER
         // Generate debug information
         {
             // Disassemble compiled shader

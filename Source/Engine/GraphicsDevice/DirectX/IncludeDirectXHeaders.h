@@ -18,7 +18,7 @@
 
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 
-#if  PLATFORM_XBOX_SCARLETT
+#if PLATFORM_XBOX_SCARLETT
 #include <Scarlett/d3d12_xs.h>
 #else
 #include <XboxOne/d3d12_x.h>
@@ -27,6 +27,10 @@ typedef IGraphicsUnknown IDXGIFactory4;
 typedef IGraphicsUnknown IDXGISwapChain3;
 #define	D3D12_TEXTURE_DATA_PITCH_ALIGNMENT 256
 #define IID_PPV_ARGS(ppType) IID_GRAPHICS_PPV_ARGS(ppType)
+#define D3D12MA_OPTIONS16_SUPPORTED 0
+#define D3D12MA_TIGHT_ALIGNMENT_SUPPORTED 0
+#define D3D12MA_D3D12_HEADERS_ALREADY_INCLUDED
+#define __ID3D12Device1_INTERFACE_DEFINED__
 
 #else
 

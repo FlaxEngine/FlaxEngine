@@ -9,9 +9,12 @@ namespace FlaxEngine.GUI
     public class RenderToTextureControl : ContainerControl
     {
         private bool _invalid, _redrawRegistered, _isDuringTextureDraw;
-        private bool _autoSize = true;
+        private bool _autoSize = true, _constantInvalidate = false;
         private GPUTexture _texture;
         private Float2 _textureSize;
+        private MaterialBase _drawMaterial;
+        private MaterialInstance _drawMaterialInstance;
+        private string _drawTextureParameterName = "Input";
 
         /// <summary>
         /// Gets the texture with cached children controls.
@@ -21,7 +24,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets a value indicating whether automatically update size of texture when control dimensions gets changed.
         /// </summary>
-        [EditorOrder(10), Tooltip("If checked, size of the texture will be automatically updated when control dimensions gets changed.")]
+        [EditorOrder(10)]
         public bool AutomaticTextureSize
         {
             get => _autoSize;
@@ -38,7 +41,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the size of the texture (in pixels).
         /// </summary>
-        [EditorOrder(20), VisibleIf("CanEditTextureSize"), Limit(0, 4096), Tooltip("The size of the texture (in pixels).")]
+        [EditorOrder(20), VisibleIf(nameof(AutomaticTextureSize), true), Limit(0, 4096)]
         public Float2 TextureSize
         {
             get => _textureSize;
@@ -54,15 +57,85 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the value whether cached texture data should be invalidated automatically (eg. when child control changes). 
         /// </summary>
+        [EditorOrder(30)]
         public bool AutomaticInvalidate { get; set; } = true;
 
+        /// <summary>
+        /// Gets or sets the value whether cached texture data should be invalidated every frame (eg. when UI is animated). 
+        /// </summary>
+        [EditorOrder(40)]
+        public bool ConstantInvalidate
+        {
+            get => _constantInvalidate;
+            set
+            {
+                if (_constantInvalidate != value)
+                {
+                    _constantInvalidate = value;
+                    if (value)
+                    {
+                        // Register for constant invalidation
+                        Invalidate();
+                    }
+                    else if (_invalid && _redrawRegistered)
+                    {
+                        // Don't invalidate anymore
+                        _redrawRegistered = false;
+                        Scripting.Draw -= OnDraw;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the GUI material used to draw the cached texture to the screen.
+        /// Can be used to post-process underlying GUI with a custom shader (eg. chromatic-aberration, blur or tint). If not set, simple texture copy is performed.
+        /// Materials has to be created with GUI domain and a GPUTexture parameter (default name is "Input") to be used as a source texture.
+        /// </summary>
+        [EditorOrder(100)]
+        public MaterialBase DrawMaterial
+        {
+            get => _drawMaterial;
+            set
+            {
+                if (_drawMaterial != value)
+                {
+                    _drawMaterial = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the name of the GPUTexture parameter on the <see cref="DrawMaterial"/> to use as a source texture.
+        /// </summary>
+        [EditorOrder(110), VisibleIf("HasDrawMaterial")]
+        public string DrawTextureParameterName
+        {
+            get => _drawTextureParameterName;
+            set
+            {
+                if (_drawTextureParameterName != value)
+                {
+                    _drawTextureParameterName = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        /// <summary>
+        /// If checked, the control will be bypassed and will not render its children to texture, instead draw children normally. It can be used to temporarily disable the effect of this control without removing it from the hierarchy.
+        /// </summary>
+        [EditorOrder(200)]
+        public bool Bypass { get; set; }
+
 #if FLAX_EDITOR
-        private bool CanEditTextureSize => !_autoSize;
+        private bool HasDrawMaterial => _drawMaterial != null;
 #endif
+
         /// <summary>
         /// Invalidates the cached image of children controls and invokes the redraw to the texture.
         /// </summary>
-        [Tooltip("Invalidates the cached image of children controls and invokes the redraw to the texture.")]
         public void Invalidate()
         {
             _invalid = true;
@@ -76,17 +149,29 @@ namespace FlaxEngine.GUI
 
         private void OnDraw()
         {
-            if (_redrawRegistered)
+            if (!EnabledInHierarchy || !VisibleInHierarchy)
+                return;
+            if (!ConstantInvalidate)
             {
-                _redrawRegistered = false;
-                Scripting.Draw -= OnDraw;
+                if (_redrawRegistered)
+                {
+                    _redrawRegistered = false;
+                    Scripting.Draw -= OnDraw;
+                }
+                if (!_invalid)
+                    return;
             }
-            if (!_invalid)
+            if (Bypass && !_texture)
                 return;
             _invalid = false;
 
             if (!_texture)
+            {
                 _texture = new GPUTexture();
+#if !BUILD_RELEASE
+                _texture.Name = nameof(RenderToTextureControl);
+#endif
+            }
             if (_texture.Size != _textureSize)
             {
                 var desc = GPUTextureDescription.New2D((int)_textureSize.X, (int)_textureSize.Y, PixelFormat.R8G8B8A8_UNorm);
@@ -115,22 +200,55 @@ namespace FlaxEngine.GUI
             finally
             {
                 Render2D.End();
+                _isDuringTextureDraw = false;
+                Profiler.EndEventGPU();
             }
-            _isDuringTextureDraw = false;
-            Profiler.EndEventGPU();
         }
 
         /// <inheritdoc />
         public override void Draw()
         {
             // Draw cached texture
-            if (_texture && !_invalid && !_isDuringTextureDraw)
+            if (_texture && !_invalid && !_isDuringTextureDraw && !Bypass)
             {
                 var bounds = new Rectangle(Float2.Zero, Size);
+
+                // Background
                 var backgroundColor = BackgroundColor;
                 if (backgroundColor.A > 0.0f)
                     Render2D.FillRectangle(bounds, backgroundColor);
-                Render2D.DrawTexture(_texture, bounds);
+
+                if (_drawMaterial && !_drawMaterial.WaitForLoaded())
+                {
+                    // Blit with a custom material
+                    if (!_drawMaterialInstance)
+                        _drawMaterialInstance = Content.CreateVirtualAsset<MaterialInstance>();
+                    _drawMaterialInstance.BaseMaterial = _drawMaterial;
+                    if (!_drawMaterial.IsGUI)
+                    {
+                        Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Cannot draw RenderToTextureControl contents because material '{_drawMaterial}' isn't GUI domain");
+                        return;
+                    }
+                    var textureParam = _drawMaterialInstance.GetParameter(_drawTextureParameterName);
+                    if (!textureParam)
+                    {
+                        Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Cannot draw RenderToTextureControl contents because material '{_drawMaterial}' doesn't have parameter '{_drawTextureParameterName}'");
+                        return;
+                    }
+                    if (textureParam.ParameterType != MaterialParameterType.GPUTexture)
+                    {
+                        Debug.Logger.LogHandler.LogWrite(LogType.Error, $"Cannot draw RenderToTextureControl contents because material '{_drawMaterial}''s parameter '{_drawTextureParameterName}' is not a GPUTexture");
+                        return;
+                    }
+                    textureParam.Value = _texture;
+                    Render2D.DrawMaterial(_drawMaterialInstance, bounds);
+                }
+                else
+                {
+                    // Simple texture draw
+                    Render2D.DrawTexture(_texture, bounds);
+                }
+
                 return;
             }
 
@@ -183,7 +301,9 @@ namespace FlaxEngine.GUI
                 _redrawRegistered = false;
                 Scripting.Draw -= OnDraw;
             }
+            _drawMaterial = null;
             Object.Destroy(ref _texture);
+            Object.Destroy(ref _drawMaterialInstance);
 
             base.OnDestroy();
         }

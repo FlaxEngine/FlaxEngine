@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -42,6 +43,38 @@ namespace FlaxEditor.Windows.Profiler
             private Color _color;
             private string _name;
             private float _nameLength = -1;
+            private bool _leftClick;
+            private bool _isRightDown;
+
+            /// <summary>
+            /// The double click event.
+            /// </summary>
+            public Action DoubleClick;
+
+            /// <summary>
+            /// The left mouse button click event.
+            /// </summary>
+            public Action LeftClick;
+
+            /// <summary>
+            /// The right mouse button click event.
+            /// </summary>
+            public Action RightClick;
+
+            /// <summary>
+            /// The double click event.
+            /// </summary>
+            public Action<Event> EventDoubleClick;
+
+            /// <summary>
+            /// The left mouse button click event.
+            /// </summary>
+            public Action<Event> EventLeftClick;
+
+            /// <summary>
+            /// The right mouse button click event.
+            /// </summary>
+            public Action<Event> EventRightClick;
 
             /// <summary>
             /// The default height of the event.
@@ -94,6 +127,68 @@ namespace FlaxEditor.Windows.Profiler
                     Render2D.PopClip();
                 }
             }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (InteractBounds.Contains(ref location))
+                {
+                    if (button == MouseButton.Left)
+                        _leftClick = true;
+                    else if (button == MouseButton.Right)
+                        _isRightDown = true;
+                    Focus();
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _leftClick && InteractBounds.Contains(ref location))
+                {
+                    _leftClick = false;
+                    LeftClick?.Invoke();
+                    EventLeftClick?.Invoke(this);
+                    return true;
+                }
+                if (button == MouseButton.Right && _isRightDown && InteractBounds.Contains(ref location))
+                {
+                    _isRightDown = false;
+                    RightClick?.Invoke();
+                    EventRightClick?.Invoke(this);
+                    return true;
+                }
+
+                return base.OnMouseUp(location, button);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && InteractBounds.Contains(ref location))
+                {
+                    _leftClick = false;
+                    _isRightDown = false;
+                    DoubleClick?.Invoke();
+                    EventDoubleClick?.Invoke(this);
+                    return true;
+                }
+
+                return base.OnMouseDoubleClick(location, button);
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseLeave()
+            {
+                _leftClick = false;
+                _isRightDown = false;
+
+                base.OnMouseLeave();
+            }
+
+            private Rectangle InteractBounds => new Rectangle(Float2.Zero, Mathf.Max(Width, 4), Height);
         }
 
         /// <summary>

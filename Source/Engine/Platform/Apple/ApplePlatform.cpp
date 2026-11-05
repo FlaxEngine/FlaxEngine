@@ -76,7 +76,6 @@
 extern "C" int proc_pid_rusage(int pid, int flavor, rusage_info_t *buffer) __OSX_AVAILABLE_STARTING(__MAC_10_9, __IPHONE_7_0);
 #endif
 
-CPUInfo Cpu;
 String UserLocale;
 double SecondsPerCycle;
 NSAutoreleasePool* AutoreleasePool = nullptr;
@@ -216,11 +215,6 @@ Version ApplePlatform::GetSystemVersion()
 {
     NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
     return Version(version.majorVersion, version.minorVersion, version.patchVersion);
-}
-
-CPUInfo ApplePlatform::GetCPUInfo()
-{
-    return Cpu;
 }
 
 MemoryStats ApplePlatform::GetMemoryStats()
@@ -406,36 +400,37 @@ bool ApplePlatform::Init()
     }
 
     // Get CPU info
+    extern CPUInfo CpuInfo;
     int32 value32;
     int64 value64;
     size_t value32Size = sizeof(value32), value64Size = sizeof(value64);
     if (sysctlbyname("hw.packages", &value32, &value32Size, nullptr, 0) != 0)
         value32 = 1;
-    Cpu.ProcessorPackageCount = value32;
+    CpuInfo.ProcessorPackageCount = value32;
     if (sysctlbyname("hw.physicalcpu", &value32, &value32Size, nullptr, 0) != 0)
         value32 = 1;
-    Cpu.ProcessorCoreCount = value32;
+    CpuInfo.ProcessorCoreCount = value32;
     if (sysctlbyname("hw.logicalcpu", &value32, &value32Size, nullptr, 0) != 0)
         value32 = 1;
-    Cpu.LogicalProcessorCount = value32;
+    CpuInfo.LogicalProcessorCount = value32;
     if (sysctlbyname("hw.l1icachesize", &value32, &value32Size, nullptr, 0) != 0)
         value32 = 0;
-    Cpu.L1CacheSize = value32;
+    CpuInfo.L1CacheSize = value32;
     if (sysctlbyname("hw.l2cachesize", &value32, &value32Size, nullptr, 0) != 0)
         value32 = 0;
-    Cpu.L2CacheSize = value32;
+    CpuInfo.L2CacheSize = value32;
     if (sysctlbyname("hw.l3cachesize", &value32, &value32Size, nullptr, 0) != 0)
         value32 = 0;
-    Cpu.L3CacheSize = value32;
+    CpuInfo.L3CacheSize = value32;
     if (sysctlbyname("hw.pagesize", &value32, &value32Size, nullptr, 0) != 0)
         value32 = vm_page_size;
-    Cpu.PageSize = value32;
+    CpuInfo.PageSize = value32;
     if (sysctlbyname("hw.cpufrequency_max", &value64, &value64Size, nullptr, 0) != 0)
         value64 = GetClockFrequency();
-    Cpu.ClockSpeed = value64;
+    CpuInfo.ClockSpeed = value64;
     if (sysctlbyname("hw.cachelinesize", &value32, &value32Size, nullptr, 0) != 0)
         value32 = PLATFORM_CACHE_LINE_SIZE;
-    Cpu.CacheLineSize = value32;
+    CpuInfo.CacheLineSize = value32;
 
     // Get locale
     {

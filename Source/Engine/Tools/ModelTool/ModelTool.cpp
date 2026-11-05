@@ -45,6 +45,7 @@
 #include "Editor/Utilities/EditorUtilities.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
+extern void InitMeshOpt();
 #endif
 
 ModelSDFHeader::ModelSDFHeader(const ModelBase::SDFData& sdf, const GPUTextureDescription& desc)
@@ -113,7 +114,7 @@ public:
     GPUModelSDFTask(ConditionVariable& signal, MeshAccelerationStructure* scene, Model* inputModel, const ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd, float backfacesThreshold)
         : GPUTask(Type::Custom, GPU_ALLOW_PROFILE_EVENTS ? 4 : GPU_ASYNC_LATENCY) // Fix timer query result reading with some more latency
         , _signal(&signal)
-        , _shader(Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SDF")))
+        , _shader(Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/SDF")))
         , _scene(scene)
         , _inputModel(inputModel)
         , _modelData(modelData)
@@ -142,7 +143,7 @@ public:
         // Allocate resources
         if (_shader == nullptr || _shader->WaitForLoaded())
             return Result::Failed;
-        GPUShader* shader = _shader->GetShader();
+        GPUShader* shader = _shader->GPU;
         const uint32 resolutionSize = _resolution.X * _resolution.Y * _resolution.Z;
         auto cb = shader->GetCB(0);
         Data data;
@@ -948,16 +949,6 @@ void OptimizeCurve(LinearCurve<T>& curve)
     }
 }
 
-void* MeshOptAllocate(size_t size)
-{
-    return Allocator::Allocate(size);
-}
-
-void MeshOptDeallocate(void* ptr)
-{
-    Allocator::Free(ptr);
-}
-
 void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> paramNames, const Variant& value, MaterialParameterType type)
 {
     for (const Char* name : paramNames)
@@ -1098,7 +1089,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 
         // Special case if imported model has no bones but has valid skeleton and meshes.
         // We assume that every mesh uses a single bone. Copy nodes to bones.
-        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, MODEL_MAX_BONES_PER_MODEL))
+        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, (int32)MODEL_MAX_BONES_PER_MODEL))
         {
             data.Skeleton.Bones.Resize(data.Skeleton.Nodes.Count());
             for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)
@@ -1966,7 +1957,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     {
         PROFILE_CPU_NAMED("GenerateLODs");
         auto lodStartTime = DateTime::NowUTC();
-        meshopt_setAllocator(MeshOptAllocate, MeshOptDeallocate);
+        InitMeshOpt();
         float triangleReduction = Math::Saturate(options.TriangleReduction);
         int32 lodCount = Math::Max(options.LODCount, data.LODs.Count());
         int32 baseLOD = Math::Clamp(options.BaseLOD, 0, lodCount - 1);

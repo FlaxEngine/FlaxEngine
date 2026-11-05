@@ -56,8 +56,8 @@ namespace FlaxEditor.Surface
 
             private object Creator(Type type)
             {
-                var ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Utils.GetEmptyArray<Type>(), null);
-                return ctor.Invoke(Utils.GetEmptyArray<object>());
+                var ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Array.Empty<Type>(), null);
+                return ctor.Invoke(Array.Empty<object>());
             }
         }
 
@@ -124,19 +124,18 @@ namespace FlaxEditor.Surface
             };
             editor.Select(_proxy);
 
-            _presenter.Modified += OnPresenterModified;
-            OnPresenterModified();
+            _presenter.AfterLayout += OnPresenterLayer;
         }
 
-        private void OnPresenterModified()
+        private void OnPresenterLayer(LayoutElementsContainer layout)
         {
             if (_proxy.Value.Length == 0)
             {
-                var label = _presenter.Label("No attributes.\nPress the \"+\" button to add a new one and then select an attribute type using the \"Type\" dropdown.", TextAlignment.Center);
-                label.Label.Wrapping = TextWrapping.WrapWords;
-                label.Control.Height = 35f;
-                label.Label.Margin = new Margin(10f);
-                label.Label.TextColor = label.Label.TextColorHighlighted = Style.Current.ForegroundGrey;
+                var label = layout.Label("No attributes.\nPress the \"+\" button to add a new one and then select an attribute type using the \"Type\" dropdown.", TextAlignment.Center).Label;
+                label.Wrapping = TextWrapping.WrapWords;
+                label.Height = 45f;
+                label.Margin = new Margin(10f);
+                label.TextColor = label.TextColorHighlighted = Style.Current.ForegroundGrey;
             }
         }
 
@@ -186,11 +185,14 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            _presenter = null;
+            if (_presenter != null)
+            {
+                _presenter.AfterLayout -= OnPresenterLayer;
+                _presenter = null;
+            }
             _oldData = null;
             _proxy = null;
             Edited = null;
-            _presenter.Modified -= OnPresenterModified;
 
             base.OnDestroy();
         }

@@ -4,15 +4,15 @@
 
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/Math/BoundingSphere.h"
-#include "Engine/Renderer/DrawCall.h"
-#include "Engine/Level/Scene/Lightmap.h"
+#include "Engine/Core/Math/Half.h"
+#include "Engine/Core/Math/Matrix.h"
 
 /// <summary>
 /// Foliage instanced mesh instance. Packed data with very little of logic. Managed by the foliage chunks and foliage actor itself.
 /// </summary>
-API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
+API_STRUCT(NoPod, NoDefault) struct FLAXENGINE_API FoliageInstance
 {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(FoliageInstance);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FoliageInstance);
 
     /// <summary>
     /// The local-space transformation of the mesh relative to the foliage actor.
@@ -20,14 +20,46 @@ API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
     API_FIELD() Transform Transform;
 
     /// <summary>
-    /// The model drawing state.
+    /// The cached instance bounds (in world space).
     /// </summary>
-    GeometryDrawStateData DrawState;
+    API_FIELD() BoundingSphere Bounds;
+
+    /// <summary>
+    /// The previous frame index. In sync with Engine::FrameCount used to detect new frames and rendering gaps to reset state.
+    /// </summary>
+    uint64 DrawStatePrevFrame = 0;
 
     /// <summary>
     /// The foliage type index. Foliage types are hold in foliage actor and shared by instances using the same model.
     /// </summary>
-    API_FIELD() int32 Type;
+    API_FIELD() uint16 Type;
+
+    /// <summary>
+    /// The lightmap index for the foliage instance. -1 if unused.
+    /// </summary>
+    int8 LightmapTextureIndex = -1;
+
+    /// <summary>
+    /// The previous frame model LOD index used. It's locked during LOD transition to cache the transition start LOD.
+    /// </summary>
+    char DrawStatePrevLOD = -1;
+
+    /// <summary>
+    /// The LOD transition timer.
+    /// </summary>
+    byte DrawStateLODTransition = 255;
+
+    union
+    {
+        struct
+        {
+            // Flag used to indicate whether CachedDrawWorld contains valid data.
+            byte CachedDrawWorldValid : 1;
+            // Marks last model drawing as culled (due to screen size or view distance).
+            byte CachedDrawCulled : 1;
+        };
+        byte CachedFlags = 0;
+    };
 
     /// <summary>
     /// The per-instance random value from range [0;1].
@@ -40,14 +72,14 @@ API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
     float CullDistance;
 
     /// <summary>
-    /// The cached instance bounds (in world space).
+    /// Lightmap UVs area that entry occupies (packed Rectangle into Half4).
     /// </summary>
-    API_FIELD() BoundingSphere Bounds;
+    Half4 LightmapUVsArea;
 
     /// <summary>
-    /// The lightmap entry for the foliage instance.
+    /// Cached local-to-world transformation matrix for the instance used during rendering. Relative to the last rendering context origin. Valid only if CachedDrawWorldValid flag is set.
     /// </summary>
-    LightmapEntry Lightmap;
+    Matrix CachedDrawWorld;
 
 public:
     bool operator==(const FoliageInstance& v) const
@@ -60,7 +92,7 @@ public:
     /// </summary>
     FORCE_INLINE bool HasLightmap() const
     {
-        return Lightmap.TextureIndex != INVALID_INDEX;
+        return LightmapTextureIndex != INVALID_INDEX;
     }
 
     /// <summary>
@@ -68,6 +100,6 @@ public:
     /// </summary>
     FORCE_INLINE void RemoveLightmap()
     {
-        Lightmap.TextureIndex = INVALID_INDEX;
+        LightmapTextureIndex = INVALID_INDEX;
     }
 };

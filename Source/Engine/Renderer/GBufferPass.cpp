@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GBufferPass.h"
-#include "RenderList.h"
-#if USE_EDITOR
+#include "Engine/Renderer/RenderList.h"
+#include "Culling/IOcclusionCulling.h"
+#if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Renderer/Editor/VertexColors.h"
 #include "Engine/Renderer/Editor/LightmapUVsDensity.h"
 #include "Engine/Renderer/Editor/LODPreview.h"
@@ -11,17 +12,18 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Level/Actors/Decal.h"
 #include "Engine/Level/Actors/Sky.h"
 #include "Engine/Engine/Engine.h"
-#include "Engine/Graphics/Graphics.h"
 
 GPU_CB_STRUCT(GBufferPassData {
     ShaderGBufferData GBuffer;
@@ -30,7 +32,7 @@ GPU_CB_STRUCT(GBufferPassData {
     int32 ViewMode;
     });
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 Dictionary<GPUBuffer*, const ModelLOD*> GBufferPass::IndexBufferToModelLOD;
 CriticalSection GBufferPass::Locker;
 #endif
@@ -47,28 +49,24 @@ bool GBufferPass::Init()
     _psLinearToSrgb = GPUDevice::Instance->CreatePipelineState();
 
     // Load assets
-    _gBufferShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GBuffer"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GBuffer"));
     _skyModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     _boxModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/SimpleBox"));
-    if (_gBufferShader == nullptr || _skyModel == nullptr || _boxModel == nullptr)
-    {
+    if (_shader == nullptr || _skyModel == nullptr || _boxModel == nullptr)
         return true;
-    }
-#if COMPILE_WITH_DEV_ENV
-    _gBufferShader.Get()->OnReloading.Bind<GBufferPass, &GBufferPass::OnShaderReloading>(this);
-#endif
+    BIND_SHADER_RELOADING(_shader, GBufferPass, OnShaderReloading);
 
     return false;
 }
 
 bool GBufferPass::setupResources()
 {
-    if (!_gBufferShader || !_gBufferShader->IsLoaded())
+    if (!_shader || !_shader->IsLoaded())
         return true;
-    auto gbuffer = _gBufferShader->GetShader();
+    auto shader = _shader->GPU;
 
     // Validate shader constant buffers sizes
-    if (gbuffer->GetCB(0)->GetSize() != sizeof(GBufferPassData))
+    if (shader->GetCB(0)->GetSize() != sizeof(GBufferPassData))
     {
         LOG(Warning, "GBuffer shader has incorrct constant buffers sizes.");
         return true;
@@ -78,13 +76,13 @@ bool GBufferPass::setupResources()
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_psDebug->IsValid())
     {
-        psDesc.PS = gbuffer->GetPS("PS_DebugView");
+        psDesc.PS = shader->GetPS("PS_DebugView");
         if (_psDebug->Init(psDesc))
             return true;
     }
     if (!_psLinearToSrgb->IsValid())
     {
-        psDesc.PS = gbuffer->GetPS("PS_LinearToSrgb");
+        psDesc.PS = shader->GetPS("PS_LinearToSrgb");
         if (_psLinearToSrgb->Init(psDesc))
             return true;
     }
@@ -100,10 +98,10 @@ void GBufferPass::Dispose()
     // Cleanup
     SAFE_DELETE_GPU_RESOURCE(_psDebug);
     SAFE_DELETE_GPU_RESOURCE(_psLinearToSrgb);
-    _gBufferShader = nullptr;
+    _shader = nullptr;
     _skyModel = nullptr;
     _boxModel = nullptr;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     SAFE_DELETE(_lightmapUVsDensity);
     SAFE_DELETE(_vertexColors);
     SAFE_DELETE(_lodPreview);
@@ -112,7 +110,7 @@ void GBufferPass::Dispose()
 #endif
 }
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 
 void DebugOverrideDrawCallsMaterial(const RenderContext& renderContext, IMaterial* material)
 {
@@ -120,7 +118,7 @@ void DebugOverrideDrawCallsMaterial(const RenderContext& renderContext, IMateria
         return;
     PROFILE_CPU();
     IMaterial::InstancingHandler handler;
-    const bool canUseInstancing = material->CanUseInstancing(handler);
+    const bool canUseInstancing = material->CanUseInstancing(renderContext, handler);
     const auto drawModes = material->GetDrawModes();
     if (EnumHasAnyFlags(drawModes, DrawPass::GBuffer))
     {
@@ -167,13 +165,19 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         renderContext.Buffers->GBuffer2->View(),
         renderContext.Buffers->GBuffer3->View(),
     };
+    GPUDrawPassAction targetActions[5] =
+    {
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+        GPUDrawPassAction::ClearStore,
+    };
     renderContext.View.Pass = DrawPass::GBuffer;
     context->SetViewportAndScissors(renderContext.Buffers->GetViewport());
 
     // Clear GBuffer
     {
-        PROFILE_GPU_CPU_NAMED("Clear");
-
         context->ClearDepth(*renderContext.Buffers->DepthBuffer);
         context->Clear(lightBuffer->View(), Color::Transparent);
         context->Clear(renderContext.Buffers->GBuffer0->View(), Color::Transparent);
@@ -182,14 +186,11 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         context->Clear(renderContext.Buffers->GBuffer3->View(), Color::Transparent);
     }
 
-    // Ensure to have valid data
+    // Skip when resources are not loaded yet
     if (checkIfSkipPass())
-    {
-        // Resources are missing. Do not perform rendering.
         return;
-    }
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     // Special debug drawing
     if (renderContext.View.Mode == ViewMode::MaterialComplexity)
     {
@@ -211,8 +212,19 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
 #endif
 
     // Draw objects that can get decals
-    context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
-    renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
+    {
+        GPUDrawPass drawPass(
+            context,
+            *renderContext.Buffers->DepthBuffer,
+            GPUDrawPassAction::ClearStore,
+            ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)),
+            ToSpan(targetActions, ARRAY_COUNT(targetActions)));
+        renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::GBuffer);
+    }
+
+    // Submit occlusion queries
+    if (renderContext.Buffers->OcclusionCulling)
+        renderContext.Buffers->OcclusionCulling->Submit(renderContext);
 
     // Draw decals
     DrawDecals(renderContext, lightBuffer->View());
@@ -246,14 +258,10 @@ bool SortDecal(RenderDecalData const& a, RenderDecalData const& b)
 
 void GBufferPass::RenderDebug(RenderContext& renderContext)
 {
-    // Check if has resources loaded
     if (checkIfSkipPass())
         return;
-
-    // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    auto lights = _gBufferShader->GetShader();
     GBufferPassData data;
 
     // Set constants buffer
@@ -267,7 +275,7 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
         break;
     }
     data.ViewMode = static_cast<int32>(renderContext.View.Mode);
-    auto cb = lights->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
 
@@ -360,7 +368,7 @@ GPUTextureView* GBufferPass::RenderSkybox(RenderContext& renderContext, GPUConte
     return result;
 }
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 
 void GBufferPass::PreOverrideDrawCalls(RenderContext& renderContext)
 {
@@ -428,7 +436,10 @@ bool GBufferPass::IsDebugView(ViewMode mode)
 void GBufferPass::SetInputs(const RenderView& view, ShaderGBufferData& gBuffer)
 {
     // GBuffer params:
-    // ViewInfo             :  x-1/Projection[0,0]   y-1/Projection[1,1]   z-(Far / (Far - Near)   w-(-Far * Near) / (Far - Near) / Far)
+    // With reverse Z enabled:
+    //     ViewInfo         :  x-1/Projection[0,0]   y-1/Projection[1,1]   z-(-(Near / (Far - Near))   w-((Far * Near) / (Far - Near) / Far)
+    // Otherwise:
+    //     ViewInfo         :  x-1/Projection[0,0]   y-1/Projection[1,1]   z-(Far / (Far - Near))      w-(-(Far * Near) / (Far - Near) / Far)
     // ScreenSize           :  x-Width               y-Height              z-1 / Width             w-1 / Height
     // ViewPos,ViewFar      :  x,y,z - world space view position                                   w-Far
     // InvViewMatrix        :  inverse view matrix (4 rows by 4 columns)

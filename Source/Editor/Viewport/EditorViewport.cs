@@ -1514,9 +1514,15 @@ namespace FlaxEditor.Viewport
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
 
-            // Create near and far points
-            var nearPoint = new Vector3(mousePosition, _nearPlane);
-            var farPoint = new Vector3(mousePosition, _farPlane);
+            // Create near and far points, with device depth of 1 and 0 respectively
+#if REVERSE_Z
+            var nearPoint = new Vector3(mousePosition, 1.0f);
+            // Depth 0 is the reverse-Z far plane and can unproject to a point at infinity (homogeneous W is 0) so use a finite depth sample to derive the ray direction
+            var farPoint = new Vector3(mousePosition, 0.5f);
+#else
+            var nearPoint = new Vector3(mousePosition, 0.0f);
+            var farPoint = new Vector3(mousePosition, 1.0f);
+#endif
             viewport.Unproject(ref nearPoint, ref ivp, out nearPoint);
             viewport.Unproject(ref farPoint, ref ivp, out farPoint);
 
@@ -2089,11 +2095,12 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.Unlit, "Unlit", Editor.Instance.Options.Options.Input.Unlit),
             new ViewModeOptions(ViewMode.NoPostFx, "No PostFx", Editor.Instance.Options.Options.Input.NoPostFX),
             new ViewModeOptions(ViewMode.Wireframe, "Wireframe", Editor.Instance.Options.Options.Input.Wireframe),
+            new ViewModeOptions(ViewMode.Lighting, "Lighting"),
             new ViewModeOptions(ViewMode.LightBuffer, "Light Buffer", Editor.Instance.Options.Options.Input.LightBuffer),
             new ViewModeOptions(ViewMode.Reflections, "Reflections Buffer", Editor.Instance.Options.Options.Input.ReflectionsBuffer),
-            new ViewModeOptions(ViewMode.Depth, "Depth Buffer", Editor.Instance.Options.Options.Input.DepthBuffer),
             new ViewModeOptions("GBuffer", new[]
             {
+                new ViewModeOptions(ViewMode.Depth, "Depth Buffer", Editor.Instance.Options.Options.Input.DepthBuffer),
                 new ViewModeOptions(ViewMode.Diffuse, "Diffuse"),
                 new ViewModeOptions(ViewMode.Metalness, "Metalness"),
                 new ViewModeOptions(ViewMode.Roughness, "Roughness"),
@@ -2104,14 +2111,19 @@ namespace FlaxEditor.Viewport
                 new ViewModeOptions(ViewMode.Emissive, "Emissive Light"),
                 new ViewModeOptions(ViewMode.Normals, "Normals"),
                 new ViewModeOptions(ViewMode.AmbientOcclusion, "Ambient Occlusion"),
+                new ViewModeOptions(ViewMode.MotionVectors, "Motion Vectors", Editor.Instance.Options.Options.Input.MotionVectors),
             }),
-            new ViewModeOptions(ViewMode.MotionVectors, "Motion Vectors", Editor.Instance.Options.Options.Input.MotionVectors),
             new ViewModeOptions(ViewMode.LightmapUVsDensity, "Lightmap UVs Density", Editor.Instance.Options.Options.Input.LightmapUVDensity),
             new ViewModeOptions(ViewMode.VertexColors, "Vertex Colors", Editor.Instance.Options.Options.Input.VertexColors),
             new ViewModeOptions(ViewMode.PhysicsColliders, "Physics Colliders", Editor.Instance.Options.Options.Input.PhysicsColliders),
-            new ViewModeOptions(ViewMode.LODPreview, "LOD Preview", Editor.Instance.Options.Options.Input.LODPreview),
-            new ViewModeOptions(ViewMode.MaterialComplexity, "Material Complexity", Editor.Instance.Options.Options.Input.MaterialComplexity),
-            new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw", Editor.Instance.Options.Options.Input.QuadOverdraw),
+            new ViewModeOptions("Optimization", new[]
+            {
+                new ViewModeOptions(ViewMode.LODPreview, "LOD Preview", Editor.Instance.Options.Options.Input.LODPreview),
+                new ViewModeOptions(ViewMode.MaterialComplexity, "Material Complexity", Editor.Instance.Options.Options.Input.MaterialComplexity),
+                new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw", Editor.Instance.Options.Options.Input.QuadOverdraw),
+                new ViewModeOptions(ViewMode.LightOverlap, "Light Overlap"),
+                new ViewModeOptions(ViewMode.GlobalSDFOverdraw, "Global SDF Overdraw"),
+            }),
             new ViewModeOptions(ViewMode.GlobalSDF, "Global SDF", Editor.Instance.Options.Options.Input.GloablSDF),
             new ViewModeOptions(ViewMode.GlobalSurfaceAtlas, "Global Surface Atlas", Editor.Instance.Options.Options.Input.GlobalSurfaceAtlas),
             new ViewModeOptions(ViewMode.GlobalIllumination, "Global Illumination", Editor.Instance.Options.Options.Input.GlobalIllumination),

@@ -303,7 +303,7 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView
 
 void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts)
 {
-    ASSERT(Math::IsInRange(rts.Length(), 1, GPU_MAX_RT_BINDED));
+    ASSERT(Math::IsInRange(rts.Length(), 0, GPU_MAX_RT_BINDED));
 
     auto depthBufferDX11 = static_cast<GPUTextureViewDX11*>(depthBuffer);
     ID3D11DepthStencilView* dsv = depthBufferDX11 ? depthBufferDX11->DSV() : nullptr;
@@ -499,6 +499,7 @@ void GPUContextDX11::UpdateCB(GPUConstantBuffer* cb, const void* data)
         return;
 
     _context->UpdateSubresource(cbDX11->GetBuffer(), 0, nullptr, data, size, 1);
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextDX11::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
@@ -533,13 +534,18 @@ void GPUContextDX11::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GP
 
 void GPUContextDX11::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
+    if (_currentState == nullptr)
+        return;
     onDrawCall();
+    ASSERT(CurrentPrimitiveTopology != 0);
     _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
+    if (_currentState == nullptr)
+        return;
     onDrawCall();
     _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(indicesCount * instanceCount, indicesCount / 3 * instanceCount);
@@ -547,10 +553,10 @@ void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCo
 
 void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    if (_currentState == nullptr)
+        return;
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
     const auto bufferForArgsDX11 = static_cast<GPUBufferDX11*>(bufferForArgs);
-
     onDrawCall();
     _context->DrawInstancedIndirect(bufferForArgsDX11->GetBuffer(), offsetForArgs);
     RENDER_STAT_DRAW_CALL(0, 0);
@@ -558,10 +564,10 @@ void GPUContextDX11::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offs
 
 void GPUContextDX11::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    if (_currentState == nullptr)
+        return;
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
     const auto bufferForArgsDX11 = static_cast<GPUBufferDX11*>(bufferForArgs);
-
     onDrawCall();
     _context->DrawIndexedInstancedIndirect(bufferForArgsDX11->GetBuffer(), offsetForArgs);
     RENDER_STAT_DRAW_CALL(0, 0);
@@ -584,7 +590,18 @@ uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
         auto& query = _device->_queries.AddOne();
         query.Type = type;
         D3D11_QUERY_DESC queryDesc;
-        queryDesc.Query = type == GPUQueryType::Occlusion ? D3D11_QUERY_OCCLUSION : D3D11_QUERY_TIMESTAMP;
+        switch (type)
+        {
+        case GPUQueryType::Timer:
+            queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+            break;
+        case GPUQueryType::Occlusion:
+            queryDesc.Query = D3D11_QUERY_OCCLUSION;
+            break;
+        case GPUQueryType::BinaryOcclusion:
+            queryDesc.Query = D3D11_QUERY_OCCLUSION_PREDICATE;
+            break;
+        }
         queryDesc.MiscFlags = 0;
         HRESULT hr = _device->GetDevice()->CreateQuery(&queryDesc, &query.Query);
         LOG_DIRECTX_RESULT_WITH_RETURN(hr, 0);
@@ -610,6 +627,7 @@ uint64 GPUContextDX11::BeginQuery(GPUQueryType type)
         ASSERT_LOW_LAYER(query.State == GPUQueryDataDX11::Ready);
         ASSERT_LOW_LAYER(query.Type == type);
         query.State = GPUQueryDataDX11::Begin;
+        query.TTL = 50; // Auto-destroy after some frames when user fails to call GetQueryResult
         auto context = _device->GetIM();
         if (type == GPUQueryType::Timer)
         {
@@ -904,6 +922,7 @@ void GPUContextDX11::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 si
         box.bottom = 1;
         _context->UpdateSubresource(bufferDX11->GetResource(), 0, &box, data, size, 0);
     }
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextDX11::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -934,6 +953,7 @@ void GPUContextDX11::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 
     if (texture->IsVolume())
         depthPitch /= Math::Max(1, texture->Depth() >> mipIndex);
     _context->UpdateSubresource(textureDX11->GetResource(), subresourceIndex, nullptr, data, (UINT)rowPitch, (UINT)depthPitch);
+    RENDER_STAT_DATA_UPLOAD(slicePitch);
 
     //D3D11_MAPPED_SUBRESOURCE mapped;
     //_device->GetIM()->Map(_resource, textureMipIndex, D3D11_MAP_WRITE_DISCARD, 0, &mapped);

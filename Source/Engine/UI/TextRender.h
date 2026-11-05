@@ -42,7 +42,6 @@ private:
     int32 _sceneRenderingKey = -1;
 
     BoundingBox _localBox;
-    GeometryDrawStateData _drawState;
     DynamicIndexBuffer _ib;
     DynamicVertexBuffer _vb;
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
@@ -161,7 +160,7 @@ private:
 public:
     // [Actor]
     bool HasContentLoaded() const override;
-    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif

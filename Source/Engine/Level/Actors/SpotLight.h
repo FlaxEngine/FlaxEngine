@@ -73,7 +73,7 @@ public:
     /// <summary>
     /// Gets light radius.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(1000.0f), EditorDisplay(\"Light\"), Limit(0, 10000, 0.1f)")
+    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(1000.0f), EditorDisplay(\"Light\"), Limit(0, 1000000, 0.1f)")
     FORCE_INLINE float GetRadius() const
     {
         return _radius;
@@ -117,7 +117,7 @@ private:
 
 public:
     // [LightWithShadow]
-    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDraw() override;
     void OnDebugDrawSelected() override;

@@ -25,7 +25,7 @@ void MaterialInstance::OnBaseSet()
     ASSERT(_baseMaterial->IsLoaded());
 
     _baseMaterial->AddReference();
-    _baseMaterial->OnUnloaded.Bind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
+    _baseMaterial->Unloaded.Bind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
     _baseMaterial->ParamsChanged.Bind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);
 
     // Sync parameters with the base parameters to ensure all data is valid for rendering (constants offset and resource register)
@@ -63,7 +63,7 @@ void MaterialInstance::OnBaseSet()
 void MaterialInstance::OnBaseUnset()
 {
     _baseMaterial->RemoveReference();
-    _baseMaterial->OnUnloaded.Unbind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
+    _baseMaterial->Unloaded.Unbind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
     _baseMaterial->ParamsChanged.Unbind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);
 }
 
@@ -168,9 +168,9 @@ bool MaterialInstance::CanUseLightmap() const
     return _baseMaterial && _baseMaterial->CanUseLightmap();
 }
 
-bool MaterialInstance::CanUseInstancing(InstancingHandler& handler) const
+bool MaterialInstance::CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const
 {
-    return _baseMaterial && _baseMaterial->CanUseInstancing(handler);
+    return _baseMaterial && _baseMaterial->CanUseInstancing(renderContext, handler);
 }
 
 void MaterialInstance::Bind(BindParameters& params)
@@ -332,7 +332,18 @@ bool MaterialInstance::Save(const StringView& path)
         // Save parameters
         Params.Save(&stream);
     }
-    SetChunk(0, ToSpan(stream));
+    // Virtual assets don't own a storage container, so SetChunk/GetOrCreateChunk are a no-op for them.
+    // Wire a temporary chunk into the header for the duration of the save (mirrors ModelBase::Save).
+    FlaxChunk tmpChunk;
+    if (IsVirtual())
+    {
+        tmpChunk.Data.Copy(ToSpan(stream));
+        _header.Chunks[0] = &tmpChunk;
+    }
+    else
+    {
+        SetChunk(0, ToSpan(stream));
+    }
 
     // Setup asset data
     AssetInitData data;
@@ -340,6 +351,11 @@ bool MaterialInstance::Save(const StringView& path)
 
     // Save data
     const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
+    if (IsVirtual())
+    {
+        // Release the temporary chunk reference (points to stack memory)
+        _header.Chunks[0] = nullptr;
+    }
     if (saveResult)
     {
         LOG(Error, "Cannot save \'{0}\'", ToString());

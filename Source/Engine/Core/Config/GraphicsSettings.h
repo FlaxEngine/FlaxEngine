@@ -11,7 +11,7 @@ class FontAsset;
 /// <summary>
 /// Graphics rendering settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API GraphicsSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class FLAXENGINE_API GraphicsSettings : public SettingsBase
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
@@ -31,55 +31,92 @@ public:
         R16G16B16A16,
     };
 
+    /// <summary>
+    /// The environment probes cubemap texture storage formats.
+    /// </summary>
+    API_ENUM(Attributes = "EnumDisplay(EnumDisplayAttribute.FormatMode.None)")
+    enum class ProbeCubemapFormats
+    {
+        // LDR uncompressed format (32-bit per pixel).
+        R8G8B8A8,
+        // HDR uncompressed format (32-bit per pixel, no alpha).
+        R11G11B10,
+        // HDR compressed format (8-bit per pixel, no alpha). Converted into ASTC/Basis for mobile/web. Realtime probes will fallback to R11G11B10.
+        BC6,
+        // HDR compressed format (8-bit per pixel). Converted into ASTC/Basis for mobile/web. Realtime probes will fallback to R11G11B10.
+        BC7,
+    };
+
 public:
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), DefaultValue(false), EditorDisplay(\"General\", \"Use V-Sync\")")
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\", \"Use V-Sync\")")
     bool UseVSync = false;
 
+public:
     /// <summary>
     /// Anti Aliasing quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1000), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\", \"AA Quality\")")
-    Quality AAQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Quality\", \"AA Quality\")")
+    Quality AAQuality = Quality::High;
 
     /// <summary>
     /// Screen Space Reflections quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1100), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\", \"SSR Quality\")")
-    Quality SSRQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1100), EditorDisplay(\"Quality\", \"SSR Quality\")")
+    Quality SSRQuality = Quality::High;
 
     /// <summary>
     /// Screen Space Ambient Occlusion quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1200), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\", \"SSAO Quality\")")
-    Quality SSAOQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1200), EditorDisplay(\"Quality\", \"SSAO Quality\")")
+    Quality SSAOQuality = Quality::High;
 
     /// <summary>
     /// Volumetric Fog quality setting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1250), DefaultValue(Quality.High), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1250), EditorDisplay(\"Quality\")")
     Quality VolumetricFogQuality = Quality::High;
 
     /// <summary>
     /// The shadows quality.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1300), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\")")
-    Quality ShadowsQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1300), EditorDisplay(\"Quality\")")
+    Quality ShadowsQuality = Quality::High;
 
     /// <summary>
     /// The shadow maps quality (textures resolution).
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1310), DefaultValue(Quality.Medium), EditorDisplay(\"Quality\")")
-    Quality ShadowMapsQuality = Quality::Medium;
+    API_FIELD(Attributes="EditorOrder(1310), EditorDisplay(\"Quality\")")
+    Quality ShadowMapsQuality = Quality::High;
 
     /// <summary>
     /// Enables cascades splits blending for directional light shadows.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1320), DefaultValue(false), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
+    API_FIELD(Attributes="EditorOrder(1320), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
     bool AllowCSMBlending = false;
 
+public:
+    /// <summary>
+    /// The type of the occlusion culling (implements IOcclusionCulling) that will be used to test visibility of the objects and skip rendering occluded ones. Can be left empty to use frustum-culling only.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1450), EditorDisplay(\"Culling\"), TypeReference(typeof(IOcclusionCulling)), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.TypeNameEditor\")")
+    StringAnsi OcclusionCulling;
+
+    /// <summary>
+    /// The number of buffered frames for the visibility query results readback from GPU (to avoid stalls). The higher value the more latency but less CPU stalls (to wait for GPU results). Higher values increase object popping artifacts.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1460), EditorDisplay(\"Culling\"), Limit(1, 4)")
+    int32 OcclusionBufferedFrames = 2;
+
+    /// <summary>
+    /// The object bounds scale for occlusion culling to reduce popping artifacts caused by latency of visibility readback from GPU to CPU. Higher values inflate bounds which improves visual stability but lowers occlusion culling efficiency.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(1461), EditorDisplay(\"Culling\"), Limit(1, 1.5f)")
+    float OcclusionBoundsScale = 1.1f;
+
+public:
     /// <summary>
     /// Default probes cubemap resolution (use for Environment Probes, can be overriden per-actor).
     /// </summary>
@@ -87,9 +124,16 @@ public:
     ProbeCubemapResolution DefaultProbeResolution = ProbeCubemapResolution::_128;
 
     /// <summary>
-    /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
+    /// Environment Probes texture storage format. Controls the quality fo reflections and memory usage of probes data.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1502), EditorDisplay(\"Quality\")")
+    ProbeCubemapFormats DefaultProbeCubemapFormat = ProbeCubemapFormats::BC6;
+
+    /// <summary>
+    /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
+    /// [Deprecated in v1.13]
+    /// </summary>
+    DEPRECATED("Use DefaultProbeCubemapFormat instead.")
     bool UseHDRProbes = false;
 
     /// <summary>
@@ -107,7 +151,7 @@ public:
     /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2005), DefaultValue(Quality.High), EditorDisplay(\"Global SDF\")")
+    API_FIELD(Attributes="EditorOrder(2005), EditorDisplay(\"Global SDF\")")
     Quality GlobalSDFQuality = Quality::High;
 
 #if USE_EDITOR
@@ -121,19 +165,19 @@ public:
     /// <summary>
     /// The Global Illumination quality. Controls the quality of the GI effect.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2100), DefaultValue(Quality.High), EditorDisplay(\"Global Illumination\")")
+    API_FIELD(Attributes="EditorOrder(2100), EditorDisplay(\"Global Illumination\")")
     Quality GIQuality = Quality::High;
 
     /// <summary>
     /// The global spacing between Global Illumination probes (in world units). Smaller values improve interior detail at a higher GPU cost. Values around 100-150 are a useful starting point for mixed interiors and exteriors; adjust to 200-500 for mostly outdoor scenes and lower-frequency GI. Changing this value recreates the DDGI probe resources and can change the automatic cascade layout.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2120), Limit(50, 1000), EditorDisplay(\"Global Illumination\")")
+    API_FIELD(Attributes="EditorOrder(2120), Limit(50, 1000), EditorDisplay(\"Global Illumination\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GIProbesSpacing = 100;
 
     /// <summary>
     /// Enables smooth blending between Global Illumination cascade splits. If disabled, the transition uses dithering intended for temporal anti-aliasing. Smooth blending can expose rounded cascade boundaries when adjacent cascades contain significantly different lighting.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2125), DefaultValue(false), EditorDisplay(\"Global Illumination\", \"GI Cascades Blending\")")
+    API_FIELD(Attributes="EditorOrder(2125), EditorDisplay(\"Global Illumination\", \"GI Cascades Blending\")")
     bool GICascadesBlending = false;
 
     /// <summary>
@@ -158,7 +202,7 @@ public:
 
 public:
     /// <summary>
-    /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
+    /// The default Post Process settings. Can be overridden by PostFxVolume on a level locally, per camera or for a whole map.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
     PostProcessSettings PostProcessSettings;
@@ -175,8 +219,10 @@ private:
     /// Renamed UeeHDRProbes into UseHDRProbes
     /// [Deprecated on 12.10.2022, expires on 12.10.2024]
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") bool GetUeeHDRProbes() const { return UseHDRProbes; }
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") void SetUeeHDRProbes(bool value);
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") bool GetUeeHDRProbes() const;
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") void SetUeeHDRProbes(bool value);
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") bool GetUseHDRProbes() const;
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use DefaultProbeCubemapFormat instead.") void SetUseHDRProbes(bool value);
     API_FUNCTION(Attributes="OnDeserializing", Hidden) void OnDeserializing(const CallbackContext& context);
 
 public:

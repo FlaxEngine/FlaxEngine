@@ -8,14 +8,14 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerMemory.h"
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
 #include "Engine/Renderer/GBufferPass.h"
 #endif
 
@@ -241,7 +241,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.Surface.PrevWorld = world;
     drawCall.PerInstanceRandom = perInstanceRandom;
     drawCall.StencilValue = stencilValue;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
@@ -249,6 +249,42 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
 
     // Push draw call to the render list
     renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals, sortOrder);
+}
+
+void Mesh::Draw(const RenderContextBatch& renderContextBatch, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder, uint8 stencilValue, ShadowsCastingMode shadowsMode) const
+{
+    if (!material || !material->IsSurface() || !IsInitialized())
+        return;
+    drawModes &= material->GetDrawModes();
+    if (drawModes == DrawPass::None)
+        return;
+
+    // Setup draw call
+    DrawCall drawCall;
+    drawCall.Geometry.IndexBuffer = _indexBuffer;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
+    drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
+    drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
+    drawCall.Draw.IndicesCount = _triangles * 3;
+    drawCall.InstanceCount = 1;
+    drawCall.Material = material;
+    drawCall.World = world;
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = (float)_sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
+    drawCall.Surface.GeometrySize = _box.GetSize();
+    drawCall.Surface.PrevWorld = world;
+    drawCall.PerInstanceRandom = perInstanceRandom;
+    drawCall.StencilValue = stencilValue;
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
+#if GPU_ENABLE_DEVELOPMENT
+    const ViewMode viewMode = renderContext.View.Mode;
+    if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
+        GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+#endif
+
+    // Push draw call to the render list
+    BoundingSphere bounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
+    renderContext.List->AddDrawCall(renderContextBatch, drawModes, flags, shadowsMode, bounds, drawCall, receiveDecals, sortOrder);
 }
 
 void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
@@ -302,18 +338,18 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
-    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
     if (viewMode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = info.LightmapScale; // See LightmapUVsDensityMaterialShader
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&info.LightmapScale; // See LightmapUVsDensityMaterialShader
 #endif
 
     // Push draw call to the render list
@@ -365,18 +401,18 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
+    drawCall.Surface.PrevWorld = info.DrawState ? info.DrawState->PrevWorld : drawCall.World;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
-    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
-    drawCall.Surface.LODDitherFactor = lodDitherFactor;
+    drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Half4::Zero;
+    drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
     if (viewMode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = info.LightmapScale; // See LightmapUVsDensityMaterialShader
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&info.LightmapScale; // See LightmapUVsDensityMaterialShader
 #endif
 
     // Push draw call to the render lists
@@ -451,7 +487,7 @@ enum class InternalBufferType
     VB2 = 2,
 };
 
-MArray* Mesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI)
+MArray* Mesh::DownloadBuffer(bool forceGpu, MType* resultType, int32 typeI)
 {
     // [Deprecated in v1.10]
     ScopeLock lock(GetModelBase()->Locker);
@@ -479,7 +515,7 @@ MArray* Mesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI
     auto count = GetVertexCount();
 
     // Convert into managed array
-    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), count);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(resultType), count);
     void* managedArrayPtr = MCore::Array::GetAddress(result);
     switch ((InternalBufferType)typeI)
     {

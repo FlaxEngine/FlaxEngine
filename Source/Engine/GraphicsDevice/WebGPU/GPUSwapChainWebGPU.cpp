@@ -114,8 +114,9 @@ bool GPUSwapChainWebGPU::Resize(int32 width, int32 height)
         return false;
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
-#if GPU_ENABLE_DIAGNOSTICS
-    LOG(Info, "Resizing WebGPU surface to: {}x{}", width, height);
+#if GPU_ENABLE_DEBUG_LAYER
+    if (_device->_debugLayer)
+        LOG(Info, "Resizing WebGPU surface to: {}x{}", width, height);
 #endif
 
     // Ensure to have a surface
@@ -145,7 +146,7 @@ bool GPUSwapChainWebGPU::Resize(int32 width, int32 height)
     WGPUSurfaceConfiguration configuration = WGPU_SURFACE_CONFIGURATION_INIT;
     configuration.device = _device->Device;
     configuration.usage = WGPUTextureUsage_RenderAttachment;
-#if GPU_USE_WINDOW_SRV
+#if GPU_ENABLE_WINDOW_SRV
     configuration.usage |= WGPUTextureUsage_TextureBinding;
 #endif
     configuration.width = width;

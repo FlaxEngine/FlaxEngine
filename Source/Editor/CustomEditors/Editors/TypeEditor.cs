@@ -32,7 +32,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private DragHandlers _dragHandlers;
 
         /// <summary>
-        /// Gets or sets the allowed type (given type and all sub classes). Must be <see cref="System.Type"/> type of any subclass.
+        /// Gets or sets the allowed type (given type and all subclasses). Must be <see cref="System.Type"/> type of any subclass.
         /// </summary>
         public ScriptType Type
         {
@@ -147,6 +147,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var nameRect = new Rectangle(2, 1, frameRect.Width - 4, 14);
             var button1Rect = new Rectangle(nameRect.Right + 2, 1, 14, 14);
             var button2Rect = new Rectangle(button1Rect.Right + 2, 1, 14, 14);
+            var enabled = EnabledInHierarchy;
 
             // Draw frame
             Render2D.DrawRectangle(frameRect, IsMouseOver ? style.BorderHighlighted : style.BorderNormal);
@@ -156,17 +157,17 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Draw deselect button
                 if (_type == ScriptType.Null)
-                    Render2D.DrawSprite(style.Cross, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
+                    Render2D.DrawSprite(style.Cross, button1Rect, enabled ? (button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey) : style.ForegroundDisabled);
 
                 // Draw name
                 Render2D.PushClip(nameRect);
-                Render2D.DrawText(style.FontMedium, _valueName, nameRect, style.Foreground, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, _valueName, nameRect, enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
             else
             {
                 // Draw info
-                Render2D.DrawText(style.FontMedium, "-", nameRect, Color.OrangeRed, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, "-", nameRect, enabled ? Color.OrangeRed : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }
 
             // Draw picker button
@@ -209,7 +210,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            // Cache data
             bool isSelected = _value != ScriptType.Null;
             var frameRect = new Rectangle(0, 0, Width - 16, 16);
             if (isSelected && _type == ScriptType.Null)
@@ -220,11 +220,30 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Deselect
             if (_value && button1Rect.Contains(ref location) && _type == ScriptType.Null)
+            {
+                Focus();
                 Value = ScriptType.Null;
+                return true;
+            }
 
             // Picker dropdown menu
             if ((isSelected && _type == ScriptType.Null ? button2Rect : button1Rect).Contains(ref location))
+            {
                 ShowDropDownMenu();
+                return true;
+            }
+
+            // Clear value with MMB or show picker with RMB
+            if (button == MouseButton.Middle)
+            {
+                Focus();
+                Value = ScriptType.Null;
+                return true;
+            }
+            if (button == MouseButton.Right)
+            {
+                ShowDropDownMenu();
+            }
 
             return base.OnMouseUp(location, button);
         }
@@ -235,9 +254,8 @@ namespace FlaxEditor.CustomEditors.Editors
             // Navigate to types from game project
             if (button == MouseButton.Left && _value != ScriptType.Null)
             {
-                var item = _value.ContentItem;
-                if (item != null)
-                    Editor.Instance.ContentEditing.Open(item);
+                Editor.Instance.ContentEditing.Open(_value.ContentItem);
+                return true;
             }
 
             return base.OnMouseDoubleClick(location, button);

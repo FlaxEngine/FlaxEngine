@@ -6,7 +6,7 @@ using FlaxEngine;
 namespace FlaxEditor.Tools.Foliage
 {
     /// <summary>
-    /// The custom outline for drawing the selected foliage instances outlines.
+    /// The custom outline for drawing the selected foliage instance.
     /// </summary>
     /// <seealso cref="FlaxEditor.Gizmo.SelectionOutline" />
     [HideInEditor]

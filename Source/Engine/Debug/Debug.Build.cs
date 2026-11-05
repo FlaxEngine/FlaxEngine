@@ -32,6 +32,6 @@ public class Debug : EngineModule
     /// <inheritdoc />
     public override void GetFilesToDeploy(List<string> files)
     {
-        files.AddRange(Directory.GetFiles(FolderPath, "*.h", SearchOption.TopDirectoryOnly));
+        files.AddRange(Directory.GetFiles(FolderPath, "*.h", SearchOption.AllDirectories));
     }
 }

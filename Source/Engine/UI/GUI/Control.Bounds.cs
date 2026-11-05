@@ -708,5 +708,22 @@ namespace FlaxEngine.GUI
                 }
             }
         }
+
+        /// <summary>
+        /// Sets the anchors for the control.
+        /// </summary>
+        /// <param name="anchorMin">The minimum anchors point to use.</param>
+        /// <param name="anchorMax">The maximum anchors point to use.</param>
+        /// <param name="preserveBounds">True if preserve current control bounds, otherwise will align control position accordingly to the anchor location.</param>
+        public void SetAnchors(Float2 anchorMin, Float2 anchorMax, bool preserveBounds)
+        {
+            var bounds = _bounds;
+            _anchorMin = anchorMin;
+            _anchorMax = anchorMax;
+            if (preserveBounds)
+                Bounds = bounds;
+            else
+                UpdateBounds();
+        }
     }
 }

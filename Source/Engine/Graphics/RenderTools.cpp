@@ -6,7 +6,7 @@
 #include "PixelFormat.h"
 #include "RenderView.h"
 #include "GPUDevice.h"
-#include "RenderTask.h"
+#include "RenderContext.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
 #include "Engine/Core/Math/Packed.h"
@@ -446,13 +446,15 @@ int32 RenderTools::ComputeModelLOD(const Model* model, const Float3& origin, flo
         return -1;
 
     // Skip if no need to calculate LOD
-    if (model->LODs.Count() <= 1)
+    int32 lodCount = model->LODs.Count();
+    if (lodCount <= 1)
         return 0;
 
     // Iterate backwards and return the first matching LOD
-    for (int32 lodIndex = model->LODs.Count() - 1; lodIndex >= 0; lodIndex--)
+    const auto* lodData = model->LODs.Get();
+    for (int32 lodIndex = lodCount - 1; lodIndex >= 0; lodIndex--)
     {
-        if (Math::Square(model->LODs[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
+        if (Math::Square(lodData[lodIndex].ScreenSize * 0.5f) >= screenRadiusSquared)
         {
             return lodIndex;
         }
@@ -534,7 +536,7 @@ void RenderTools::ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascad
             }
         }
         break;
-    case 2: // 2 cascade2 update per frame
+    case 2: // 2 cascades update per frame
         switch (cascadeIndex)
         {
         case 0: // Cascade 0
@@ -684,6 +686,24 @@ float RenderTools::TemporalHalton(int32 index, int32 base)
 
 Float2 RenderTools::GetDepthBounds(const RenderView& view, const Float3& nearPoint, const Float3& farPoint)
 {
+#if REVERSE_Z
+    Float3 viewNearPoint = Float3::Transform(nearPoint, view.View);
+    Float3 viewFarPoint = Float3::Transform(farPoint, view.View);
+
+    viewNearPoint.Z = Math::Max(viewNearPoint.Z, view.Near);
+    viewFarPoint.Z = Math::Min(viewFarPoint.Z, view.Far);
+
+    Float4 clipNearPoint = Matrix::TransformPosition(view.Projection, Float4(0, 0, viewNearPoint.Z, 1));
+    Float4 clipFarPoint = Matrix::TransformPosition(view.Projection, Float4(0, 0, viewFarPoint.Z, 1));
+    clipNearPoint /= clipNearPoint.W;
+    clipFarPoint /= clipFarPoint.W;
+
+    // Clamp within valid depth range
+    clipNearPoint.Z = Math::Saturate(clipNearPoint.Z);
+    clipFarPoint.Z = Math::Saturate(clipFarPoint.Z);
+
+    return Float2(clipNearPoint.Z, clipFarPoint.Z);
+#else
     // Point closest the view
     const Float4 nearPointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(nearPoint, 1.0));
     float nearDepth = nearPointClip.Z / nearPointClip.W;
@@ -700,8 +720,8 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const Float3& nearPoi
     nearDepth = Math::Clamp(nearDepth, 0.0f, 1.0f);
     farDepth = Math::Clamp(farDepth, nearDepth, 1.0f);
 
-    // TODO: swap depths when using reversed depth buffer
     return Float2(nearDepth, farDepth);
+#endif
 }
 
 Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingSphere& bounds)
@@ -713,6 +733,24 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingSphere&
 
 Float2 RenderTools::GetDepthBounds(const RenderView& view, const Span<Float3>& points)
 {
+#if REVERSE_Z
+    // Find min and max view depth range for list of points
+    float nearDepth = view.Far, farDepth = view.Near;
+    for (int32 i = 0; i < points.Length(); i++)
+    {
+        const Float3 viewPoint = Float3::Transform(points[i], view.View);
+        nearDepth = Math::Min(nearDepth, viewPoint.Z);
+        farDepth = Math::Max(farDepth, viewPoint.Z);
+    }
+
+    // Project end points to clip space
+    Float4 clipNearPoint = Matrix::TransformPosition(view.Projection, Float4(0, 0, nearDepth, 1));
+    Float4 clipFarPoint = Matrix::TransformPosition(view.Projection, Float4(0, 0, farDepth, 1));
+    clipNearPoint /= clipNearPoint.W;
+    clipFarPoint /= clipFarPoint.W;
+
+    return Float2(clipNearPoint.Z, clipFarPoint.Z);
+#else
     // Find min and max depth range for list of points
     float nearDepth = 1.0f, farDepth = 0.0f;
     for (int32 i = 0; i < points.Length(); i++)
@@ -729,8 +767,8 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const Span<Float3>& p
     nearDepth = Math::Clamp(nearDepth, 0.0f, 1.0f);
     farDepth = Math::Clamp(farDepth, nearDepth, 1.0f);
 
-    // TODO: swap depths when using reversed depth buffer
     return Float2(nearDepth, farDepth);
+#endif
 }
 
 Float2 RenderTools::GetDepthBounds(const RenderView& view, const BoundingBox& bounds)
@@ -749,11 +787,21 @@ Float2 RenderTools::GetDepthBounds(const RenderView& view, const OrientedBoundin
 
 float RenderTools::GetDepthBounds(const RenderView& view, const Float3& point, bool near)
 {
+#if REVERSE_Z
+    Float3 viewPoint = Float3::Transform(point, view.View);
+    viewPoint.Z = Math::Clamp(viewPoint.Z, view.Near, view.Far);
+
+    Float4 clipPoint = Matrix::TransformPosition(view.Projection, Float4(0, 0, viewPoint.Z, 1));
+    clipPoint /= clipPoint.W;
+
+    return clipPoint.Z;
+#else
     const Float4 pointClip = Matrix::TransformPosition(view.ViewProjection(), Float4(point, 1.0));
     float depth = pointClip.Z / pointClip.W;
     if (depth >= 1.0f)
         depth = near ? 0.0f : 1.0f; // Point is behind the view
     return Math::Clamp(depth, 0.0f, 1.0f);
+#endif
 }
 
 float RenderTools::GetDepthBounds(const RenderView& view, float viewDistance, bool near)

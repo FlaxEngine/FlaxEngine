@@ -30,7 +30,7 @@ namespace ShaderProcessing
         ShaderProfileFeatures _features;
 
     private:
-        Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile);
+        Parser(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderProfileFeatures features);
         ~Parser();
 
     public:
@@ -42,9 +42,10 @@ namespace ShaderProcessing
         /// <param name="sourceLength">Amount of characters in the source code</param>
         /// <param name="macros">The input macros.</param>
         /// <param name="profile">The target shader profile.</param>
+        /// <param name="features">The target shader features.</param>
         /// <param name="result">Output result with metadata</param>
         /// <returns>True if cannot process the file (too many errors), otherwise false</returns>
-        static bool Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderMeta* result);
+        static bool Process(const String& targetName, const char* source, int32 sourceLength, ParserMacros macros, ShaderProfile profile, ShaderProfileFeatures features, ShaderMeta* result);
 
     public:
         /// <summary>

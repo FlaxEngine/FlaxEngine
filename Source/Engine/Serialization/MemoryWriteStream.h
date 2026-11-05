@@ -98,7 +98,7 @@ public:
     /// Cleanups the buffers, resets the position and allocated the new memory chunk.
     /// </summary>
     /// <param name="capacity">Initial write buffer capacity (in bytes).</param>
-    void Reset(uint32 capacity);
+    void Reset(uint32 capacity = 0);
 
     /// <summary>
     /// Saves current buffer contents to the file.

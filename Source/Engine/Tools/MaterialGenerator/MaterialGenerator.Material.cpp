@@ -56,7 +56,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         {
             // Transform world position into main viewport texcoord space
             Value clipPosition = writeLocal(VariantType::Float4, TEXT("PROJECT_POINT(float4(input.WorldPosition.xyz, 1), MainViewProjectionMatrix)"), node);
-            Value uvPos = writeLocal(VariantType::Float2, String::Format(TEXT("(({0}.xy / {0}.w) * float2(0.5, -0.5) + float2(0.5, 0.5))"), clipPosition.Value), node);
+            Value uvPos = writeLocal(VariantType::Float2, String::Format(TEXT("ProjectClipToUV({0}.xy / {0}.w)"), clipPosition.Value), node);
 
             // Position
             if (box->ID == 0)
@@ -189,17 +189,16 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         _treeLayer->UsageFlags |= MaterialUsageFlags::UseVertexColor;
         break;
     // Pre-skinned Local Position
-    case 13:
-        value = Value(VariantType::Float3, TEXT("input.PreSkinnedPosition"));
-        if (_treeType != MaterialTreeType::VertexShader)
-            value = VsToPs(node, box).AsFloat3();
-        break;
     // Pre-skinned Local Normal
+    case 13:
     case 14:
-        value = Value(VariantType::Float3, TEXT("input.PreSkinnedNormal"));
-        if (_treeType != MaterialTreeType::VertexShader)
+    {
+        value = Value(VariantType::Float3, node->TypeID == 13 ? TEXT("input.PreSkinnedPosition") : TEXT("input.PreSkinnedNormal"));
+        MaterialLayer* baseLayer = GetRootLayer();
+        if (_treeType != MaterialTreeType::VertexShader && (!baseLayer || baseLayer->Domain != MaterialDomain::Decal))
             value = VsToPs(node, box).AsFloat3();
         break;
+    }
     // Depth
     case 15:
         value = writeLocal(VariantType::Float, TEXT("distance(ViewPos, input.WorldPosition)"), node);
@@ -323,7 +322,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Peek the function output (function->Outputs maps the functions outputs to output nodes indices)
         const int32 outputIndex = box->ID - 16;
-        if (outputIndex < 0 || outputIndex >= function->Outputs.Count())
+        if (!function->Outputs.IsValidIndex(outputIndex) || !graph->Nodes.IsValidIndex(function->Outputs[outputIndex]))
         {
             OnError(node, box, TEXT("Invalid function output box."));
             value = Value::Zero;
@@ -785,7 +784,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     {
         const auto linear = tryGetValue(node->GetBox(0), Value::Zero).AsFloat3();
         value = writeLocal(linear.Type, String::Format(TEXT("LinearToSrgb({0})"), linear.Value), node);
-        _includes.Add(TEXT("./Flax/GammaCorrectionCommon.hlsl"));
+        _includes.Add(TEXT("./Flax/PostFX/GammaCorrectionCommon.hlsl"));
         break;
     }
     // sRGB to Linear
@@ -793,7 +792,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     {
         const auto sRGB = tryGetValue(node->GetBox(0), Value::Zero).AsFloat3();
         value = writeLocal(sRGB.Type, String::Format(TEXT("sRGBToLinear({0})"), sRGB.Value), node);
-        _includes.Add(TEXT("./Flax/GammaCorrectionCommon.hlsl"));
+        _includes.Add(TEXT("./Flax/PostFX/GammaCorrectionCommon.hlsl"));
         break;
     }
     default:

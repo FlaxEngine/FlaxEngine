@@ -101,6 +101,11 @@ namespace FlaxEditor.GUI
         public abstract Type ValueType { get; }
 
         /// <summary>
+        /// Gets the main container control that holds the curve editor UI. Can be used to add custom controls to the curve editor.
+        /// </summary>
+        public abstract Panel MainPanel { get; }
+
+        /// <summary>
         /// The amount of frames per second of the curve animation (optional). Can be used to restrict the keyframes time values to the given time quantization rate.
         /// </summary>
         public abstract float? FPS { get; set; }
@@ -177,6 +182,28 @@ namespace FlaxEditor.GUI
             ViewScale = ApplyUseModeMask(EnableZoom, Float2.One, ViewScale);
             ViewOffset = ApplyUseModeMask(EnablePanning, Float2.Zero, ViewOffset);
             UpdateKeyframes();
+        }
+
+        internal static string GetComponentLabel(int component, Type valueType)
+        {
+            if (valueType == typeof(Color) || valueType == typeof(Color32))
+            {
+                switch (component)
+                {
+                case 0: return "r";
+                case 1: return "g";
+                case 2: return "b";
+                case 3: return "a";
+                }
+            }
+            switch (component)
+            {
+            case 0: return "x";
+            case 1: return "y";
+            case 2: return "z";
+            case 3: return "w";
+            default: return (component + 1).ToString();
+            }
         }
 
         /// <summary>

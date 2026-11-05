@@ -2,6 +2,7 @@
 
 #include "GPUContext.h"
 #include "GPUDevice.h"
+#include "GPUPass.h"
 #include "RenderTask.h"
 #include "Textures/GPUTexture.h"
 
@@ -77,7 +78,7 @@ void GPUContext::OnPresent()
 
 void GPUContext::BindSR(int32 slot, GPUTexture* t)
 {
-    ASSERT_LOW_LAYER(t == nullptr || t->ResidentMipLevels() == 0 || t->IsShaderResource());
+    CHECK_DEBUG(t == nullptr || t->ResidentMipLevels() == 0 || t->IsShaderResource());
     BindSR(slot, GET_TEXTURE_VIEW_SAFE(t));
 }
 
@@ -94,8 +95,10 @@ void GPUContext::Draw(GPUTexture* dst, GPUTexture* src)
     ResetRenderTarget();
     const float width = (float)dst->Width();
     const float height = (float)dst->Height();
+    auto rt = dst->View();
+    auto rtAction = GPUDrawPassAction::Store;
+    GPUDrawPass drawPass(this, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
     SetViewport(width, height);
-    SetRenderTarget(dst->View());
     BindSR(0, src->View());
     SetState(_device->GetCopyLinearPS());
     DrawFullscreenTriangle();
@@ -107,8 +110,10 @@ void GPUContext::Draw(GPUTexture* dst, GPUTextureView* src)
     ResetRenderTarget();
     const float width = (float)dst->Width();
     const float height = (float)dst->Height();
+    auto rt = dst->View();
+    auto rtAction = GPUDrawPassAction::Store;
+    GPUDrawPass drawPass(this, ToSpan(&rt, 1), ToSpan(&rtAction, 1));
     SetViewport(width, height);
-    SetRenderTarget(dst->View());
     BindSR(0, src);
     SetState(_device->GetCopyLinearPS());
     DrawFullscreenTriangle();
@@ -136,4 +141,9 @@ void GPUContext::SetResourceState(GPUResource* resource, uint64 state, int32 sub
 
 void GPUContext::ForceRebindDescriptors()
 {
+}
+
+void GPUContext::BeginDrawPass(GPUDrawPass& pass)
+{
+    SetRenderTarget(pass.DepthBuffer, ToSpan(pass.RenderTargets, pass.RenderTargetsCount));
 }

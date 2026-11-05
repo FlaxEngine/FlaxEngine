@@ -113,6 +113,16 @@ namespace FlaxEngine
         public float ValuesSum => R + G + B + A;
 
         /// <summary>
+        /// Returns true if color is fully transparent (all components are equal zero).
+        /// </summary>
+        public bool IsTransparent => Mathf.IsZero(R + G + B + A);
+
+        /// <summary>
+        /// Returns true if color has opacity channel in use (different from 1).
+        /// </summary>
+        public bool HasOpacity => !Mathf.IsOne(A);
+
+        /// <summary>
         /// Constructs a new Color with given r,g,b,a component.
         /// </summary>
         /// <param name="rgba">RGBA component.</param>

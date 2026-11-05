@@ -82,15 +82,13 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     ASSERT(depth || rtCount);
 
     // Prepare key
-    GPUPipelineStateKeyDX12 key;
+    GPUPipelineStateKeyDX12 key = {};
     key.RTsCount = rtCount;
     key.VertexLayout = vertexLayout;
     key.DepthFormat = depth ? depth->GetFormat() : PixelFormat::Unknown;
     key.MSAA = depth ? depth->GetMSAA() : (rtCount ? rtHandles[0]->GetMSAA() : MSAALevel::None);
     for (int32 i = 0; i < rtCount; i++)
         key.RTVsFormats[i] = rtHandles[i]->GetFormat();
-    for (int32 i = rtCount; i < GPU_MAX_RT_BINDED; i++)
-        key.RTVsFormats[i] = PixelFormat::Unknown;
 
     // Try reuse cached version
     ID3D12PipelineState* state = nullptr;

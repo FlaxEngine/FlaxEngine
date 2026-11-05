@@ -14,14 +14,16 @@
 #include "Engine/Level/Actors/Skybox.h"
 #include "Engine/Level/Actors/Decal.h"
 #include "Engine/Level/Actors/ExponentialHeightFog.h"
-#include "Engine/Audio/AudioListener.h"
-#include "Engine/Audio/AudioSource.h"
-#include "Engine/Particles/ParticleEffect.h"
-#include "Engine/Animations/SceneAnimations/SceneAnimationPlayer.h"
-#include "Engine/Engine/EngineService.h"
 #include "Engine/Level/Actors/Sky.h"
 #include "Engine/Level/Actors/SkyLight.h"
 #include "Engine/Level/Actors/SpotLight.h"
+#include "Engine/Audio/AudioListener.h"
+#include "Engine/Audio/AudioSource.h"
+#include "Engine/Particles/ParticleEffect.h"
+#include "Engine/Graphics/RenderContext.h"
+#include "Engine/Graphics/Models/ModelInstanceEntry.h"
+#include "Engine/Animations/SceneAnimations/SceneAnimationPlayer.h"
+#include "Engine/Engine/EngineService.h"
 #include "Engine/Video/VideoPlayer.h"
 
 enum class IconTypes
@@ -84,16 +86,8 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor
         return;
 
     Mesh::DrawInfo draw;
-    draw.Lightmap = nullptr;
-    draw.LightmapUVs = nullptr;
     draw.Flags = StaticFlags::Transform;
     draw.DrawModes = DrawPass::Forward;
-    draw.PerInstanceRandom = 0;
-    draw.StencilValue = 0;
-    draw.LODBias = 0;
-    draw.ForcedLOD = -1;
-    draw.SortOrder = 0;
-    draw.VertexColors = nullptr;
 
     if (const auto scene = SceneObject::Cast<Scene>(actor))
     {
@@ -137,9 +131,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
     const BoundingFrustum frustum = view.Frustum;
     const auto& icons = scene->GetSceneRendering()->ViewportIcons;
     Matrix m1, m2, world;
-    GeometryDrawStateData drawState;
-    draw.DrawState = &drawState;
-    draw.Deformation = nullptr;
     draw.World = &world;
     AssetReference<Texture> texture;
     for (Actor* icon : icons)
@@ -219,11 +210,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
         Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
         Matrix::Multiply(m1, m2, world);
 
-        // Draw icon
-        GeometryDrawStateData drawState;
-        draw.DrawState = &drawState;
-        draw.Deformation = nullptr;
-
         // Support custom icons through types, but not ones that were added through actors, since they cant register while in prefab view anyway
         if (ActorTypeToTexture.TryGet(actor->GetTypeHandle(), texture))
         {
@@ -236,9 +222,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
                 draw.Buffer->At(0).ReceiveDecals = false;
                 draw.Buffer->At(0).ShadowsMode = ShadowsCastingMode::None;
             }
-
             AssetReference<MaterialBase> material;
-
             if (!TextureToMaterial.TryGet(texture, material))
             {
                 // Create custom material per custom texture
@@ -246,7 +230,6 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
                 TextureToMaterial[texture]->SetParameterValue(TEXT("Image"), Variant(texture));
                 material = TextureToMaterial[texture];
             }
-
             draw.Buffer->At(0).Material = material;
         }
         else
@@ -255,6 +238,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
             draw.Buffer = &InstanceBuffers[static_cast<int32>(iconType)];
         }
 
+        // Draw icon
         draw.World = &world;
         draw.Bounds = sphere;
         QuadModel->Draw(renderContext, draw);

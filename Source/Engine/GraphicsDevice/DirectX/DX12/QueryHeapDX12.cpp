@@ -28,6 +28,11 @@ bool QueryHeapDX12::Init(GPUDeviceDX12* device, GPUQueryType type, uint32 size)
         QueryType = D3D12_QUERY_TYPE_OCCLUSION;
         heapDesc.Type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
         break;
+    case GPUQueryType::BinaryOcclusion:
+        _resultSize = sizeof(uint64);
+        QueryType = D3D12_QUERY_TYPE_BINARY_OCCLUSION;
+        heapDesc.Type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
+        break;
     case GPUQueryType::MAX:
         return true;
     }
@@ -74,13 +79,20 @@ void QueryHeapDX12::Destroy()
     _resultData.SetCapacity(0);
 }
 
-void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)
+void QueryHeapDX12::EndFrame(GPUContextDX12* context)
 {
-    ASSERT(_currentBatch.Open);
-    if (_currentBatch.Count == 0)
-        return;
+    // Update existing batches to avoid leaks
+    for (int32 i = 0; i < _batches.Count(); i++)
+    {
+        if (--_batches[i].TTL == 0)
+        {
+            _batches.RemoveAt(i--);
+        }
+    }
 
-    // Close the current batch
+    // Close the current batch (if not empty)
+    if (!_currentBatch.Open || _currentBatch.Count == 0)
+        return;
     _currentBatch.Open = false;
 
     // Resolve the batch
@@ -98,11 +110,6 @@ void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)
     // Begin a new query batch
     _batches.Add(_currentBatch);
     StartQueryBatch();
-}
-
-bool QueryHeapDX12::CanAlloc(int32 count) const
-{
-    return _currentBatch.Open && _currentIndex + count <= GetQueryHeapCount();
 }
 
 void QueryHeapDX12::Alloc(ElementHandle& handle)
@@ -203,6 +210,7 @@ void QueryHeapDX12::StartQueryBatch()
     // Start a new batch
     _currentBatch.Start = _currentIndex;
     _currentBatch.Open = true;
+    _currentBatch.TTL = 50; // Auto-destroy after some frames when user fails to call GetQueryResult
 }
 
 #endif

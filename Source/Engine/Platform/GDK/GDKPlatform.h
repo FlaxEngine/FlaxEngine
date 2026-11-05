@@ -43,7 +43,7 @@ public:
     // Signs in user without showing UI. If user is not signed in, it will fail and return false. Use SignInWithUI to show UI and let user sign in.
     API_FUNCTION() static void SignInSilently();
     // Signs in user with showing UI. If user is already signed in, it will succeed and return true. If user is not signed in, it will show UI and let user sign in.
-    API_FUNCTION() static void SignInWithUI();
+    API_FUNCTION() static void SignInWithUI(bool allowGuests = true);
     // Searches for a user with a specific local ID.
     static User* FindUser(const struct XUserLocalId& id);
 

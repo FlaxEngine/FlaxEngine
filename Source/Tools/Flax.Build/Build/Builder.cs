@@ -384,6 +384,7 @@ namespace Flax.Build
                 }
 
                 // Prepare tasks for the execution
+                Sdk.DelayedPrint();
                 using (new ProfileEventScope("PrepareTasks"))
                 {
                     using (new ProfileEventScope("Setup"))

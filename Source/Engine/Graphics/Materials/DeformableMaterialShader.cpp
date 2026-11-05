@@ -7,12 +7,12 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/GPULimits.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 
 PACK_STRUCT(struct DeformableMaterialShaderData {
     Matrix WorldMatrix;
@@ -82,7 +82,6 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    const bool wireframe = (_info.FeaturesFlags & MaterialFeaturesFlags::Wireframe) != MaterialFeaturesFlags::None || view.Mode == ViewMode::Wireframe;
     CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : _info.CullMode;
     if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
     {
@@ -91,7 +90,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     }
     PipelineStateCache* psCache = _cache.GetPS(view.Pass);
     ASSERT(psCache);
-    GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);
+    GPUPipelineState* state = psCache->GetPS(this, cullMode);
 
     // Bind pipeline
     context->SetState(state);
@@ -108,10 +107,12 @@ void DeformableMaterialShader::Unload()
 
 bool DeformableMaterialShader::Load()
 {
-    _drawModes = DrawPass::Depth | DrawPass::QuadOverdraw;
+    _drawModes = DrawPass::Depth | DrawPass::QuadOverdraw | DrawPass::Wireframe;
     auto psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
-    psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
+    psDesc.DepthEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthTest);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    psDesc.CullMode = _info.CullMode;
     psDesc.VS = _shader->GetVS("VS_SplineModel");
 
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -124,13 +125,24 @@ bool DeformableMaterialShader::Load()
     }
 #endif
 
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
     if (_shader->HasShader("PS_QuadOverdraw"))
     {
         // Quad Overdraw
+        _drawModes |= DrawPass::QuadOverdraw;
         psDesc.PS = _shader->GetPS("PS_QuadOverdraw");
         _cache.QuadOverdraw.Init(psDesc);
     }
+
+    // Wireframe
+    psDesc.Wireframe = true;
+    psDesc.DepthWriteEnable = false;
+    psDesc.BlendMode = BlendingMode::AlphaBlend;
+    psDesc.PS = GPUDevice::Instance->QuadShader->GetPS("PS_Wireframe");
+    _cache.Wireframe.Init(psDesc);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
+    psDesc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    psDesc.BlendMode = BlendingMode::Opaque;
 #endif
 
     if (_info.BlendMode == MaterialBlendMode::Opaque)
@@ -188,7 +200,7 @@ bool DeformableMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
-    psDesc.DepthFunc = ComparisonFunc::Less;
+    psDesc.DepthFunc = ComparisonFunc::Default;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
     _cache.Depth.Init(psDesc);

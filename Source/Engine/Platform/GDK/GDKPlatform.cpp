@@ -343,12 +343,12 @@ void GDKPlatform::SignInSilently()
     }
 }
 
-void GDKPlatform::SignInWithUI()
+void GDKPlatform::SignInWithUI(bool allowGuests)
 {
     auto ab = new XAsyncBlock();
     ab->queue = TaskQueue;
     ab->callback = AddUserComplete;
-    HRESULT result = XUserAddAsync(XUserAddOptions::AllowGuests, ab);
+    HRESULT result = XUserAddAsync(allowGuests ? XUserAddOptions::AllowGuests : XUserAddOptions::None, ab);
     if (FAILED(result))
     {
         GDK_LOG(result, "XUserAddAsync");
@@ -552,6 +552,8 @@ bool GDKPlatform::CanOpenUrl(const StringView& url)
 
 void GDKPlatform::OpenUrl(const StringView& url)
 {
+    if (Users.IsEmpty())
+        return;
     const StringAsANSI<> urlANSI(url.Get(), url.Length());
     XLaunchUri(Users[0]->UserHandle, urlANSI.Get());
 }

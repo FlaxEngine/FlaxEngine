@@ -48,14 +48,19 @@ namespace FlaxEditor.States
         public virtual bool CanChangeScene => false;
 
         /// <summary>
-        /// Checks if can enter play mode in this state.
+        /// Checks if can start play mode in this state.
         /// </summary>
         public virtual bool CanEnterPlayMode => false;
 
         /// <summary>
-        /// Checks if can enter recompile scripts in this state.
+        /// Checks if can recompile scripts in this state.
         /// </summary>
         public virtual bool CanReloadScripts => false;
+
+        /// <summary>
+        /// Checks if can cook game in this state.
+        /// </summary>
+        public virtual bool CanCookGame => false;
 
         /// <summary>
         /// Checks if static is valid for Editor UI calls and other stuff.

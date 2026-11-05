@@ -33,4 +33,6 @@ namespace THelpers
     };
 }
 
+// Utility to execute code from lambda on scope exit (no matter the place with scope arguments capture)
+// Usage: SCOPE_EXIT{ DoSomething(); };
 #define SCOPE_EXIT const auto CONCAT_MACROS(__scopeExit, __LINE__) = THelpers::ScopeExitInternal() * [&]()

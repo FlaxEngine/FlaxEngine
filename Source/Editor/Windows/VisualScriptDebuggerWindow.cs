@@ -71,9 +71,14 @@ namespace FlaxEditor.Windows
                 /// <inheritdoc />
                 protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
                 {
-                    var node = GetNode(Tag);
-                    ((VisualScriptWindow)node?.Surface.Owner)?.ShowNode(node);
-                    return true;
+                    if (button == MouseButton.Left)
+                    {
+                        var node = GetNode(Tag);
+                        ((VisualScriptWindow)node?.Surface.Owner)?.ShowNode(node);
+                        return true;
+                    }
+
+                    return false;
                 }
             }
 

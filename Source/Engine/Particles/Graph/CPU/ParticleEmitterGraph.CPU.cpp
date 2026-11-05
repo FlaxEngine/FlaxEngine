@@ -4,6 +4,7 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -370,7 +371,9 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
 
 void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, RenderContext& renderContext, Matrix& transform)
 {
-    if (!emitter->IsUsingLights || _graph._attrPosition == -1)
+    if (!emitter->IsUsingLights ||
+        _graph._attrPosition == -1 ||
+        data.Version != _graph.Version)
         return;
 
     // Prepare particles buffer access
@@ -578,7 +581,7 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
                 ribbonOrderData[j] = j;
             }
 
-            if (sortKeyData.IsValid())
+            if (sortKeyData.IsValid() && data.Buffer->CPU.Count == cpu.Count)
             {
                 Sorting::SortArray(ribbonOrderData, cpu.Count, SortRibbonParticles, &sortKeyData);
             }

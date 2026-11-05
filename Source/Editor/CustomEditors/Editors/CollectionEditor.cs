@@ -1016,11 +1016,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 var result = base.OnDragDrop(ref location, data);
                 if (result != DragDropEffect.None)
                 {
-                    _dragHandlers.OnDragDrop(null);
+                    _dragHandlers?.OnDragDrop(null);
                     return result;
                 }
 
-                if (_dragHandlers.HasValidDrag)
+                if (_dragHandlers != null && _dragHandlers.HasValidDrag)
                 {
                     if (_dragItems.HasValidDrag)
                     {

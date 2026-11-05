@@ -101,9 +101,9 @@ bool Material::CanUseLightmap() const
     return _materialShader && _materialShader->CanUseLightmap();
 }
 
-bool Material::CanUseInstancing(InstancingHandler& handler) const
+bool Material::CanUseInstancing(const RenderContext& renderContext, InstancingHandler& handler) const
 {
-    return _materialShader && _materialShader->CanUseInstancing(handler);
+    return _materialShader && _materialShader->CanUseInstancing(renderContext, handler);
 }
 
 void Material::Bind(BindParameters& params)

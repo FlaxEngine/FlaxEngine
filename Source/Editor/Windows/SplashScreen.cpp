@@ -29,7 +29,7 @@ const Char* SplashScreenQuotes[] =
 #elif PLATFORM_LINUX
     TEXT("Try it on a Raspberry"),
     TEXT("Trying to exit vim"),
-    TEXT("sudo flax --project HelloWorld.flaxproj"),
+    TEXT("sudo flax --project=HelloWorld.flaxproj"),
 #elif PLATFORM_MAC
     TEXT("don't compare Macbooks to oranges."),
     TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
@@ -213,7 +213,7 @@ void SplashScreen::Show()
         if (font->IsLoaded())
             OnFontLoaded(font);
         else
-            font->OnLoaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
+            font->Loaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
     }
 
     // Load custom image
@@ -337,7 +337,7 @@ void SplashScreen::OnFontLoaded(Asset* asset)
     ASSERT(asset && asset->IsLoaded());
     auto font = (FontAsset*)asset;
 
-    font->OnLoaded.Unbind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
+    font->Loaded.Unbind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
 
     // Create fonts
     const float s = _dpiScale;

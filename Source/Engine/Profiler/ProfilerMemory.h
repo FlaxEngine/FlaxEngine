@@ -28,6 +28,8 @@ public:
         TotalTracked,
         // Total amount of untracked memory (gap between total system memory usage and tracked memory size).
         TotalUntracked,
+        // Total amount of used GPU video memory (sum of dedicated and system memory).
+        TotalGPU,
         // Initial memory used by program upon startup (eg. executable size, static variables).
         ProgramSize,
         // Profiling tool memory overhead.
@@ -101,6 +103,9 @@ public:
 
         // Total memory allocated by input system.
         Input,
+
+        // Total online system memory.
+        Online,
 
         // Total localization system memory.
         Localization,

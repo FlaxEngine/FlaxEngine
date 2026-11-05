@@ -42,6 +42,13 @@ bool CompileScriptsStep::DeployBinaries(CookingData& data, const String& path, c
         return true;
     }
 
+    // Metadata
+    auto versionControlInfoMember = document.FindMember("VersionControlInfo");
+    if (versionControlInfoMember != document.MemberEnd() && data.VersionControlInfo.IsEmpty())
+    {
+        data.VersionControlInfo = versionControlInfoMember->value.GetText();
+    }
+
     // Deploy all references
     auto referencesMember = document.FindMember("References");
     if (referencesMember != document.MemberEnd())
@@ -245,8 +252,15 @@ bool CompileScriptsStep::Perform(CookingData& data)
             writer.String(target);
             writer.JKEY("Platform");
             writer.String(platform);
+            writer.JKEY("Architecture");
+            writer.String(architecture);
             writer.JKEY("Configuration");
             writer.String(configuration);
+            if (data.VersionControlInfo.HasChars())
+            {
+                writer.JKEY("VersionControlInfo");
+                writer.String(data.VersionControlInfo);
+            }
 
             writer.JKEY("BinaryModules");
             writer.StartArray();

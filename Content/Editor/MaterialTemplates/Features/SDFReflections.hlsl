@@ -3,7 +3,7 @@
 @0// SDF Reflections: Defines
 #define USE_GLOBAL_SURFACE_ATLAS 1
 @1// SDF Reflections: Includes
-#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/Utils/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 @2// SDF Reflections: Constants
 GlobalSDFData GlobalSDF;

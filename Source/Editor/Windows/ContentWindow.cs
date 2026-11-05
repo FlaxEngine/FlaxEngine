@@ -335,7 +335,7 @@ namespace FlaxEditor.Windows
             var menu = new ContextMenu();
             
             InterfaceOptions interfaceOptions = Editor.Instance.Options.Options.Interface;
-            bool disableUnavaliable = interfaceOptions.UnavaliableContentCreateOptions == InterfaceOptions.DisabledHidden.Disabled;
+            bool disableUnavaliable = interfaceOptions.UnavailableContentCreateOptions == InterfaceOptions.DisabledHidden.Disabled;
 
             CreateNewFolderMenu(menu, CurrentViewFolder, disableUnavaliable);
             CreateNewModuleMenu(menu, CurrentViewFolder, disableUnavaliable);
@@ -1154,8 +1154,7 @@ namespace FlaxEditor.Windows
                 throw new ArgumentNullException();
 
             var item = Editor.ContentDatabase.Find(asset.ID);
-            if (item != null)
-                Select(item);
+            Select(item);
         }
 
         /// <summary>
@@ -1167,8 +1166,7 @@ namespace FlaxEditor.Windows
         public void Select(ContentItem item, bool fastScroll = false, bool additive = false)
         {
             if (item == null)
-                throw new ArgumentNullException();
-
+                return;
             if (!_navigationUnlocked)
                 return;
             var parent = item.ParentFolder;

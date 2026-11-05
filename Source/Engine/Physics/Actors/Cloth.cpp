@@ -3,7 +3,7 @@
 #include "Cloth.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Ray.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshBase.h"
@@ -906,12 +906,6 @@ void Cloth::OnPostUpdate()
         if (_sceneRenderingKey != -1)
             GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
     }
-}
-
-void Cloth::Draw(RenderContext& renderContext)
-{
-    // Update min draw distance for the next simulation tick
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
 }
 
 void Cloth::Draw(RenderContextBatch& renderContextBatch)

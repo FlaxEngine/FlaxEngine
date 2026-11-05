@@ -1627,6 +1627,7 @@ inline const CD3DX12_RESOURCE_DESC1* D3DX12ConditionallyExpandAPIDesc(
 }
 
 
+
 //------------------------------------------------------------------------------------------------
 struct CD3DX12_SHADER_RESOURCE_VIEW_DESC : public D3D12_SHADER_RESOURCE_VIEW_DESC
 {
@@ -1656,7 +1657,7 @@ struct CD3DX12_SHADER_RESOURCE_VIEW_DESC : public D3D12_SHADER_RESOURCE_VIEW_DES
         UINT64 FirstElement = 0) noexcept
     {
         CD3DX12_SHADER_RESOURCE_VIEW_DESC desc;
-        desc.Format = DXGI_FORMAT_R32_UINT;
+        desc.Format = DXGI_FORMAT_R32_TYPELESS;
         desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
         desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         desc.Buffer.FirstElement = FirstElement;
@@ -1888,7 +1889,7 @@ struct CD3DX12_UNORDERED_ACCESS_VIEW_DESC : public D3D12_UNORDERED_ACCESS_VIEW_D
         UINT64 CounterOffsetInBytes = 0) noexcept
     {
         CD3DX12_UNORDERED_ACCESS_VIEW_DESC desc;
-        desc.Format = DXGI_FORMAT_R32_UINT;
+        desc.Format = DXGI_FORMAT_R32_TYPELESS;
         desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
         desc.Buffer.FirstElement = FirstElement;
         desc.Buffer.NumElements = NumElements;
@@ -2068,5 +2069,3 @@ struct CD3DX12_SERIALIZED_ROOT_SIGNATURE_DESC : public D3D12_SERIALIZED_ROOT_SIG
         SerializedBlobSizeInBytes = size;
     }
 };
-
-

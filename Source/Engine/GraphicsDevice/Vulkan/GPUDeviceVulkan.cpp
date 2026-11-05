@@ -8,6 +8,9 @@
 #include "GPUDeviceVulkan.h"
 #include "GPUAdapterVulkan.h"
 #include "GPUShaderVulkan.h"
+#if VULKAN_USE_DEBUG_LAYER
+#include "GPUShaderProgramVulkan.h"
+#endif
 #include "GPUContextVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "GPUTextureVulkan.h"
@@ -130,6 +133,11 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugReportFunction(VkDebugReportFlagsEXT m
 
 #if VK_EXT_debug_utils
 
+#if GPU_ENABLE_DEBUG_LAYER
+#include "Engine/Threading/ThreadLocal.h"
+extern ThreadLocal<const GPUShaderProgramInitializer*> CurrentVulkanShaderLoading;
+#endif
+
 static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity, VkDebugUtilsMessageTypeFlagsEXT msgType, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData)
 {
     // Ignore some errors
@@ -144,11 +152,12 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 5: // SPIR-V module not valid: MemoryBarrier: Vulkan specification requires Memory Semantics to have one of the following bits set: Acquire, Release, AcquireRelease or SequentiallyConsistent
         case -1666394502: // After query pool creation, each query must be reset before it is used. Queries must also be reset between uses.
         case 1203141749:
-        case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment. TODO: investigate it for PS_GBuffer shader from Deferred material with USE_LIGHTMAP=1
+        case 602160055: // Attachment 4 not written by fragment shader; undefined values will be written to attachment.
         case 7060244: //  Image Operand Offset can only be used with OpImage*Gather operations
         case -1539028524: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
         case -1810835948: // SortedIndices is null so Vulkan backend sets it to default R32_SFLOAT format which is not good for UINT format of the buffer
         case -1621360350: // VkFramebufferCreateInfo attachment #0 has a layer count (1) smaller than the corresponding framebuffer layer count (64). The Vulkan spec states: If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as an input, color, resolve, or depth/stencil attachment by renderPass must have been created with a VkImageViewCreateInfo::subresourceRange.layerCount greater than or equal to layers
+        case -1744492148: // pCreateInfos[0] Inside [VK_SHADER_STAGE_FRAGMENT_BIT], it writes to [Output variable, Location 3], but there is no VkSubpassDescription::pColorAttachments[3] and this write is unused.
             return VK_FALSE;
         }
         break;
@@ -158,6 +167,7 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         case 0: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
         case 558591440: // preTransform doesn't match the currentTransform returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation. TODO: implement preTransform for Android to improve swapchain presentation performance
         case 101294395: // Vertex shader writes to output location 0.0 which is not consumed by fragment shader
+        case -937765618: // pCreateInfos[0] (SPIR-V Interface) [VK_SHADER_STAGE_VERTEX_BIT] has an Output value declared at Location 1 Component 0, but there is no corresponding Input declared in [VK_SHADER_STAGE_FRAGMENT_BIT].
             return VK_FALSE;
         }
         break;
@@ -240,12 +250,27 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
     }
 
-#if !BUILD_RELEASE
+#if GPU_ENABLE_DEBUG_LAYER
     if (GPUDevice::Instance)
     {
-        if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+        if (auto* shaderInitializer = CurrentVulkanShaderLoading.Get())
         {
-            if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+            LOG(Warning, "[Vulkan] Error during loading shader '{}' from '{}'", String(shaderInitializer->Name), String(shaderInitializer->Owner->GetName()));
+        }
+        else if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+        {
+            if (auto* cs = context->GetCurrentCS())
+            {
+#if !BUILD_RELEASE
+                GPUShaderProgram::DebugName nameBuf;
+                cs->GetDebugName(nameBuf);
+                String name(nameBuf.Get(), nameBuf.Count() - 1);
+#else
+                name = TEXT("Compute Shader");
+#endif
+                LOG(Warning, "[Vulkan] Error during rendering with {}", name);
+            }
+            else if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
             {
                 GPUPipelineState::DebugName name;
                 state->GetDebugName(name);
@@ -447,7 +472,8 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
 uint32 GetHash(const RenderTargetLayoutVulkan& key)
 {
     uint32 hash = (int32)key.MSAA * 11;
-    CombineHash(hash, key.Flags);
+    CombineHash(hash, (uint32)(key.Flags & MAX_uint32));
+    CombineHash(hash, (uint32)((key.Flags >> 32) & MAX_uint32));
     CombineHash(hash, (uint32)key.DepthFormat * 93473262);
     CombineHash(hash, key.Extent.width);
     CombineHash(hash, key.Extent.height);
@@ -515,7 +541,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     : Device(device)
     , Handle(VK_NULL_HANDLE)
     , Layout(layout)
-    , CanDepthWrite(true)
+    , CanDepthStencilWrite(true)
 {
     const int32 colorAttachmentsCount = layout.RTsCount;
     const bool hasDepthStencilAttachment = layout.DepthFormat != PixelFormat::Unknown;
@@ -537,15 +563,9 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.flags = 0;
         attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.RTVsFormats[i]);
         attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-#if PLATFORM_ANDROID
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // TODO: Adreno 640 has glitches when blend is disabled and rt data not loaded 
-#elif PLATFORM_MAC || PLATFORM_IOS
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // MoltenVK seams to have glitches (tiled arch of gpu)
-#else
-        // TODO: we need render passes into high-level rendering api to perform more optimal rendering (esp. for tiled gpus)
-        attachment.loadOp = layout.BlendEnable ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-#endif
-        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        uint64 mask = 1ull << i;
+        attachment.loadOp = layout.LoadClear & mask ? VK_ATTACHMENT_LOAD_OP_CLEAR : (layout.LoadDontCare & mask ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD);
+        attachment.storeOp = layout.StoreDontCare & mask ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -595,15 +615,21 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         attachment.loadOp = layout.ReadDepth || layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         //attachment.storeOp = layout.WriteDepth || layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // For some reason, read-only depth results in artifacts
+        // TODO: use VK_ATTACHMENT_STORE_OP_NONE for readonly depth/stencil but check for 'VK_KHR_load_store_op_none' extension
         attachment.stencilLoadOp = layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        uint64 mask = 1ull << colorAttachmentsCount;
+        if (layout.LoadClear & mask)
+            attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        else if (layout.LoadDontCare & mask)
+            attachment.loadOp = attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.initialLayout = depthStencilLayout;
         attachment.finalLayout = depthStencilLayout;
         depthStencilReference.attachment = colorAttachmentsCount;
         depthStencilReference.layout = depthStencilLayout;
         subpassDesc.pDepthStencilAttachment = &depthStencilReference;
         if (!layout.WriteDepth && !layout.WriteStencil)
-            CanDepthWrite = false;
+            CanDepthStencilWrite = false;
     }
 
     VkRenderPassCreateInfo createInfo;
@@ -630,7 +656,7 @@ QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQue
 {
     VkQueryPoolCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);
-    createInfo.queryType = type == GPUQueryType::Occlusion ? VK_QUERY_TYPE_OCCLUSION : VK_QUERY_TYPE_TIMESTAMP;
+    createInfo.queryType = type == GPUQueryType::Timer ? VK_QUERY_TYPE_TIMESTAMP : VK_QUERY_TYPE_OCCLUSION;
     createInfo.queryCount = capacity;
     VALIDATE_VULKAN_RESULT(vkCreateQueryPool(device->Device, &createInfo, nullptr, &_handle));
 
@@ -651,11 +677,18 @@ QueryPoolVulkan::~QueryPoolVulkan()
 
 #if VULKAN_RESET_QUERY_POOLS
 
-void QueryPoolVulkan::Reset(CmdBufferVulkan* cmdBuffer)
+void QueryPoolVulkan::Reset(GPUContextVulkan* context)
 {
+    if (_resetRanges.IsEmpty())
+        return;
+    const auto cmdBuffer = context->GetCmdBufferManager()->GetCmdBuffer();
+    if (cmdBuffer->IsInsideRenderPass())
+        context->EndRenderPass(); // vkCmdResetQueryPool can be called only outside the render pass
+    // TODO: batch sequential reset operations
+    auto commandBuffer = cmdBuffer->GetHandle();
     for (auto& range : _resetRanges)
     {
-        vkCmdResetQueryPool(cmdBuffer->GetHandle(), _handle, range.Start, range.Count);
+        vkCmdResetQueryPool(commandBuffer, _handle, range.Start, range.Count);
     }
     _resetRanges.Clear();
     ResetBeforeUse = false;
@@ -665,7 +698,6 @@ void QueryPoolVulkan::Reset(CmdBufferVulkan* cmdBuffer)
 
 BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type)
     : QueryPoolVulkan(device, capacity, type)
-    , _lastBeginIndex(0)
 {
     _queryOutput.Resize(capacity);
     _usedQueryBits.AddZeroed((capacity + 63) / 64);
@@ -673,7 +705,7 @@ BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 
     _readResultsBits.AddZeroed((capacity + 63) / 64);
 }
 
-bool BufferedQueryPoolVulkan::AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex)
+bool BufferedQueryPoolVulkan::AcquireQuery(GPUContextVulkan* context, uint32& resultIndex)
 {
     const uint64 allUsedMask = MAX_uint64;
     for (int32 wordIndex = _lastBeginIndex / 64; wordIndex < _usedQueryBits.Count(); wordIndex++)
@@ -690,10 +722,12 @@ bool BufferedQueryPoolVulkan::AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& r
             resultIndex += wordIndex * 64;
             const uint64 bit = (uint64)1 << (uint64)(resultIndex % 64);
             _usedQueryBits[wordIndex] = _usedQueryBits[wordIndex] | bit;
+            _startedQueryBits[wordIndex] &= ~bit;
             _readResultsBits[wordIndex] &= ~bit;
             _lastBeginIndex = resultIndex + 1;
             if (ResetBeforeUse)
-                Reset(cmdBuffer);
+                Reset(context);
+            _lastUsedFrame = Engine::FrameCount;
             return true;
         }
     }
@@ -716,6 +750,7 @@ void BufferedQueryPoolVulkan::ReleaseQuery(uint32 queryIndex)
             _lastBeginIndex = (uint32)queryIndex;
         }
     }
+    _lastUsedFrame = Engine::FrameCount;
     if (_usedQueryBits[word] == 0)
     {
         // Check if pool got empty and reset the pointer back to start
@@ -737,23 +772,22 @@ void BufferedQueryPoolVulkan::MarkQueryAsStarted(uint32 queryIndex)
 
 bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
 {
-    const uint64 bit = (uint64)(index % 64);
-    const uint64 bitMask = (uint64)1 << bit;
+    const uint64 bit = (uint64)1 << (index % 64);
     const uint32 word = index / 64;
 
-    if ((_startedQueryBits[word] & bitMask) == 0)
+    if ((_startedQueryBits[word] & bit) == 0)
     {
         // Query never started/ended
         result = 0;
         return true;
     }
 
-    if ((_readResultsBits[word] & bitMask) == 0)
+    if ((_readResultsBits[word] & bit) == 0)
     {
         const VkResult vkResult = vkGetQueryPoolResults(_device->Device, _handle, index, 1, sizeof(uint64), &_queryOutput[index], sizeof(uint64), VK_QUERY_RESULT_64_BIT);
         if (vkResult == VK_SUCCESS)
         {
-            _readResultsBits[word] = _readResultsBits[word] | bitMask;
+            _readResultsBits[word] = _readResultsBits[word] | bit;
 
 #if VULKAN_RESET_QUERY_POOLS
             // Add to reset
@@ -765,7 +799,6 @@ bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
         else if (vkResult == VK_NOT_READY)
         {
             // No results yet
-            result = 0;
             return false;
         }
         else
@@ -774,19 +807,60 @@ bool BufferedQueryPoolVulkan::GetResults(uint32 index, uint64& result)
         }
     }
 
+    // Get result
     result = _queryOutput[index];
+    _lastUsedFrame = Engine::FrameCount;
     return true;
 }
 
 bool BufferedQueryPoolVulkan::HasRoom() const
 {
-    const uint64 allUsedMask = MAX_uint64;
+    constexpr uint64 allUsedMask = MAX_uint64;
     if (_lastBeginIndex < _usedQueryBits.Count() * 64)
     {
         ASSERT((_usedQueryBits[_lastBeginIndex / 64] & allUsedMask) != allUsedMask);
         return true;
     }
     return false;
+}
+
+bool BufferedQueryPoolVulkan::TryExpire()
+{
+    // Auto-destroy pools some frames when user fails to call GetQueryResult
+    if (Engine::FrameCount - _lastUsedFrame < 50)
+        return false;
+
+    // Reset back to clean state all unfinished queries
+    bool canUseNow = true;
+    for (uint32 index = 0; index < (uint32)_queryOutput.Count(); index++)
+    {
+        const uint64 bit = (uint64)1 << (index % 64);
+        const uint32 word = index / 64;
+        if ((_usedQueryBits[word] & bit) == 0)
+            continue;
+#if VULKAN_RESET_QUERY_POOLS
+        if ((_readResultsBits[word] & bit) == 0)
+        {
+            // Add to reset
+            if (!_device->QueriesToReset.Contains(this))
+                _device->QueriesToReset.Add(this);
+            _resetRanges.Add(Range{ index, 1 });
+            canUseNow = false;
+        }
+#endif
+        _usedQueryBits[word] = _usedQueryBits[word] & ~bit;
+    }
+    constexpr uint64 allUsedMask = MAX_uint64;
+    for (int32 wordIndex = 0; wordIndex < _usedQueryBits.Count(); wordIndex++)
+    {
+        if (_usedQueryBits[wordIndex] != allUsedMask)
+        {
+            _lastBeginIndex = wordIndex * 64;
+            break;
+        }
+    }
+
+    return canUseNow && HasRoom();
 }
 
 HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)
@@ -796,7 +870,7 @@ HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)
     Platform::MemoryClear(_staticSamplers, sizeof(_staticSamplers));
 }
 
-void InitSampler(VkSamplerCreateInfo& createInfo, bool supportsMirrorClampToEdge, GPUSamplerFilter filter, GPUSamplerAddressMode addressU, GPUSamplerAddressMode addressV, GPUSamplerAddressMode addressW, GPUSamplerCompareFunction compareFunction)
+void InitSampler(VkSamplerCreateInfo& createInfo, bool supportsMirrorClampToEdge, GPUSamplerFilter filter, GPUSamplerAddressMode addressU, GPUSamplerAddressMode addressV, GPUSamplerAddressMode addressW, GPUSamplerCompareFunction compareFunction = GPUSamplerCompareFunction::Never)
 {
     createInfo.magFilter = RenderToolsVulkan::ToVulkanMagFilterMode(filter);
     createInfo.minFilter = RenderToolsVulkan::ToVulkanMinFilterMode(filter);
@@ -819,33 +893,39 @@ VkSampler* HelperResourcesVulkan::GetStaticSamplers()
         RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
         createInfo.mipLodBias = 0.0f;
         createInfo.minLod = 0.0f;
-        createInfo.maxLod = MAX_float;
+        createInfo.maxLod = 1000.0f;
         createInfo.maxAnisotropy = 1.0f;
         createInfo.anisotropyEnable = VK_FALSE;
         createInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
 
         // Linear Clamp
-        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Never);
+        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[0]));
 
         // Point Clamp
-        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Never);
+        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[1]));
 
         // Linear Wrap
-        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerCompareFunction::Never);
+        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[2]));
 
         // Point Wrap
-        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerCompareFunction::Never);
+        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[3]));
 
+#if REVERSE_Z
+        auto comparisionFunc = GPUSamplerCompareFunction::Greater;
+#else
+        auto comparisionFunc = GPUSamplerCompareFunction::Less;
+#endif
+
         // Shadow
-        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
+        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, comparisionFunc);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[4]));
 
         // Shadow PCF
-        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
+        InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, comparisionFunc);
         VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->Device, &createInfo, nullptr, &_staticSamplers[5]));
     }
     return _staticSamplers;
@@ -992,16 +1072,21 @@ GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* 
 GPUDevice* GPUDeviceVulkan::Create()
 {
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
-	auto settings = PlatformSettings::Get();
-	if (!settings->SupportVulkan)
-	{
-		// Skip if there is no support
-		LOG(Warning, "Cannot use Vulkan (support disabled).");
-		return nullptr;
-	}
+    auto settings = PlatformSettings::Get();
+    if (!settings->SupportVulkan)
+    {
+        // Skip if there is no support
+        LOG(Warning, "Cannot use Vulkan (support disabled).");
+        return nullptr;
+    }
 #endif
 
     VkResult result;
+
+#if VULKAN_USE_PERF_SDK
+    // Configure the Vulkan loader for NVIDIA PerfSDK before the loader initializes its global config
+    PerfSDKInit();
+#endif
 
 #if !PLATFORM_SWITCH
     // Initialize bindings
@@ -1029,7 +1114,12 @@ GPUDevice* GPUDeviceVulkan::Create()
     instInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #endif
     instInfo.pApplicationInfo = &appInfo;
-    GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt);
+#if VULKAN_USE_DEBUG_LAYER
+    bool useDebugLayer = CommandLine::Options.GPUDebug.IsTrue();
+#else
+    bool useDebugLayer = false;
+#endif
+    GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt, useDebugLayer);
     instInfo.enabledExtensionCount = InstanceExtensions.Count();
     instInfo.ppEnabledExtensionNames = instInfo.enabledExtensionCount > 0 ? static_cast<const char* const*>(InstanceExtensions.Get()) : nullptr;
     instInfo.enabledLayerCount = InstanceLayers.Count();
@@ -1127,7 +1217,8 @@ GPUDevice* GPUDeviceVulkan::Create()
 
     // Setup debug layer
 #if VULKAN_USE_DEBUG_LAYER
-    SetupDebugLayerCallback();
+    if (useDebugLayer)
+        SetupDebugLayerCallback();
 #endif
 
     // Enumerate all GPU devices and pick one
@@ -1212,10 +1303,19 @@ GPUDevice* GPUDeviceVulkan::Create()
             }
         }
     }
-    ASSERT(adapters[selectedAdapterIndex].IsValid());
+    GPUAdapterVulkan& selectedAdapter = adapters[selectedAdapterIndex];
+    ASSERT(selectedAdapter.IsValid());
+    if (VK_VERSION_MAJOR(selectedAdapter.GpuProps.apiVersion) < VK_VERSION_MAJOR(VULKAN_API_VERSION) || VK_VERSION_MINOR(selectedAdapter.GpuProps.apiVersion) < VK_VERSION_MINOR(VULKAN_API_VERSION))
+    {
+#if PLATFORM_DESKTOP
+        LOG(Fatal, "Failed to use GPU '{}' with Vulkan API {}.{} which is lower than required {}.{}.\nCheck your video driver version for update to the latest one.", selectedAdapter.Description, VK_VERSION_MAJOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MINOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MAJOR(VULKAN_API_VERSION), VK_VERSION_MINOR(VULKAN_API_VERSION));
+#else
+        LOG(Fatal, "Failed to use GPU '{}' with Vulkan API {}.{} which is lower than required {}.{}.\nCheck your system for updates.", selectedAdapter.Description, VK_VERSION_MAJOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MINOR(selectedAdapter.GpuProps.apiVersion), VK_VERSION_MAJOR(VULKAN_API_VERSION), VK_VERSION_MINOR(VULKAN_API_VERSION));
+#endif
+    }
 
     // Create device
-    auto device = New<GPUDeviceVulkan>(ShaderProfile::Vulkan_SM5, New<GPUAdapterVulkan>(adapters[selectedAdapterIndex]));
+    auto device = New<GPUDeviceVulkan>(ShaderProfile::Vulkan_SM5, New<GPUAdapterVulkan>(selectedAdapter));
     if (device->Init())
     {
         LOG(Warning, "Graphics Device init failed");
@@ -1238,13 +1338,13 @@ int32 GPUDeviceVulkan::GetOrCreateQueryPool(GPUQueryType type)
     for (int32 i = 0; i < QueryPools.Count(); i++)
     {
         auto pool = pools[i];
-        if (pool->Type == type && pool->HasRoom())
+        if (pool->Type == type && (pool->HasRoom() || pool->TryExpire()))
             return i;
     }
 
     PROFILE_CPU_NAMED("Create Create Pool");
     PROFILE_MEM(GraphicsCommands);
-    auto pool = New<BufferedQueryPoolVulkan>(this, type == GPUQueryType::Occlusion ? 4096 : 1024, type);
+    auto pool = New<BufferedQueryPoolVulkan>(this, type == GPUQueryType::Timer ? 1024 : 4096, type);
     QueryPools.Add(pool);
     return QueryPools.Count() - 1;
 }
@@ -1528,10 +1628,45 @@ GPUAdapter* GPUDeviceVulkan::GetAdapter() const
 
 void* GPUDeviceVulkan::GetNativePtr() const
 {
-    // Return both Instance and Device as pointer to void*[2]
+    // Returns pointer to array of pointers with multiple device handles used by external tools and plugins:
     _nativePtr[0] = (void*)Instance;
     _nativePtr[1] = (void*)Device;
+    _nativePtr[2] = (void*)vkGetInstanceProcAddr;
+    _nativePtr[3] = (void*)vkGetDeviceProcAddr;
     return _nativePtr;
+}
+
+GPUDevice::QueueInfo GPUDeviceVulkan::GetNativeQueue() const
+{
+    QueueInfo result;
+    if (GraphicsQueue)
+        result = { (void*)GraphicsQueue->GetHandle(), GraphicsQueue->GetFamilyIndex() };
+    return result;
+}
+
+GPUMemoryStats GPUDeviceVulkan::GetMemoryStats()
+{
+    GPUMemoryStats stats;
+    VmaBudget budgets[VK_MAX_MEMORY_HEAPS];
+    vmaGetHeapBudgets(Allocator, budgets);
+    const VkPhysicalDeviceMemoryProperties* memoryProperties;
+    vmaGetMemoryProperties(Allocator, &memoryProperties);
+    for (uint32 i = 0; i < memoryProperties->memoryHeapCount; i++)
+    {
+        VkMemoryHeap heap = memoryProperties->memoryHeaps[i];
+        VmaBudget& budget = budgets[i];
+        if (heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT && Adapter->GpuProps.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        {
+            stats.UsedDedicatedMemory += budget.usage;
+            stats.TotalDedicatedMemory += budget.budget;
+        }
+        else
+        {
+            stats.UsedSystemMemory += budget.usage;
+            stats.TotalSystemMemory += budget.budget;
+        }
+    }
+    return stats;
 }
 
 static int32 GetMaxSampleCount(VkSampleCountFlags counts)
@@ -1578,8 +1713,7 @@ bool GPUDeviceVulkan::Init()
 
     // Get extensions and layers
     Array<const char*> deviceExtensions;
-    Array<const char*> validationLayers;
-    GetDeviceExtensionsAndLayers(gpu, deviceExtensions, validationLayers);
+    GetDeviceExtensions(gpu, deviceExtensions);
     ParseOptionalDeviceExtensions(deviceExtensions);
 
     // Setup device info
@@ -1587,8 +1721,6 @@ bool GPUDeviceVulkan::Init()
     RenderToolsVulkan::ZeroStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
     deviceInfo.enabledExtensionCount = deviceExtensions.Count();
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.Get();
-    deviceInfo.enabledLayerCount = validationLayers.Count();
-    deviceInfo.ppEnabledLayerNames = deviceInfo.enabledLayerCount > 0 ? validationLayers.Get() : nullptr;
 
     // Setup queues info
     Array<VkDeviceQueueCreateInfo> queueFamilyInfos;
@@ -1677,6 +1809,18 @@ bool GPUDeviceVulkan::Init()
     VulkanPlatform::RestrictEnabledPhysicalDeviceFeatures(PhysicalDeviceFeatures, enabledFeatures);
     deviceInfo.pEnabledFeatures = &enabledFeatures;
 
+#if VULKAN_USE_PERF_SDK
+    VkPhysicalDeviceFeatures2 enabledFeatures2 = {};
+    VkPhysicalDeviceFeatures2* enabledFeatures2Ptr = nullptr;
+    if (Adapter && UsePerfSDK)
+    {
+        RenderToolsVulkan::ZeroStruct(enabledFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+        enabledFeatures2.features = enabledFeatures;
+        enabledFeatures2Ptr = &enabledFeatures2;
+        deviceInfo.pEnabledFeatures = nullptr;
+    }
+#endif
+
 #if VULKAN_USE_TRACY_GPU && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
     VkPhysicalDeviceHostQueryResetFeatures resetFeatures;
     if (PhysicalDeviceFeatures12.hostQueryReset)
@@ -1687,8 +1831,14 @@ bool GPUDeviceVulkan::Init()
     }
 #endif
 
+#if VULKAN_USE_PERF_SDK
+    if (UsePerfSDK)
+        PerfSDKInitDeviceInfo(deviceInfo, deviceExtensions, enabledFeatures2Ptr);
+#endif
+
     // Create the device
     VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
+    PhysicalDeviceFeatures12.pNext = nullptr;
 
 #if !PLATFORM_SWITCH
     // Optimize bindings
@@ -1731,7 +1881,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
         limits.HasDrawIndirect = PhysicalDeviceLimits.maxDrawIndirectCount >= 1;
-        limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
+        limits.HasAppendConsumeBuffers = false;
         limits.HasDepthClip = PhysicalDeviceFeatures.depthClamp;
         limits.HasDepthBounds = PhysicalDeviceFeatures.depthBounds;
         limits.HasDepthAsSRV = true;
@@ -1839,7 +1989,9 @@ bool GPUDeviceVulkan::Init()
     // Initialize memory allocator
     {
         VmaVulkanFunctions vulkanFunctions;
+        Platform::MemoryClear(&vulkanFunctions, sizeof(vulkanFunctions));
 #define INIT_FUNC(name) vulkanFunctions.name = name
+#define INIT_FUNC_EXTENSION(name, extension) vulkanFunctions.name = name; if (!vulkanFunctions.name) vulkanFunctions.name = extension
         INIT_FUNC(vkGetPhysicalDeviceProperties);
         INIT_FUNC(vkGetPhysicalDeviceMemoryProperties);
         INIT_FUNC(vkAllocateMemory);
@@ -1857,16 +2009,28 @@ bool GPUDeviceVulkan::Init()
         INIT_FUNC(vkCreateImage);
         INIT_FUNC(vkDestroyImage);
         INIT_FUNC(vkCmdCopyBuffer);
-#if VMA_DEDICATED_ALLOCATION
 #if PLATFORM_SWITCH
         vulkanFunctions.vkGetBufferMemoryRequirements2KHR = vkGetBufferMemoryRequirements2;
         vulkanFunctions.vkGetImageMemoryRequirements2KHR = vkGetImageMemoryRequirements2;
 #else
-        INIT_FUNC(vkGetBufferMemoryRequirements2KHR);
-        INIT_FUNC(vkGetImageMemoryRequirements2KHR);
+#if VMA_DEDICATED_ALLOCATION || VMA_VULKAN_VERSION >= 1001000
+        INIT_FUNC_EXTENSION(vkGetBufferMemoryRequirements2KHR, vkGetBufferMemoryRequirements2);
+        INIT_FUNC_EXTENSION(vkGetImageMemoryRequirements2KHR, vkGetImageMemoryRequirements2);
+#endif
+#if VMA_BIND_MEMORY2 || VMA_VULKAN_VERSION >= 1001000
+        INIT_FUNC_EXTENSION(vkBindBufferMemory2KHR, vkBindBufferMemory2);
+        INIT_FUNC_EXTENSION(vkBindImageMemory2KHR, vkBindImageMemory2);
+#endif
+#if VMA_MEMORY_BUDGET || VMA_VULKAN_VERSION >= 1001000
+        INIT_FUNC_EXTENSION(vkGetPhysicalDeviceMemoryProperties2KHR, vkGetPhysicalDeviceMemoryProperties2);
+#endif
+#if VMA_KHR_MAINTENANCE4 || VMA_VULKAN_VERSION >= 1003000
+        INIT_FUNC_EXTENSION(vkGetDeviceBufferMemoryRequirements, vkGetDeviceBufferMemoryRequirementsKHR);
+        INIT_FUNC_EXTENSION(vkGetDeviceImageMemoryRequirements, vkGetDeviceImageMemoryRequirementsKHR);
 #endif
 #endif
 #undef INIT_FUNC
+#undef INIT_FUNC_EXTENSION
         VmaAllocatorCreateInfo allocatorInfo = {};
         allocatorInfo.vulkanApiVersion = VULKAN_API_VERSION;
         allocatorInfo.physicalDevice = gpu;
@@ -2115,13 +2279,17 @@ RETRY:
         }
         break;
     case GPUQueryType::Occlusion:
+    case GPUQueryType::BinaryOcclusion:
         hasData = pool->GetResults(query.QueryIndex, result);
+        if (hasData && pool->Type == GPUQueryType::BinaryOcclusion && result > 1)
+            result = 1; // Clamp binary result
         break;
     }
 
     if (!hasData && wait)
     {
         // Wait until data is ready
+        // TODO: use VK_QUERY_RESULT_WAIT_BIT maybe?
         Platform::Yield();
         goto RETRY;
     }

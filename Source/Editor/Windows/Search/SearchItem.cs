@@ -2,6 +2,7 @@
 
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Drag;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -14,6 +15,7 @@ namespace FlaxEditor.Windows.Search
     internal class SearchItem : ContainerControl
     {
         private ContentFinder _finder;
+        private bool _isMouseDown;
 
         /// <summary>
         /// The item icon.
@@ -90,6 +92,10 @@ namespace FlaxEditor.Windows.Search
                 Focus();
                 return true;
             }
+
+            if (button == MouseButton.Left)
+                _isMouseDown = true;
+
             return base.OnMouseUp(location, button);
         }
 
@@ -98,6 +104,7 @@ namespace FlaxEditor.Windows.Search
         {
             if (button == MouseButton.Left)
             {
+                _isMouseDown = false;
                 _finder.Hide();
                 Editor.Instance.ContentFinding.Open(Item);
             }
@@ -122,6 +129,30 @@ namespace FlaxEditor.Windows.Search
             var root = RootWindow;
             if (root != null)
                 root.Cursor = CursorType.Hand;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            // Check if start drag and drop
+            if (_isMouseDown)
+            {
+                // Clear flag
+                _isMouseDown = false;
+
+                // Start
+                DoDragDrop();
+            }
+
+            // Base
+            base.OnMouseLeave();
+        }
+
+        /// <summary>
+        /// Begins the drag drop operation.
+        /// </summary>
+        protected virtual void DoDragDrop()
+        {
         }
 
         /// <inheritdoc />
@@ -178,6 +209,14 @@ namespace FlaxEditor.Windows.Search
             return false;
         }
 
+        protected override void DoDragDrop()
+        {
+            DragData data = DragItems.GetDragData(_asset);
+            DoDragDrop(data);
+
+            base.DoDragDrop();
+        }
+
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
@@ -190,6 +229,8 @@ namespace FlaxEditor.Windows.Search
                 ContextMenuButton b;
                 var cm = new ContextMenu { Tag = contentItem };
                 b = cm.AddButton("Open", () => Editor.Instance.ContentFinding.Open(Item));
+                proxy?.OnContentWindowContextMenu(cm, contentItem);
+                contentItem.OnContextMenu(cm);
                 cm.AddSeparator();
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(contentItem.Path)));
                 cm.AddButton("Show in Content window", () => Editor.Instance.Windows.ContentWin.Select(contentItem, true));
@@ -213,8 +254,6 @@ namespace FlaxEditor.Windows.Search
                     cm.AddButton("Copy path to Clipboard", () => Clipboard.Text = assetItem.Path);
                     cm.AddSeparator();
                 }
-                proxy?.OnContentWindowContextMenu(cm, contentItem);
-                contentItem.OnContextMenu(cm);
                 cm.Show(this, location);
                 _cm = cm;
                 return true;

@@ -70,10 +70,6 @@ namespace Flax.Build
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("COMPILE_WITHOUT_CSHARP");
             }
-            else if (!EngineConfiguration.WithDotNet(options))
-            {
-                options.CompileEnv.PreprocessorDefinitions.Add("COMPILE_WITH_MONO");
-            }
             if (EngineConfiguration.WithLargeWorlds(options))
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("USE_LARGE_WORLDS");
@@ -87,6 +83,11 @@ namespace Flax.Build
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_SDL");
                 options.ScriptingAPI.Defines.Add("PLATFORM_SDL");
+            }
+            if (EngineConfiguration.WithReverseZ(options))
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("REVERSE_Z");
+                options.ScriptingAPI.Defines.Add("REVERSE_Z");
             }
 
             // Add include paths for this and all referenced projects sources

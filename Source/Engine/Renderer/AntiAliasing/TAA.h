@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../RendererPass.h"
+#include "Engine/Renderer/RendererPass.h"
 #include "Engine/Graphics/GPUPipelineStatePermutations.h"
 
 /// <summary>
@@ -11,9 +11,8 @@
 class TAA : public RendererPass<TAA>
 {
 private:
-
     AssetReference<Shader> _shader;
-    GPUPipelineState* _psTAA;
+    GPUPipelineStatePermutationsPs<3> _psTAA;
 
 public:
     /// <summary>
@@ -22,21 +21,18 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="input">The input render target.</param>
     /// <param name="output">The output render target.</param>
-    void Render(const RenderContext& renderContext, GPUTexture* input, GPUTextureView* output);
+    void Render(const RenderContext& renderContext, GPUTexture* input, GPUTexture* output);
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        if (_psTAA)
-            _psTAA->ReleaseGPU();
+        _psTAA.Release();
         invalidateResources();
     }
 #endif
 
 public:
-
     // [RendererPass]
     String ToString() const override
     {
@@ -46,7 +42,6 @@ public:
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

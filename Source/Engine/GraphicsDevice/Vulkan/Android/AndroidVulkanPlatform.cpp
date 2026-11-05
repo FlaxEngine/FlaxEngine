@@ -12,7 +12,7 @@ void AndroidVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions
 	extensions.Add(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 }
 
-void AndroidVulkanPlatform::GetDeviceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
+void AndroidVulkanPlatform::GetDeviceExtensions(Array<const char*>& extensions)
 {
 	extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
 	extensions.Add(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);

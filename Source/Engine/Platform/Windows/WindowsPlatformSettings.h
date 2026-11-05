@@ -12,7 +12,7 @@ class Texture;
 /// <summary>
 /// Windows platform settings.
 /// </summary>
-API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API WindowsPlatformSettings : public SettingsBase
+API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API WindowsPlatformSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(WindowsPlatformSettings);
     API_AUTO_SERIALIZATION();

@@ -14,6 +14,8 @@ private:
     String _execPath;
     String _solutionPath;
 
+    String GetSolutionPath() const;
+
 public:
 
     /// <summary>

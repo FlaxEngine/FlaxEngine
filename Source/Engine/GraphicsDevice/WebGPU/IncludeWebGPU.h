@@ -17,10 +17,10 @@
 
 #include <webgpu/webgpu.h>
 
-// Utiltiy macro to convert WGPUStringView into UTF-16 string (on stack)
+// Utility macro to convert WGPUStringView into UTF-16 string (on stack)
 #define WEBGPU_TO_STR(strView) StringAsUTF16<>(strView.data, strView.data ? strView.length : 0).Get()
 
-// Utiltiy macro to get WGPUStringView for a text constant
+// Utility macro to get WGPUStringView for a text constant
 #define WEBGPU_STR(str) { str, ARRAY_COUNT(str) - 1 }
 
 #define WEBGPU_MAX_QUERY_SETS 8

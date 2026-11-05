@@ -34,6 +34,9 @@ namespace FlaxEditor.States
         public override bool CanReloadScripts => true;
 
         /// <inheritdoc />
+        public override bool CanCookGame => true;
+
+        /// <inheritdoc />
         public override string Status => AutoSaveStatus;
 
         internal EditingSceneState(Editor editor)

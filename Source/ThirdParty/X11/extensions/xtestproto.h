@@ -30,7 +30,7 @@ in this Software without prior written authorization from The Open Group.
 #include <X11/extensions/xtestconst.h>
 
 #define Window CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define Cursor CARD32
 
 #define X_XTestGetVersion	0
@@ -94,7 +94,7 @@ typedef struct {
     BYTE	type;
     BYTE	detail;
     CARD16	pad0 B16;
-    Time	time B32;
+    XXTime	time B32;
     Window	root B32;
     CARD32	pad1 B32;
     CARD32	pad2 B32;
@@ -118,7 +118,7 @@ typedef struct {
 #define sz_xXTestGrabControlReq 8
 
 #undef Window
-#undef Time
+#undef XXTime
 #undef Cursor
 
 #endif /* _XTESTPROTO_H_ */

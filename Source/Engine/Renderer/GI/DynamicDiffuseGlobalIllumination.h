@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../RendererPass.h"
+#include "Engine/Renderer/RendererPass.h"
 #include "Engine/Core/Math/Int4.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 
@@ -15,14 +15,14 @@ public:
     // Constant buffer data for DDGI access on a GPU.
     GPU_CB_STRUCT(ConstantsData {
         Float4 ProbesOriginAndSpacing[4];
-        Float4 BlendOrigin[4]; // w is unused
+        Float4 BlendOrigin[4]; // [0] w is flag for specular usage, [1-3] w is unused
         Int4 ProbesScrollOffsets[4]; // w is unused
         uint32 ProbesCounts[3];
         uint32 CascadesCount;
-        float IrradianceGamma;
         float ProbeHistoryWeight;
         float RayMaxDistance;
         float IndirectLightingIntensity;
+        float IndirectShadowsStrength;
         Float3 ViewPos;
         uint32 RaysCount;
         Float4 FallbackIrradiance;
@@ -35,10 +35,12 @@ public:
         GPUTextureView* ProbesData;
         GPUTextureView* ProbesDistance;
         GPUTextureView* ProbesIrradiance;
+        GPUTextureView* ProbesRadiance;
     };
 
 private:
     bool _supported = false;
+    bool _depthBounds = false;
     AssetReference<Shader> _shader;
     GPUConstantBuffer* _cb0 = nullptr;
     GPUConstantBuffer* _cb1 = nullptr;
@@ -48,8 +50,10 @@ private:
     GPUShaderProgramCS* _csTraceRays[4];
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
     GPUShaderProgramCS* _csUpdateProbesDistance;
-    GPUPipelineState* _psIndirectLighting[2] = {};
-#if USE_EDITOR
+    GPUShaderProgramCS* _csUpdateProbesRadiance;
+    GPUPipelineState* _psIndirectLighting[4] = {};
+    GPUPipelineState* _psSpecularLighting = nullptr;
+#if GPU_ENABLE_DEVELOPMENT
     AssetReference<Model> _debugModel;
     AssetReference<MaterialBase> _debugMaterial;
 #endif
@@ -72,11 +76,28 @@ public:
     /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
     bool Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer);
 
+    /// <summary>
+    /// Renders the DDGI Reflections.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="context">The GPU context.</param>
+    /// <param name="reflectionsBuffer">The reflections buffer (output).</param>
+    /// <returns>True if failed to render (platform doesn't support it, out of video memory, disabled feature or effect is not ready), otherwise false.</returns>
+    bool RenderReflections(RenderContext& renderContext, GPUContext* context, GPUTextureView* reflectionsBuffer);
+
+    /// <summary>
+    /// Forces DDGI update for a specific regions (eg. when object is moved). It will refresh the probes in the given regions on the next GI update.
+    /// </summary>
+    /// <param name="buffers">The rendering buffers.</param>
+    /// <param name="regions">The list of regions to invalidate.</param>
+    void UpdateRegions(const RenderBuffers* buffers, Span<BoundingBox> regions);
+
 private:
 #if COMPILE_WITH_DEV_ENV
     uint64 LastFrameShaderReload = 0;
     void OnShaderReloading(Asset* obj);
 #endif
+    bool Render(RenderContext& renderContext, GPUContext* context, class DDGICustomBuffer*& ddgiDataPtr, bool& render);
     bool RenderInner(RenderContext& renderContext, GPUContext* context, class DDGICustomBuffer& ddgiData);
 
 public:

@@ -29,6 +29,7 @@ public:
 };
 
 ProfilingToolsService ProfilingToolsServiceInstance;
+double LastInputLatency = 0;
 
 void ProfilingToolsService::Update()
 {
@@ -52,6 +53,8 @@ void ProfilingToolsService::Update()
         float presentTime;
         ProfilerGPU::GetLastFrameData(stats.DrawGPUTimeMs, presentTime, stats.DrawStats);
         stats.DrawCPUTimeMs = Math::Max(stats.DrawCPUTimeMs - presentTime, 0.0f); // Remove swapchain present wait time to exclude from drawing on CPU
+
+        stats.InputLatencyMs = (float)(LastInputLatency * 1000.0);
     }
 
     // Extract CPU profiler events

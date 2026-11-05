@@ -213,7 +213,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
 
-                if (_headerRect.Contains(ref location))
+                if (button == MouseButton.Left && _headerRect.Contains(ref location))
                 {
                     StartRenaming();
                     return true;
@@ -875,7 +875,7 @@ namespace FlaxEditor.Surface.Archetypes
                     byte[] value;
                     if (Transitions.Count == 0)
                     {
-                        value = Utils.GetEmptyArray<byte>();
+                        value = Array.Empty<byte>();
                     }
                     else
                     {
@@ -1129,7 +1129,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
 
-                if (_renameButtonRect.Contains(ref location) || _closeButtonRect.Contains(ref location))
+                if (button == MouseButton.Left && _renameButtonRect.Contains(ref location) || _closeButtonRect.Contains(ref location))
                     return true;
 
                 return false;
@@ -1489,8 +1489,13 @@ namespace FlaxEditor.Surface.Archetypes
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
 
-                Edit();
-                return true;
+                if (button == MouseButton.Left)
+                {
+                    Edit();
+                    return true;
+                }
+
+                return false;
             }
 
             /// <inheritdoc />
@@ -1807,7 +1812,7 @@ namespace FlaxEditor.Surface.Archetypes
                 get => _ruleGraph;
                 set
                 {
-                    _ruleGraph = value ?? Utils.GetEmptyArray<byte>();
+                    _ruleGraph = value ?? Array.Empty<byte>();
                     SourceState.SaveTransitions();
                 }
             }
@@ -1849,7 +1854,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DestinationState = destination;
                 _data = data;
                 _data.Destination = destination.ID;
-                _ruleGraph = ruleGraph ?? Utils.GetEmptyArray<byte>();
+                _ruleGraph = ruleGraph ?? Array.Empty<byte>();
             }
 
             /// <summary>

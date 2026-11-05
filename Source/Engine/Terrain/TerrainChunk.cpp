@@ -10,6 +10,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Level/Scene/Scene.h"
 #if USE_EDITOR
@@ -82,7 +83,7 @@ bool TerrainChunk::PrepareDraw(const RenderContext& renderContext)
     return true;
 }
 
-void TerrainChunk::Draw(const RenderContext& renderContext) const
+void TerrainChunk::Draw(const RenderContext& renderContext, DrawPass drawModes) const
 {
     const int32 lod = _cachedDrawLOD;
     const int32 minLod = Math::Max(lod + 1, 0);
@@ -120,13 +121,16 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     else
     {
         drawCall.Terrain.Lightmap = nullptr;
-        drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
+        drawCall.Terrain.LightmapUVsArea = Half4::Zero;
     }
     drawCall.PerInstanceRandom = _perInstanceRandom;
     drawCall.SetStencilValue(_patch->_terrain->GetLayer());
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+    {
+        float lightmapScale = 1.0f;
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&lightmapScale; // See LightmapUVsDensityMaterialShader
+    }
 #endif
 
     // Add half-texel offset for heightmap sampling in vertex shader
@@ -136,7 +140,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     //drawCall.TerrainData.HeightmapUVScaleBias.W += halfTexelOffset;
 
     // Submit draw call
-    const DrawPass drawModes = _patch->_terrain->DrawModes & renderContext.View.Pass & drawCall.Material->GetDrawModes();
+    drawModes &= renderContext.View.Pass & drawCall.Material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContext.List->AddDrawCall(renderContext, drawModes, flags, drawCall, true);
 }
@@ -181,13 +185,16 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     else
     {
         drawCall.Terrain.Lightmap = nullptr;
-        drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
+        drawCall.Terrain.LightmapUVsArea = Half4::Zero;
     }
     drawCall.PerInstanceRandom = _perInstanceRandom;
     drawCall.SetStencilValue(_patch->_terrain->GetLayer());
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
-        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+    {
+        float lightmapScale = 1.0f;
+        drawCall.Surface.SkinningBonesOffset = *(uint32*)&lightmapScale; // See LightmapUVsDensityMaterialShader
+    }
 #endif
 
     // Add half-texel offset for heightmap sampling in vertex shader
@@ -311,11 +318,7 @@ void TerrainChunk::Serialize(SerializeStream& stream, const void* otherObj)
 #endif
     )
     {
-        stream.JKEY("LightmapIndex");
-        stream.Int(Lightmap.TextureIndex);
-
-        stream.JKEY("LightmapArea");
-        stream.Rectangle(Lightmap.UVsArea);
+        Lightmap.Serialize(stream);
     }
 }
 
@@ -324,6 +327,5 @@ void TerrainChunk::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE_MEMBER(Offset, _yOffset);
     DESERIALIZE_MEMBER(Height, _yHeight);
     DESERIALIZE_MEMBER(Material, OverrideMaterial);
-    DESERIALIZE_MEMBER(LightmapIndex, Lightmap.TextureIndex);
-    DESERIALIZE_MEMBER(LightmapArea, Lightmap.UVsArea);
+    Lightmap.Deserialize(stream);
 }

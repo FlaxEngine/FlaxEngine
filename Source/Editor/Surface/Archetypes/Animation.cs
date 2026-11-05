@@ -215,7 +215,8 @@ namespace FlaxEditor.Surface.Archetypes
             : base(id, context, nodeArch, groupArch)
             {
                 // Add buttons for adding/removing blend poses
-                _addButton = new Button(70, 94, 20, 20)
+                var y = FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderHeight + FlaxEditor.Surface.Constants.LayoutOffsetY * 3;
+                _addButton = new Button(70, y, 20, 20)
                 {
                     Text = "+",
                     Parent = this
@@ -410,6 +411,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(2, "Time", typeof(float), 2),
                     NodeElementArchetype.Factory.Output(3, "Length", typeof(float), 3),
                     NodeElementArchetype.Factory.Output(4, "Is Playing", typeof(bool), 4),
+                    NodeElementArchetype.Factory.Output(5, "Animation", typeof(FlaxEngine.Animation), 9),
                     NodeElementArchetype.Factory.Input(0, "Speed", true, typeof(float), 5, 1),
                     NodeElementArchetype.Factory.Input(1, "Loop", true, typeof(bool), 6, 2),
                     NodeElementArchetype.Factory.Input(2, "Start Position", true, typeof(float), 7, 3),
@@ -624,7 +626,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new MultiBlend1D(id, context, arch, groupArch),
                 Title = "Multi Blend 1D",
                 Description = "Animation blending in 1D",
-                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize | NodeFlags.FixedSize,
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
                 Size = new Float2(420, 320),
                 DefaultValues = new object[]
                 {
@@ -633,6 +635,7 @@ namespace FlaxEditor.Surface.Archetypes
                     1.0f,
                     true,
                     0.0f,
+                    (int)MultiBlend.AnimationSources.Default,
 
                     // Per blend sample data
                     new Float4(0, 0, 0, 1.0f), Guid.Empty,
@@ -646,6 +649,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Speed", true, typeof(float), 1, 1),
                     NodeElementArchetype.Factory.Input(1, "Loop", true, typeof(bool), 2, 2),
                     NodeElementArchetype.Factory.Input(2, "Start Position", true, typeof(float), 3, 3),
+                    NodeElementArchetype.Factory.Text(0, 4 * Surface.Constants.LayoutOffsetY, "Source:"),
+                    NodeElementArchetype.Factory.Enum(45, 4 * Surface.Constants.LayoutOffsetY, 80, 4, typeof(MultiBlend.AnimationSources)),
 
                     // Axis X
                     NodeElementArchetype.Factory.Input(3, "X", true, typeof(float), 4),
@@ -660,7 +665,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new MultiBlend2D(id, context, arch, groupArch),
                 Title = "Multi Blend 2D",
                 Description = "Animation blending in 2D",
-                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize | NodeFlags.FixedSize,
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
                 Size = new Float2(420, 640),
                 DefaultValues = new object[]
                 {
@@ -669,6 +674,7 @@ namespace FlaxEditor.Surface.Archetypes
                     1.0f,
                     true,
                     0.0f,
+                    (int)MultiBlend.AnimationSources.Default,
 
                     // Per blend sample data
                     new Float4(0, 0, 0, 1.0f), Guid.Empty,
@@ -682,6 +688,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Speed", true, typeof(float), 1, 1),
                     NodeElementArchetype.Factory.Input(1, "Loop", true, typeof(bool), 2, 2),
                     NodeElementArchetype.Factory.Input(2, "Start Position", true, typeof(float), 3, 3),
+                    NodeElementArchetype.Factory.Text(Surface.Constants.NodeMarginX, 5 * Surface.Constants.LayoutOffsetY, "Source:"),
+                    NodeElementArchetype.Factory.Enum(50, 5 * Surface.Constants.LayoutOffsetY, 80, 4, typeof(MultiBlend.AnimationSources)),
 
                     // Axis X
                     NodeElementArchetype.Factory.Input(3, "X", true, typeof(float), 4),
@@ -717,7 +725,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Pose Index", true, typeof(int), 1, 0),
                     NodeElementArchetype.Factory.Input(1, "Blend Duration", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 2, "Mode:"),
-                    NodeElementArchetype.Factory.ComboBox(40, Surface.Constants.LayoutOffsetY * 2, 100, 3, typeof(AlphaBlendMode)),
+                    NodeElementArchetype.Factory.ComboBox(40, Surface.Constants.LayoutOffsetY * 2, 120, 3, typeof(AlphaBlendMode)),
 
                     NodeElementArchetype.Factory.Input(3, "Pose 0", true, typeof(void), 3),
                     NodeElementArchetype.Factory.Input(4, "Pose 1", true, typeof(void), 4),
@@ -784,7 +792,7 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     "Locomotion",
-                    Utils.GetEmptyArray<byte>(),
+                    Array.Empty<byte>(),
                     3,
                     true,
                     true,
@@ -818,8 +826,8 @@ namespace FlaxEditor.Surface.Archetypes
                 DefaultValues = new object[]
                 {
                     "State",
-                    Utils.GetEmptyArray<byte>(),
-                    Utils.GetEmptyArray<byte>(),
+                    Array.Empty<byte>(),
+                    Array.Empty<byte>(),
                 },
             },
             new NodeArchetype
@@ -1089,7 +1097,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(100, 0),
                 DefaultValues = new object[]
                 {
-                    Utils.GetEmptyArray<byte>(),
+                    Array.Empty<byte>(),
                 },
             },
             new NodeArchetype

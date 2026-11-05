@@ -104,18 +104,21 @@ namespace FlaxEditor.Windows
             /// <inheritdoc />
             public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
-                // Click on text block
-                int textLength = TextLength;
-                if (textLength != 0)
+                if (button == MouseButton.Left)
                 {
-                    var hitPos = CharIndexAtPoint(ref location);
-                    if (hitPos != -1 && GetTextBlock(hitPos, out var textBlock) && textBlock.Tag is TextBlockTag tag)
+                    // Click on text block
+                    int textLength = TextLength;
+                    if (textLength != 0)
                     {
-                        switch (tag.Type)
+                        var hitPos = CharIndexAtPoint(ref location);
+                        if (hitPos != -1 && GetTextBlock(hitPos, out var textBlock) && textBlock.Tag is TextBlockTag tag)
                         {
-                        case TextBlockTag.Types.CodeLocation:
-                            Window.Editor.CodeEditing.OpenFile(tag.Url, tag.Line);
-                            return true;
+                            switch (tag.Type)
+                            {
+                            case TextBlockTag.Types.CodeLocation:
+                                Window.Editor.CodeEditing.OpenFile(tag.Url, tag.Line);
+                                return true;
+                            }
                         }
                     }
                 }
@@ -141,7 +144,19 @@ namespace FlaxEditor.Windows
                 {
                     rect = new Rectangle(2, 0, Width - 4, Height);
                 }
+                
+                public override void OnGotFocus()
+                {
+                    StartTextInput();
+                    base.OnGotFocus();
+                }
 
+                public override void OnLostFocus()
+                {
+                    EndTextInput();
+                    base.OnLostFocus();
+                }
+                
                 public override bool OnCharInput(char c)
                 {
                     if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
@@ -177,6 +192,8 @@ namespace FlaxEditor.Windows
                         {
                             // Focus back the input field as user want to modify command from history
                             Owner.HideHistory();
+                            if (Owner == null)
+                                return true;
                             Owner.HideSearch();
                             Owner.RootWindow.Focus();
                             Owner.Focus();
@@ -487,7 +504,7 @@ namespace FlaxEditor.Windows
         }
 
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
-        private bool _showLogType;
+        private bool _showLogType, _scrollToBottom;
 
         private List<Entry> _entries = new List<Entry>(1024);
         private bool _isDirty;
@@ -653,6 +670,7 @@ namespace FlaxEditor.Windows
         {
             if (options.Interface.OutputLogTimestampsFormat == _timestampsFormats &&
                 options.Interface.OutputLogShowLogType == _showLogType &&
+                options.Interface.OutputLogScrollToBottom == _scrollToBottom &&
                 _output.DefaultStyle.Font == options.Interface.OutputLogTextFont &&
                 _output.DefaultStyle.Color == options.Visual.LogInfoColor &&
                 _output.DefaultStyle.ShadowColor == options.Interface.OutputLogTextShadowColor &&
@@ -677,6 +695,7 @@ namespace FlaxEditor.Windows
 
             _timestampsFormats = options.Interface.OutputLogTimestampsFormat;
             _showLogType = options.Interface.OutputLogShowLogType;
+            _scrollToBottom = options.Interface.OutputLogScrollToBottom;
 
             Refresh();
         }
@@ -1039,7 +1058,7 @@ namespace FlaxEditor.Windows
                     cachedOutputTargetViewOffset.Y = 0;
                 _output.TargetViewOffset = cachedOutputTargetViewOffset;
                 _textBufferCount = _entries.Count;
-                if (!_vScroll.IsThumbClicked)
+                if (!_vScroll.IsThumbClicked && _scrollToBottom)
                     _vScroll.TargetValue = isBottomScroll ? _vScroll.Maximum : cachedScrollValue;
                 _output.SelectionRange = cachedSelection;
             }

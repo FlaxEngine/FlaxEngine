@@ -6,7 +6,7 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Core/Config/GameSettings.h"
-#include "Engine/Renderer/ReflectionsPass.h"
+#include "Engine/Renderer/Reflections/ReflectionsPass.h"
 #include "Engine/Renderer/AntiAliasing/SMAA.h"
 #include "Engine/Engine/Globals.h"
 #include "Editor/Cooker/PlatformTools.h"
@@ -30,13 +30,6 @@ bool DeployDataStep::Perform(CookingData& data)
         Platform::Sleep(10);
     }
     FileSystem::CreateDirectory(contentDir);
-    const String dstMono = data.DataOutputPath / TEXT("Mono");
-#if USE_NETCORE
-    {
-        // Remove old Mono files
-        FileSystem::DeleteDirectory(dstMono);
-        FileSystem::DeleteFile(data.DataOutputPath / TEXT("MonoPosixHelper.dll"));
-    }
     String dstDotnet = data.DataOutputPath / TEXT("Dotnet");
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
     const bool usAOT = aotMode != DotNetAOTModes::None && aotMode != DotNetAOTModes::NoDotnet;
@@ -93,20 +86,8 @@ bool DeployDataStep::Perform(CookingData& data)
             if (canUseSystemDotnet && (aotMode == DotNetAOTModes::None || aotMode == DotNetAOTModes::ILC))
             {
                 // Ask Flax.Build to provide .NET SDK location for the current platform
-                String sdks;
-                bool failed = ScriptsBuilder::RunBuildTool(String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs {}"), data.GetDotnetCommandArg()), data.CacheDirectory);
-                failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
-                int32 idx = sdks.Find(TEXT("DotNetSdk, "), StringSearchCase::CaseSensitive);
-                if (idx != -1)
-                {
-                    idx = sdks.Find(TEXT(", "), StringSearchCase::CaseSensitive, idx + 12);
-                    idx += 2;
-                    int32 end = sdks.Find(TEXT("\n"), StringSearchCase::CaseSensitive, idx);
-                    if (sdks[end] == '\r')
-                        end--;
-                    srcDotnet = String(sdks.Get() + idx, end - idx).TrimTrailing();
-                }
-                if (failed || !FileSystem::DirectoryExists(srcDotnet))
+                srcDotnet = EditorUtilities::GetSDK(TEXT("DotNetSdk"), data.GetDotnetCommandArg(), data.CacheDirectory / TEXT("SDKs.txt"));
+                if (srcDotnet.IsEmpty() || !FileSystem::DirectoryExists(srcDotnet))
                 {
                     data.Error(TEXT("Failed to get .NET SDK location for the current host platform."));
                     return true;
@@ -168,6 +149,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), srcDotnet / TEXT("LICENSE.TXT"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("ThirdPartyNotices.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"));
+                bool failed = false;
                 if (usAOT)
                 {
                     failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version);
@@ -324,6 +306,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 switch (data.Platform)
                 {
 #define DEPLOY_NATIVE_FILE(filename) failed |= FileSystem::CopyFile(data.NativeCodeOutputPath / TEXT(filename), srcDotnet / TEXT(filename));
+#define DEPLOY_NATIVE_FILE_DOTNET(filename) failed |= FileSystem::CopyFile(data.NativeCodeOutputPath / TEXT("Dotnet") / TEXT(filename), srcDotnet / TEXT(filename));
                 case BuildPlatform::AndroidARM64:
                     if (data.Configuration != BuildConfiguration::Release)
                     {
@@ -344,7 +327,14 @@ bool DeployDataStep::Perform(CookingData& data)
                     DEPLOY_NATIVE_FILE("libSystem.Net.Security.Native.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Apple.dylib");
                     break;
+                case BuildPlatform::XboxOne:
+                case BuildPlatform::XboxScarlett:
+                    FileSystem::CreateDirectory(data.NativeCodeOutputPath / TEXT("Dotnet"));
+                    DEPLOY_NATIVE_FILE_DOTNET("System.IO.Compression.Native.dll");
+                    DEPLOY_NATIVE_FILE_DOTNET("System.Globalization.Native.dll");
+                    break;
 #undef DEPLOY_NATIVE_FILE
+#undef DEPLOY_NATIVE_FILE_DOTNET
                 default: ;
                 }
                 if (failed)
@@ -386,23 +376,6 @@ bool DeployDataStep::Perform(CookingData& data)
             }
         }
     }
-#else
-    if (!FileSystem::DirectoryExists(dstMono))
-    {
-        // Deploy Mono files (from platform data folder)
-        const String srcMono = depsRoot / TEXT("Mono");
-        if (!FileSystem::DirectoryExists(srcMono))
-        {
-            data.Error(TEXT("Missing Mono runtime data files."));
-            return true;
-        }
-        if (FileSystem::CopyDirectory(dstMono, srcMono))
-        {
-            data.Error(TEXT("Failed to copy Mono runtime data files."));
-            return true;
-        }
-    }
-#endif
 
     // Deploy engine data for the target platform
     if (data.Tools->OnDeployBinaries(data))
@@ -410,37 +383,46 @@ bool DeployDataStep::Perform(CookingData& data)
     GameCooker::DeployFiles();
 
     // Register engine in-build assets
-    data.AddRootEngineAsset(TEXT("Shaders/AtmospherePreCompute"));
-    data.AddRootEngineAsset(TEXT("Shaders/ColorGrading"));
-    data.AddRootEngineAsset(TEXT("Shaders/DebugDraw"));
-    data.AddRootEngineAsset(TEXT("Shaders/DepthOfField"));
-    data.AddRootEngineAsset(TEXT("Shaders/EyeAdaptation"));
-    data.AddRootEngineAsset(TEXT("Shaders/Fog"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/CAS"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/FXAA"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/SMAA"));
+    data.AddRootEngineAsset(TEXT("Shaders/AntiAliasing/TAA"));
+    data.AddRootEngineAsset(TEXT("Shaders/GI/DDGI"));
+    data.AddRootEngineAsset(TEXT("Shaders/GI/GlobalSurfaceAtlas"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/AtmospherePreCompute"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/Fog"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/Lights"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/Sky"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/SSAO"));
+    data.AddRootEngineAsset(TEXT("Shaders/Lighting/VolumetricFog"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/ColorGrading"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/DepthOfField"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/EyeAdaptation"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/Histogram"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/MotionBlur"));
+    data.AddRootEngineAsset(TEXT("Shaders/PostFX/PostProcessing"));
+    data.AddRootEngineAsset(TEXT("Shaders/Reflections/ProbesFilter"));
+    data.AddRootEngineAsset(TEXT("Shaders/Reflections/Reflections"));
+    data.AddRootEngineAsset(TEXT("Shaders/Reflections/SSR"));
+    data.AddRootEngineAsset(TEXT("Shaders/Shadows/Shadows"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/BitonicSort"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/Culling"));
+    //data.AddRootEngineAsset(TEXT("Shaders/Utils/DebugDraw")); // TODO: debug draw in dev-builds
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/GlobalSignDistanceField"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/GPUParticlesSorting"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/MultiScaler"));
+    data.AddRootEngineAsset(TEXT("Shaders/Utils/SDF"));
     data.AddRootEngineAsset(TEXT("Shaders/Forward"));
-    data.AddRootEngineAsset(TEXT("Shaders/FXAA"));
-    data.AddRootEngineAsset(TEXT("Shaders/TAA"));
-    data.AddRootEngineAsset(TEXT("Shaders/SMAA"));
     data.AddRootEngineAsset(TEXT("Shaders/GBuffer"));
     data.AddRootEngineAsset(TEXT("Shaders/GUI"));
-    data.AddRootEngineAsset(TEXT("Shaders/Histogram"));
-    data.AddRootEngineAsset(TEXT("Shaders/Lights"));
-    data.AddRootEngineAsset(TEXT("Shaders/MultiScaler"));
-    data.AddRootEngineAsset(TEXT("Shaders/ProbesFilter"));
-    data.AddRootEngineAsset(TEXT("Shaders/PostProcessing"));
-    data.AddRootEngineAsset(TEXT("Shaders/MotionBlur"));
-    data.AddRootEngineAsset(TEXT("Shaders/BitonicSort"));
-    data.AddRootEngineAsset(TEXT("Shaders/GPUParticlesSorting"));
-    data.AddRootEngineAsset(TEXT("Shaders/GlobalSignDistanceField"));
-    data.AddRootEngineAsset(TEXT("Shaders/GI/GlobalSurfaceAtlas"));
-    data.AddRootEngineAsset(TEXT("Shaders/GI/DDGI"));
     data.AddRootEngineAsset(TEXT("Shaders/Quad"));
-    data.AddRootEngineAsset(TEXT("Shaders/Reflections"));
-    data.AddRootEngineAsset(TEXT("Shaders/Shadows"));
-    data.AddRootEngineAsset(TEXT("Shaders/Sky"));
-    data.AddRootEngineAsset(TEXT("Shaders/SSAO"));
-    data.AddRootEngineAsset(TEXT("Shaders/SSR"));
-    data.AddRootEngineAsset(TEXT("Shaders/SDF"));
-    data.AddRootEngineAsset(TEXT("Shaders/VolumetricFog"));
+    if (data.Configuration != BuildConfiguration::Release)
+    {
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/LightmapUVsDensity"));
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/MaterialComplexity"));
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/QuadOverdraw"));
+        data.AddRootEngineAsset(TEXT("Shaders/Editor/VertexColors"));
+    }
     data.AddRootEngineAsset(TEXT("Engine/DefaultMaterial"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultDeformableMaterial"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultTerrainMaterial"));

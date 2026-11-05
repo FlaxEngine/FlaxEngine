@@ -41,7 +41,8 @@ struct GPUQueryDataDX11
     ID3D11Query* TimerBeginQuery = nullptr;
     ID3D11Query* DisjointQuery = nullptr;
     uint64 Result = 0;
-    enum States { Ready, Begin, End, Finished } State = Ready;
+    uint16 TTL = 0;
+    enum States : uint16 { Ready, Begin, End, Finished } State = Ready;
     GPUQueryType Type = GPUQueryType::MAX;
 
     void Release();
@@ -93,7 +94,7 @@ private:
     bool _allowTearing = false;
     GPUBuffer* _dummyVB = nullptr;
     Array<GPUQueryDataDX11> _queries;
-    Array<uint16> _readyQueries[2]; // Timer and Occlusion
+    Array<uint16> _readyQueries[3]; // Timer and Occlusion and BinaryOcclusion
 
     // Static Samplers
     ID3D11SamplerState* _samplerLinearClamp = nullptr;
@@ -144,7 +145,6 @@ public:
     GPUBuffer* GetDummyVB();
 
 public:
-
     // [GPUDeviceDX]
     GPUContext* GetMainContext() override
     {

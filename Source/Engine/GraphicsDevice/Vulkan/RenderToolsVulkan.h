@@ -283,11 +283,14 @@ public:
         VkCompareOp result;
         switch (samplerComparisonFunction)
         {
+        case GPUSamplerCompareFunction::Never:
+            result = VK_COMPARE_OP_NEVER;
+            break;
         case GPUSamplerCompareFunction::Less:
             result = VK_COMPARE_OP_LESS;
             break;
-        case GPUSamplerCompareFunction::Never:
-            result = VK_COMPARE_OP_NEVER;
+        case GPUSamplerCompareFunction::Greater:
+            result = VK_COMPARE_OP_GREATER;
             break;
         default:
             CRASH;

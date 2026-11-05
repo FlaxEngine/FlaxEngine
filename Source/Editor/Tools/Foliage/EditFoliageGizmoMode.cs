@@ -17,7 +17,7 @@ namespace FlaxEditor.Tools.Foliage
         private int _selectedInstanceIndex = -1;
 
         /// <summary>
-        /// The foliage painting gizmo.
+        /// The foliage editing gizmo.
         /// </summary>
         public EditFoliageGizmo Gizmo;
 
@@ -66,8 +66,6 @@ namespace FlaxEditor.Tools.Foliage
             base.Init(owner);
 
             Gizmo = new EditFoliageGizmo(owner, this);
-            SelectionOutline = FlaxEngine.Object.New<EditFoliageSelectionOutline>();
-            SelectionOutline.GizmoMode = this;
         }
 
         /// <inheritdoc />
@@ -84,6 +82,11 @@ namespace FlaxEditor.Tools.Foliage
             base.OnActivated();
 
             Owner.Gizmos.Active = Gizmo;
+            if (SelectionOutline == null)
+            {
+                SelectionOutline = FlaxEngine.Object.New<EditFoliageSelectionOutline>();
+                SelectionOutline.GizmoMode = this;
+            }
             ((MainEditorGizmoViewport)Owner).OverrideSelectionOutline(SelectionOutline);
             SelectedInstanceIndex = -1;
         }

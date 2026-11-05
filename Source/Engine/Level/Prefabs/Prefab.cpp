@@ -71,7 +71,7 @@ Actor* Prefab::GetDefaultInstance()
     // Prevent recursive calls
     if (_isCreatingDefaultInstance)
     {
-        LOG(Warning, "Loop call to Prefab::GetDefaultInstance.");
+        LOG(Warning, "Loop call to Prefab::GetDefaultInstance for '{}'", GetPath());
         return nullptr;
     }
     _isCreatingDefaultInstance = true;

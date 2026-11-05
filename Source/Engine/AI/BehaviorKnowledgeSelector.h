@@ -34,6 +34,11 @@ API_STRUCT(NoDefault, MarshalAs=StringAnsi) struct FLAXENGINE_API BehaviorKnowle
         return Path == other.Path;
     }
 
+    FORCE_INLINE operator bool() const
+    {
+        return Path.HasChars();
+    }
+
     BehaviorKnowledgeSelectorAny& operator=(const StringAnsiView& other) noexcept
     {
         Path = other;
@@ -46,12 +51,12 @@ API_STRUCT(NoDefault, MarshalAs=StringAnsi) struct FLAXENGINE_API BehaviorKnowle
         return *this;
     }
 
-    operator StringAnsi() const
+    FORCE_INLINE operator StringAnsi() const
     {
         return Path;
     }
 
-    String ToString() const
+    FORCE_INLINE String ToString() const
     {
         return Path.ToString();
     }

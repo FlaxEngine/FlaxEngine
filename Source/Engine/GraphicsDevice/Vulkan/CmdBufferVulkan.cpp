@@ -289,7 +289,7 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
         }
 #else
         for (int32 i = 0; i < _activeTimerQueries.Count(); i++)
-            queries->Interrupt(_activeCmdBuffer);
+            queries[i]->Interrupt(_context);
 #endif
 #endif
 
@@ -347,7 +347,7 @@ void CmdBufferManagerVulkan::GetNewActiveCommandBuffer()
 #else
     for (int32 i = 0; i < _activeTimerQueries.Count(); i++)
     {
-        queries->Resume(_activeCmdBuffer);
+        queries[i]->Resume(_context);
     }
 #endif
 #endif

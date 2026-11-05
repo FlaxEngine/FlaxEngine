@@ -82,6 +82,11 @@ public:
         API_FIELD() float DrawGPUTimeMs;
 
         /// <summary>
+        /// The time between player inputs reading and frame presentation to display (in milliseconds).
+        /// </summary>
+        API_FIELD() float InputLatencyMs;
+
+        /// <summary>
         /// The last rendered frame stats.
         /// </summary>
         API_FIELD() RenderStatsData DrawStats;

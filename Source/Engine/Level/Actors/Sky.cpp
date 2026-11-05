@@ -5,11 +5,11 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Renderer/AtmospherePreCompute.h"
 #include "Engine/Renderer/GBufferPass.h"
+#include "Engine/Renderer/Lighting/AtmospherePreCompute.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
@@ -36,14 +36,14 @@ Sky::Sky(const SpawnParams& params)
     _drawCategory = SceneRendering::PreRender;
 
     // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Sky"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lighting/Sky"));
     if (_shader == nullptr)
     {
         LOG(Fatal, "Cannot load sky shader.");
         return;
     }
 #if COMPILE_WITH_DEV_ENV
-    _shader.Get()->OnReloading.Bind<Sky, &Sky::OnShaderReloading>(this);
+    _shader.Get()->Reloading.Bind<Sky, &Sky::OnShaderReloading>(this);
 #endif
 }
 
@@ -83,28 +83,27 @@ void Sky::InitConfig(ShaderAtmosphericFogData& config) const
     }
 }
 
-void Sky::Draw(RenderContext& renderContext)
+void Sky::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (HasContentLoaded() && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Sky))
     {
         // Ensure to have pipeline state cache created
         if (_psSky == nullptr)
         {
-            const auto shader = _shader->GetShader();
+            const auto shader = _shader->GPU;
 
             // Create pipeline states
             if (_psSky == nullptr)
             {
                 _psSky = GPUDevice::Instance->CreatePipelineState();
-
-                GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
+                auto psDesc = GPUPipelineState::Description::Default;
                 psDesc.VS = shader->GetVS("VS");
                 psDesc.PS = shader->GetPS("PS_Sky");
                 psDesc.CullMode = CullMode::Inverted;
                 psDesc.DepthWriteEnable = false;
                 psDesc.DepthClipEnable = false;
-                psDesc.DepthFunc = ComparisonFunc::LessEqual;
-
+                psDesc.DepthFunc = ComparisonFunc::DefaultEqual;
                 if (_psSky->Init(psDesc))
                 {
                     LOG(Warning, "Cannot create graphics pipeline state object for '{0}'.", ToString());
@@ -194,7 +193,7 @@ void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matr
     }
 
     // Bind pipeline
-    auto cb = _shader->GetShader()->GetCB(0);
+    auto cb = _shader->GPU->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->SetState(_psSky);

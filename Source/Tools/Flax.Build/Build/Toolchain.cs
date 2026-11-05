@@ -164,6 +164,7 @@ namespace Flax.Build
             public string AssembliesPath;
             public string ClassLibraryPath;
             public string PlatformToolsPath;
+            public string ManagedAssemblyExtension;
             public bool EnableDebugSymbols;
             public bool EnableToolDebug;
         }

@@ -345,6 +345,11 @@ namespace FlaxEditor.Windows
                 gitPathTextBox.Clear();
                 popup.Hide();
             };
+
+            // Auto-fill repo URL from clipboard
+            var clipboardText = Clipboard.Text ?? string.Empty;
+            if (clipboardText.EndsWith(".git") || clipboardText.Contains("github.com/"))
+                gitPathTextBox.Text = clipboardText.Trim();
         }
 
         private async void OnCloneButtonClicked(string pluginName, string gitPath)

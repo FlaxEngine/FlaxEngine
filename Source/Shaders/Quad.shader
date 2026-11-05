@@ -19,7 +19,7 @@ META_VS(true, FEATURE_LEVEL_ES2)
 Quad_VS2PS VS(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
 	Quad_VS2PS output;
-	output.Position = float4(Position, 0, 1);
+	output.Position = float4(Position, DEPTH_RANGE_MIN, 1);
 	output.TexCoord = TexCoord;
 	return output;
 }
@@ -29,7 +29,7 @@ META_VS(true, FEATURE_LEVEL_ES2)
 MaterialVertexOutput VS_PostFx(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
 	MaterialVertexOutput output;
-	output.Position = float4(Position, 0, 1);
+	output.Position = float4(Position, DEPTH_RANGE_MIN, 1);
 	output.WorldPosition = output.Position.xyz;
 	output.TexCoord = TexCoord;
 	return output;
@@ -131,6 +131,28 @@ float4 PS_DecodeNV12(Quad_VS2PS input) : SV_Target
 
     // Convert yuv to rgb
     return yuv2rgb(y, u, v);
+}
+
+#endif
+
+#ifdef _PS_Wireframe
+
+META_CB_BEGIN(3, WireframeData)
+float4 ColorNear;
+float4 ColorFar;
+META_CB_END
+
+// Pixel Shader function for wireframe debug view
+META_PS(true, FEATURE_LEVEL_ES2)
+META_FLAG(DevelopmentOnly)
+float4 PS_Wireframe(float4 SvPosition : SV_Position) : SV_Target0
+{
+    // Depth-based gradient
+    float alpha = saturate(SvPosition.w * UNITS_TO_METERS_SCALE * 0.1f);
+#if VULKAN || defined(WGSL)
+    alpha = 1 - alpha;
+#endif
+    return lerp(ColorNear, ColorFar, alpha);
 }
 
 #endif

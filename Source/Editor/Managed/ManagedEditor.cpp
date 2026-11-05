@@ -17,7 +17,7 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Engine/CommandLine.h"
-#include "Engine/Renderer/ProbesRenderer.h"
+#include "Engine/Renderer/Reflections/ProbesRenderer.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Level/Prefabs/Prefab.h"

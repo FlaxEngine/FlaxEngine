@@ -20,7 +20,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.419
+        dotnet-version: 10.0.x
     - name: Setup .NET Workload
       run: |
         dotnet workload install android
@@ -37,4 +37,4 @@ jobs:
         PowerShell "(Get-Content global.json).Replace('latestMajor', 'minor') | Set-Content global.json"
         PowerShell "(Get-Content Source/Tools/Flax.Build/global.json).Replace('latestMajor', 'minor') | Set-Content Source/Tools/Flax.Build/global.json"
         PowerShell "(Get-Content Source/Tools/Flax.Build/Flax.Build.csproj).Replace('LatestMajor', 'Minor') | Set-Content Source/Tools/Flax.Build/Flax.Build.csproj"
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=10 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame

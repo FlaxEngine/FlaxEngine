@@ -298,7 +298,7 @@ SDLWindow::~SDLWindow()
 
     // The text input events seems to be controlled globally on macOS,
     // calling this for closing window seems to remove keyboard focus from other windows...
-#if !PLATFORM_MAC
+#if !PLATFORM_MAC // TODO: Verify if this is still needed
     if (_settings.AllowInput && SDL_TextInputActive(_window))
         SDL_StopTextInput(_window);
 #endif
@@ -514,7 +514,11 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     {
         OnGotFocus();
+#if PLATFORM_MAC // TODO: Verify if this is still needed
         if (_settings.AllowInput && !SDLPlatform::UsesX11())
+            SDL_StartTextInput(_window);
+#endif
+        if (_isTextInputEnabled)
             SDL_StartTextInput(_window);
         if (_isClippingCursor)
         {
@@ -537,7 +541,11 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
     {
+#if PLATFORM_MAC // TODO: Verify if this is still needed
         if (_settings.AllowInput && !SDLPlatform::UsesX11())
+            SDL_StopTextInput(_window);
+#endif
+        if (_isTextInputEnabled)
             SDL_StopTextInput(_window);
         if (_isClippingCursor)
             SDL_SetWindowMouseRect(_window, nullptr);
@@ -858,11 +866,6 @@ void SDLWindow::Focus()
 
 #endif
 
-String SDLWindow::GetTitle() const
-{
-    return String(SDL_GetWindowTitle(_window));
-}
-
 void SDLWindow::SetTitle(const StringView& title)
 {
     SDL_SetWindowTitle(_window, title.ToStringAnsi().Get());
@@ -908,6 +911,28 @@ void SDLWindow::EndTrackingMouse()
 
     Input::Mouse->SetRelativeMode(false, this);
     _restoreRelativeMode = false;
+}
+
+void SDLWindow::StartTextInput()
+{
+#if !PLATFORM_MAC // TODO: Verify if this is still needed
+    if (_isTextInputEnabled || !_settings.AllowInput || SDLPlatform::UsesX11())
+        return;
+    
+    _isTextInputEnabled = true;
+    SDL_StartTextInput(_window);
+#endif
+}
+
+void SDLWindow::EndTextInput()
+{
+#if !PLATFORM_MAC // TODO: Verify if this is still needed
+    if (!_isTextInputEnabled || !_settings.AllowInput || SDLPlatform::UsesX11())
+        return;
+    
+    _isTextInputEnabled = false;
+    SDL_StopTextInput(_window);
+#endif
 }
 
 void SDLWindow::StartClippingCursor(const Rectangle& bounds)
@@ -995,60 +1020,84 @@ void SDLWindow::UpdateCursor()
     //if (_isTrackingMouse)
     //    Input::Mouse->SetRelativeMode(false, this);
     
-    int32 index = SDL_SYSTEM_CURSOR_DEFAULT;
-    switch (_cursor)
+    const SDL_SystemCursor cursors[] =
     {
-    case CursorType::Cross:
-        index = SDL_SYSTEM_CURSOR_CROSSHAIR;
-        break;
-    case CursorType::Hand:
-        index = SDL_SYSTEM_CURSOR_POINTER;
-        break;
-    case CursorType::Help:
-        //index = SDL_SYSTEM_CURSOR_DEFAULT;
-        break;
-    case CursorType::IBeam:
-        index = SDL_SYSTEM_CURSOR_TEXT;
-        break;
-    case CursorType::No:
-        index = SDL_SYSTEM_CURSOR_NOT_ALLOWED;
-        break;
-    case CursorType::Wait:
-        index = SDL_SYSTEM_CURSOR_WAIT;
-        break;
-    case CursorType::SizeAll:
-        index = SDL_SYSTEM_CURSOR_MOVE;
-        break;
-    case CursorType::SizeNESW:
-        index = SDL_SYSTEM_CURSOR_NESW_RESIZE;
-        break;
-    case CursorType::SizeNS:
-        index = SDL_SYSTEM_CURSOR_NS_RESIZE;
-        break;
-    case CursorType::SizeNWSE:
-        index = SDL_SYSTEM_CURSOR_NWSE_RESIZE;
-        break;
-    case CursorType::SizeWE:
-        index = SDL_SYSTEM_CURSOR_EW_RESIZE;
-        break;
-    case CursorType::Default:
-    default:
-        break;
-    }
+        SDL_SYSTEM_CURSOR_DEFAULT, // Default
+        SDL_SYSTEM_CURSOR_CROSSHAIR, // Cross
+        SDL_SYSTEM_CURSOR_POINTER, // Hand
+        SDL_SYSTEM_CURSOR_DEFAULT, // Help
+        SDL_SYSTEM_CURSOR_TEXT, // IBeam
+        SDL_SYSTEM_CURSOR_NOT_ALLOWED, // No
+        SDL_SYSTEM_CURSOR_WAIT, // Wait
+        SDL_SYSTEM_CURSOR_MOVE, // SizeAll
+        SDL_SYSTEM_CURSOR_NESW_RESIZE, // SizeNESW
+        SDL_SYSTEM_CURSOR_NS_RESIZE, // SizeNS
+        SDL_SYSTEM_CURSOR_NWSE_RESIZE, // SizeNWSE
+        SDL_SYSTEM_CURSOR_EW_RESIZE, // SizeWE
+    };
+    static_assert(ARRAY_COUNT(cursors) + 2 == (int32)CursorType::MAX, "Invalid cursors count.");
 
-    if (SDLImpl::Cursors[index] == nullptr)
-        SDLImpl::Cursors[index] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(index));
-    SDL_SetCursor(SDLImpl::Cursors[index]);
+    SDL_Cursor* cursor;
+    if (_cursor == CursorType::Image)
+    {
+        static bool Once = true;
+        if (!_cursorImage && Once)
+        {
+            Once = false;
+            LOG(Error, "Missing cursor image to set.");
+        }
+        cursor = (SDL_Cursor*)_cursorImage;
+    }
+    else
+    {
+        int32 index = cursors[(int32)_cursor];
+        if (SDLImpl::Cursors[index] == nullptr)
+            SDLImpl::Cursors[index] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(index));
+        cursor = SDLImpl::Cursors[index];
+    }
+    SDL_SetCursor(cursor);
 }
 
-void SDLWindow::SetIcon(TextureData& icon)
+void SDLWindow::SetIcon(const TextureData& icon)
 {
     Array<Color32> colorData;
     icon.GetPixels(colorData);
     SDL_Surface* surface = SDL_CreateSurfaceFrom(icon.Width, icon.Height, SDL_PIXELFORMAT_ABGR8888, colorData.Get(), sizeof(Color32) * icon.Width);
-
     SDL_SetWindowIcon(_window, surface);
     SDL_free(surface);
+}
+
+void SDLWindow::SetCursorImage(void* image)
+{
+    WindowBase::SetCursorImage(image);
+
+    if (_cursor == CursorType::Image)
+        UpdateCursor();
+}
+
+void* SDLWindow::LoadCursorImage(const StringView& path)
+{
+    return nullptr;
+}
+
+void* SDLWindow::LoadCursorImage(const TextureData& image, const Int2& hotSpot)
+{
+    Array<Color32> pixels;
+    if (image.GetPixels(pixels))
+    {
+        LOG(Error, "Invalid cursor texture");
+        return nullptr;
+    }
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(image.Width, image.Height, SDL_PIXELFORMAT_ABGR8888, pixels.Get(), sizeof(Color32) * image.Width);
+    SDL_Cursor* result = SDL_CreateColorCursor(surface, hotSpot.X, hotSpot.Y);
+    SDL_free(surface);
+    return result;
+}
+
+void SDLWindow::DestroyCursorImage(void* image)
+{
+    if (image)
+        SDL_DestroyCursor((SDL_Cursor*)image);
 }
 
 #endif

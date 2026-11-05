@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace FlaxEngine.GUI
 {
@@ -11,6 +12,8 @@ namespace FlaxEngine.GUI
     public partial class RichTextBox : RichTextBoxBase
     {
         private TextBlockStyle _textStyle;
+        private TextWrapping _wrapping = TextWrapping.NoWrap;
+        private float _baseLinesGapScale = 1.0f;
 
         /// <summary>
         /// The default text style applied to the whole text.
@@ -27,15 +30,49 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets or sets the text wrapping within the control bounds.
+        /// </summary>
+        [DefaultValue(TextWrapping.NoWrap)]
+        [EditorOrder(30), Tooltip("The text wrapping within the control bounds.")]
+        public TextWrapping Wrapping
+        {
+            get => _wrapping;
+            set
+            {
+                if (_wrapping == value)
+                    return;
+                _wrapping = value;
+                UpdateTextBlocks();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the gap between lines when wrapping and more than a single line is displayed.
+        /// </summary>
+        [DefaultValue(1.0f)]
+        [EditorOrder(40), Tooltip("The gap between lines when wrapping and more than a single line is displayed."), Limit(0f, 100.0f, 0.01f)]
+        public float BaseLinesGapScale
+        {
+            get => _baseLinesGapScale;
+            set
+            {
+                if (Mathf.NearEqual(_baseLinesGapScale, value))
+                    return;
+                _baseLinesGapScale = value;
+                UpdateTextBlocks();
+            }
+        }
+
+        /// <summary>
         /// The collection of custom text styles to apply (named).
         /// </summary>
-        [EditorOrder(30)]
+        [EditorOrder(50)]
         public Dictionary<string, TextBlockStyle> Styles = new Dictionary<string, TextBlockStyle>();
 
         /// <summary>
         /// The collection of custom images/sprites that can be inlined in text (named).
         /// </summary>
-        [EditorOrder(40)]
+        [EditorOrder(60)]
         public Dictionary<string, IBrush> Images = new Dictionary<string, IBrush>();
 
         /// <summary>

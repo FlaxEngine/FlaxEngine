@@ -658,7 +658,7 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
     ASSERT(data.Length() >= slicePitch);
 
     // Optimize texture upload invoked during rendering
-    if (IsInMainThread() && GPUDevice::Instance->IsRendering())
+    if (IsInRenderThread() && GPUDevice::Instance->IsRendering())
     {
         // Update all array slices
         const byte* dataSource = data.Get();

@@ -410,7 +410,7 @@ namespace FlaxEditor.CustomEditors.Editors
             Focus();
 
             // Check if has object selected
-            if (_value != null)
+            if (button == MouseButton.Left && _value != null)
             {
                 if (_linkedTreeNode != null)
                 {
@@ -425,6 +425,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     Select(script.Actor);
                 else if (_value is Asset asset)
                     Editor.Instance.Windows.ContentWin.Select(asset);
+                
+                return true;
             }
 
             return base.OnMouseDoubleClick(location, button);

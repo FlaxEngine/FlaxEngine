@@ -71,7 +71,7 @@ GPUShaderProgram* GPUShaderWebGPU::CreateGPUShaderProgram(ShaderStage type, cons
     if (!shaderModule)
     {
         LOG(Error, "Failed to create a shader module");
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
         LOG_STR(Warning, String((char*)wgsl.Get(), wgsl.Length()));
 #endif
         return nullptr;

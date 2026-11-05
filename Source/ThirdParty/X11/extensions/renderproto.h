@@ -36,7 +36,7 @@
 #define GContext CARD32
 #define Atom CARD32
 #define VisualID CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 
@@ -649,7 +649,7 @@ typedef struct {
 #undef GContext
 #undef Atom
 #undef VisualID
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef KeySym
 

@@ -26,7 +26,7 @@ namespace ShadowsOfMordor
             {
                 Chart = chart;
                 const float invSize = 1.0f / (int32)settings->AtlasSize;
-                chart->Result.UVsArea = Rectangle(X * invSize, Y * invSize, chart->Width * invSize, chart->Height * invSize);
+                chart->Result.UVsArea = Half4(X * invSize, Y * invSize, chart->Width * invSize, chart->Height * invSize);
             }
         };
 

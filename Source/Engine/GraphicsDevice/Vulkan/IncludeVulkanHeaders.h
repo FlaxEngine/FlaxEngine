@@ -41,6 +41,7 @@
 #define VMA_SYSTEM_ALIGNED_FREE(ptr) Platform::Free(ptr)
 #define VMA_NULLABLE
 #define VMA_NOT_NULL
+#define VMA_STATS_STRING_ENABLED 0
 #include <ThirdParty/VulkanMemoryAllocator/vk_mem_alloc.h>
 
 #if PLATFORM_APPLE_FAMILY

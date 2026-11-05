@@ -1,16 +1,20 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderBuffers.h"
-#include "Engine/Core/Config/GraphicsSettings.h"
+#include "RenderContext.h"
 #include "RenderTools.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Renderer/Utils/MultiScaler.h"
+#include "Engine/Renderer/Culling/IOcclusionCulling.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Scripting/Scripting.h"
 
 // How many frames keep cached buffers for temporal or optional effects?
 #define LAZY_FRAMES_COUNT 4
+bool UnsupportedOcclusionCulling = false;
 
 RenderBuffers::RenderBuffers(const SpawnParams& params)
     : ScriptingObject(params)
@@ -65,7 +69,8 @@ void RenderBuffers::ReleaseUnusedMemory()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
-    UPDATE_LAZY_KEEP_RT(HiZ);
+    UPDATE_LAZY_KEEP_RT(HiZ[0]);
+    UPDATE_LAZY_KEEP_RT(HiZ[1]);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     for (int32 i = CustomBuffers.Count() - 1; i >= 0; i--)
@@ -114,45 +119,51 @@ GPUTexture* RenderBuffers::RequestHalfResDepth(GPUContext* context)
     return HalfResDepth;
 }
 
-GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 mipLevels)
+GPUTexture* RenderBuffers::RequestHiZ(GPUContext* context, bool fullRes, int32 mipLevels, bool closest, bool powerOfTwo)
 {
     // Skip if already done in the current frame
     const auto currentFrame = Engine::FrameCount;
-    if (LastFrameHiZ == currentFrame)
-        return HiZ;
+    int32 idx = closest ? 0 : 1;
+    if (LastFrameHiZ[idx] == currentFrame)
+        return HiZ[idx];
     if (!MultiScaler::Instance()->IsReady())
         return nullptr;
-    LastFrameHiZ = currentFrame;
+    LastFrameHiZ[idx] = currentFrame;
 
     // Allocate or resize buffer (with full mip-chain)
     auto format = PixelFormat::R32_Float;
     auto width = fullRes ? _width : Math::Max(_width >> 1, 1);
     auto height = fullRes ? _height : Math::Max(_height >> 1, 1);
+    if (powerOfTwo)
+    {
+        width = Math::RoundUpToPowerOf2(width);
+        height = Math::RoundUpToPowerOf2(height);
+    }
     auto desc = GPUTextureDescription::New2D(width, height, mipLevels, format, GPUTextureFlags::ShaderResource);
     bool useCompute = false; // TODO: impl Compute Shader for downscaling depth to HiZ with a single dispatch (eg. FidelityFX Single Pass Downsampler)
     if (useCompute)
         desc.Flags |= GPUTextureFlags::UnorderedAccess;
     else
         desc.Flags |= GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews;
-    if (HiZ && HiZ->GetDescription() != desc)
+    if (HiZ[idx] && HiZ[idx]->GetDescription() != desc)
     {
-        RenderTargetPool::Release(HiZ);
-        HiZ = nullptr;
+        RenderTargetPool::Release(HiZ[idx]);
+        HiZ[idx] = nullptr;
     }
-    if (HiZ == nullptr)
+    if (HiZ[idx] == nullptr)
     {
-        HiZ = RenderTargetPool::Get(desc);
-        RENDER_TARGET_POOL_SET_NAME(HiZ, "HiZ");
+        HiZ[idx] = RenderTargetPool::Get(desc);
+        RENDER_TARGET_POOL_SET_NAME(HiZ[idx], "HiZ");
 #if PLATFORM_WEB
         // Hack to fix WebGPU limitation that requires to specify different sampler type manually to load 32-bit float texture
-        SetWebGPUTextureViewSampler(HiZ->View(), GPU_WEBGPU_SAMPLER_TYPE_UNFILTERABLE_FLOAT);
+        SetWebGPUTextureViewSampler(HiZ[idx]->View(), GPU_WEBGPU_SAMPLER_TYPE_UNFILTERABLE_FLOAT);
 #endif
     }
 
     // Downscale
-    MultiScaler::Instance()->BuildHiZ(context, DepthBuffer, HiZ);
+    MultiScaler::Instance()->BuildHiZ(context, DepthBuffer, HiZ[idx], closest);
 
-    return HiZ;
+    return HiZ[idx];
 }
 
 PixelFormat RenderBuffers::GetOutputFormat() const
@@ -275,6 +286,11 @@ void RenderBuffers::Release()
     for (int32 i = 0; i < _resources.Count(); i++)
         _resources[i]->ReleaseGPU();
 
+    if (auto* culling = FromInterface(OcclusionCulling))
+        Delete(culling);
+    OcclusionCulling = nullptr;
+    _statelessCulling = true;
+
     RenderTargetPool::Release(VolumetricFog);
     VolumetricFog = nullptr;
     RenderTargetPool::Release(VolumetricFogHistory);
@@ -290,8 +306,232 @@ void RenderBuffers::Release()
     UPDATE_LAZY_KEEP_RT(TemporalSSR);
     UPDATE_LAZY_KEEP_RT(TemporalAA);
     UPDATE_LAZY_KEEP_RT(HalfResDepth);
-    UPDATE_LAZY_KEEP_RT(HiZ);
+    UPDATE_LAZY_KEEP_RT(HiZ[0]);
+    UPDATE_LAZY_KEEP_RT(HiZ[1]);
     UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
     CustomBuffers.ClearDelete();
+}
+
+RenderBuffers::ReadOnlyDepthBuffer RenderBuffers::GetReadOnlyDepthBuffer() const
+{
+    GPUTexture* depthBuffer = DepthBuffer;
+    const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
+    GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
+    GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    return { depthBufferRTV, depthBufferSRV };
+}
+
+void RenderBuffers::OnRendering(const RenderContext& renderContext)
+{
+    // Initialize occlusion culling
+    if (UnsupportedOcclusionCulling)
+        return;
+    bool enableCulling = EnumHasAllFlags(renderContext.View.Flags, ViewFlags::OcclusionCulling) && !renderContext.View.IsCullingDisabled && !renderContext.View.IsSingleFrame;
+    const StringAnsi& occlusionCullingTypeName = GraphicsSettings::Get()->OcclusionCulling;
+    if (auto* culling = FromInterface(OcclusionCulling))
+    {
+        // Check if type still matches and effect is active
+        if (culling->GetType().Fullname != occlusionCullingTypeName || !enableCulling)
+        {
+            Delete(culling);
+            OcclusionCulling = nullptr;
+            _statelessCulling = true;
+        }
+    }
+    if (!OcclusionCulling && occlusionCullingTypeName.HasChars() && enableCulling)
+    {
+        const ScriptingTypeHandle occlusionCullingType = Scripting::FindScriptingType(occlusionCullingTypeName);
+        if (occlusionCullingType && occlusionCullingType.GetType().GetInterface(IOcclusionCulling::TypeInitializer))
+        {
+            OcclusionCulling = ToInterface<IOcclusionCulling>(NewObject(occlusionCullingType));
+            if (!OcclusionCulling->IsSupported())
+            {
+                UnsupportedOcclusionCulling = true;
+                LOG(Error, "Occlusion Culling system '{}' is unsupported", occlusionCullingTypeName.ToString());
+                return;
+            }
+            _statelessCulling = OcclusionCulling->IsStateless();
+
+            if (_usedCulling)
+            {
+                // Reset existing state to use a fresh CullingIds
+                _cullingLocker.Lock();
+                for (auto& e : Scenes)
+                {
+                    for (auto& q : e.Value.Geo)
+                    {
+                        for (auto& geo : q)
+                        {
+                            geo.CullingId = 0;
+                        }
+                    }
+                    e.Value.CullingIds.Clear();
+                }
+                _cullingLocker.Unlock();
+            }
+            else
+                _usedCulling = true;
+        }
+    }
+    if (OcclusionCulling)
+        OcclusionCulling->BeginFrame(renderContext);
+}
+
+void RenderBuffers::OnSceneRendering(SceneRendering* scene)
+{
+    if (!Scenes.ContainsKey(scene))
+    {
+        PROFILE_CPU_NAMED("Init Scene");
+
+        // Register scene
+        auto& sceneData = Scenes[scene];
+        ListenSceneRendering(scene);
+
+        // Put all existing actors into the render buffer geo storage used for LOD transitions, etc.
+        for (int32 i = 0; i < SceneRendering::MAX; i++)
+        {
+            auto& list = scene->Actors[i];
+            auto& geo = sceneData.Geo[i];
+            geo.Resize(list.Count());
+            auto geoPtr = geo.Get();
+            for (int32 j = 0; j < list.Count(); j++)
+                geoPtr[j] = GeometryDrawState();
+        }
+    }
+}
+
+GeometryDrawState* RenderBuffers::GetGeometryDrawState(SceneRendering* scene, int32 key, const Actor* actor) const
+{
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        auto& list = sceneData->Geo[actor->_drawCategory];
+        if (list.IsValidIndex(key))
+        {
+            return list.Get() + key;
+        }
+    }
+    // TODO: what about loose actors drawn from code? dynamically manage their state here?
+    return nullptr;
+}
+
+bool RenderBuffers::TestOcclusionCulling(const Actor* actor, uint32& cullingId) const
+{
+    return TestOcclusionCulling(actor->GetSceneRendering(), actor, actor->GetBoundingBox(), cullingId);
+}
+
+bool RenderBuffers::TestOcclusionCulling(SceneRendering* scene, const Actor* actor, const BoundingBox& objectBounds, uint32& cullingId, const void* object) const
+{
+    cullingId = 0;
+    if (!OcclusionCulling)
+        return true;
+    bool result = true;
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        // Get stable CullingId
+        const Pair<const Actor*, const void*> key(actor, object);
+        _cullingLocker.Lock();
+        _cullingIdsOwnerTypes.Add(actor->GetTypeHandle());
+        sceneData->CullingIds.TryGet(key, cullingId);
+        _cullingLocker.Unlock();
+
+        // Cull
+        uint32 cullingIdPrev = cullingId;
+        result = OcclusionCulling->IsVisible(objectBounds, cullingId);
+
+        // Update CullingId if got changed
+        if (cullingIdPrev != cullingId)
+        {
+            _cullingLocker.Lock();
+            sceneData->CullingIds[key] = cullingId;
+            _cullingLocker.Unlock();
+        }
+    }
+    return result;
+}
+
+void RenderBuffers::OnSceneRenderingAddActor(SceneRendering* scene, int32 key, Actor* a)
+{
+    // Init geo state of that object
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        auto& list = sceneData->Geo[a->_drawCategory];
+        ASSERT(key >= 0);
+        if (list.Count() <= key)
+            list.Resize(key + 1);
+        list.Get()[key] = GeometryDrawState();
+    }
+}
+
+void RenderBuffers::OnSceneRenderingUpdateActor(SceneRendering* scene, int32 key, Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags)
+{
+}
+
+void RenderBuffers::OnSceneRenderingRemoveActor(SceneRendering* scene, int32 key, Actor* a)
+{
+    bool isCullingIdOwner = _cullingIdsOwnerTypes.Contains(a->GetTypeHandle());
+    if (_statelessCulling && !isCullingIdOwner)
+        return;
+    PROFILE_CPU();
+
+    if (auto* sceneData = Scenes.TryGet(scene))
+    {
+        // Check actors that have nested sub-objects
+        if (isCullingIdOwner)
+        {
+            for (auto it = sceneData->CullingIds.Begin(); it.IsNotEnd(); ++it)
+            {
+                if (it->Key.First == a)
+                {
+                    if (!_statelessCulling && it->Value)
+                        OcclusionCulling->FreeObject(it->Value);
+                    sceneData->CullingIds.Remove(it);
+                }
+            }
+        }
+
+        // Check that actor
+        auto& list = sceneData->Geo[a->_drawCategory];
+        if (list.IsValidIndex(key) && !_statelessCulling)
+        {
+            auto& item = list.Get()[key];
+            if (item.CullingId)
+            {
+                OcclusionCulling->FreeObject(item.CullingId);
+                item.CullingId = 0;
+            }
+        }
+    }
+}
+
+void RenderBuffers::OnSceneRenderingClear(SceneRendering* scene)
+{
+    PROFILE_CPU();
+    if (!_statelessCulling)
+    {
+        // Free culling ids
+        if (auto* sceneData = Scenes.TryGet(scene))
+        {
+            for (auto& e : sceneData->CullingIds)
+            {
+                if (e.Value)
+                    OcclusionCulling->FreeObject(e.Value);
+            }
+            for (auto& list : sceneData->Geo)
+            {
+                for (auto& item : list)
+                {
+                    if (item.CullingId)
+                    {
+                        OcclusionCulling->FreeObject(item.CullingId);
+                        item.CullingId = 0;
+                    }
+                }
+            }
+        }
+        else
+            return;
+    }
+
+    Scenes.Remove(scene);
 }

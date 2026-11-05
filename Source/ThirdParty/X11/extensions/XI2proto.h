@@ -64,7 +64,7 @@
 
 /* make sure types have right sizes for protocol structures. */
 #define Window  uint32_t
-#define Time    uint32_t
+#define XXTime    uint32_t
 #define Atom    uint32_t
 #define Cursor  uint32_t
 #define Barrier uint32_t
@@ -545,7 +545,7 @@ typedef struct {
     uint8_t     ReqType;                /**< Always ::X_XISetFocus */
     uint16_t    length;                 /**< Length in 4 byte units */
     Window      focus;
-    Time        time;
+    XXTime        time;
     uint16_t    deviceid;
     uint16_t    pad0;
 } xXISetFocusReq;
@@ -586,7 +586,7 @@ typedef struct {
     uint8_t     ReqType;                /**< Always ::X_XIGrabDevice */
     uint16_t    length;                 /**< Length in 4 byte units */
     Window      grab_window;
-    Time        time;
+    XXTime        time;
     Cursor      cursor;
     uint16_t    deviceid;
     uint8_t     grab_mode;
@@ -631,7 +631,7 @@ typedef struct {
     uint8_t     reqType;
     uint8_t     ReqType;                /**< Always ::X_XIUngrabDevice */
     uint16_t    length;                 /**< Length in 4 byte units */
-    Time        time;
+    XXTime        time;
     uint16_t    deviceid;
     uint16_t    pad;
 } xXIUngrabDeviceReq;
@@ -645,7 +645,7 @@ typedef struct {
     uint8_t     reqType;
     uint8_t     ReqType;                /**< Always ::X_XIAllowEvents */
     uint16_t    length;                 /**< Length in 4 byte units */
-    Time        time;
+    XXTime        time;
     uint16_t    deviceid;
     uint8_t     mode;
     uint8_t     pad;
@@ -660,7 +660,7 @@ typedef struct {
     uint8_t     reqType;
     uint8_t     ReqType;                /**< Always ::X_XIAllowEvents */
     uint16_t    length;                 /**< Length in 4 byte units */
-    Time        time;
+    XXTime        time;
     uint16_t    deviceid;
     uint8_t     mode;
     uint8_t     pad;
@@ -677,7 +677,7 @@ typedef struct {
     uint8_t     reqType;
     uint8_t     ReqType;                /**< Always ::X_XIPassiveGrabDevice */
     uint16_t    length;                 /**< Length in 4 byte units */
-    Time        time;
+    XXTime        time;
     Window      grab_window;
     Cursor      cursor;
     uint32_t    detail;
@@ -850,7 +850,7 @@ typedef struct
     uint32_t    length;
     uint16_t    evtype;
     uint16_t    deviceid;
-    Time        time;
+    XXTime        time;
 } xXIGenericDeviceEvent;
 
 /**
@@ -885,7 +885,7 @@ typedef struct
     uint32_t    length;                 /**< Length in 4 byte units */
     uint16_t    evtype;                 /**< ::XI_Hierarchy */
     uint16_t    deviceid;
-    Time        time;
+    XXTime        time;
     uint32_t    flags;                  /**< ::XIMasterAdded, ::XIMasterDeleted,
                                              ::XISlaveAttached, ::XISlaveDetached,
                                              ::XISlaveAdded, ::XISlaveRemoved,
@@ -907,7 +907,7 @@ typedef struct
     uint32_t    length;                 /**< Length in 4 byte units */
     uint16_t    evtype;                 /**< XI_DeviceChanged */
     uint16_t    deviceid;               /**< Device that has changed */
-    Time        time;
+    XXTime        time;
     uint16_t    num_classes;            /**< Number of classes that have changed */
     uint16_t    sourceid;               /**< Source of the new classes */
     uint8_t     reason;                 /**< ::XISlaveSwitch, ::XIDeviceChange */
@@ -928,7 +928,7 @@ typedef struct
     uint32_t    length;             /**< Length in 4 byte units */
     uint16_t    evtype;             /**< XI_TouchOwnership */
     uint16_t    deviceid;           /**< Device that has changed */
-    Time        time;
+    XXTime        time;
     uint32_t    touchid;
     Window      root;
     Window      event;
@@ -952,7 +952,7 @@ typedef struct
     uint32_t    length;                 /**< Length in 4 byte uints */
     uint16_t    evtype;
     uint16_t    deviceid;
-    Time        time;
+    XXTime        time;
     uint32_t    detail;                 /**< Keycode or button */
     Window      root;
     Window      event;
@@ -985,7 +985,7 @@ typedef struct
     uint32_t    length;                 /**< Length in 4 byte uints */
     uint16_t    evtype;                 /**< ::XI_RawEvent */
     uint16_t    deviceid;
-    Time        time;
+    XXTime        time;
     uint32_t    detail;
     uint16_t    sourceid;               /**< The source device (XI 2.1) */
     uint16_t    valuators_len;          /**< Length of trailing valuator
@@ -1006,7 +1006,7 @@ typedef struct
     uint32_t    length;                 /**< Length in 4 byte uints */
     uint16_t    evtype;                 /**< ::XI_Enter */
     uint16_t    deviceid;
-    Time        time;
+    XXTime        time;
     uint16_t    sourceid;
     uint8_t     mode;
     uint8_t     detail;
@@ -1042,7 +1042,7 @@ typedef struct
     uint32_t    length;                 /**< Length in 4 byte units */
     uint16_t    evtype;                 /**< ::XI_PropertyEvent */
     uint16_t    deviceid;
-    Time        time;
+    XXTime        time;
     Atom        property;
     uint8_t     what;                   /**< ::XIPropertyDeleted,
                                              ::XIPropertyCreated,
@@ -1061,7 +1061,7 @@ typedef struct
     uint32_t    length;                 /**< Length in 4 byte units */
     uint16_t    evtype;                 /**< ::XI_BarrierHit or ::XI_BarrierLeave */
     uint16_t    deviceid;
-    Time        time;
+    XXTime        time;
     uint32_t    eventid;
     Window      root;
     Window      event;
@@ -1083,7 +1083,7 @@ typedef xXIBarrierEvent xXIBarrierPointerReleasedEvent;
 typedef xXIBarrierEvent xXIBarrierLeaveEvent;
 
 #undef Window
-#undef Time
+#undef XXTime
 #undef Atom
 #undef Cursor
 #undef Barrier

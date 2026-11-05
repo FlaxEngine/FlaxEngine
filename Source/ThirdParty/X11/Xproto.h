@@ -246,7 +246,7 @@ restoring the definitions in X.h.  */
 #define GContext CARD32
 #define Atom CARD32
 #define VisualID CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 
@@ -1002,7 +1002,7 @@ typedef struct _xEvent {
 	    } u;
 	struct {
             CARD32 pad00 B32;
-	    Time time B32;
+	    XXTime time B32;
 	    Window root B32, event B32, child B32;
 	    INT16 rootX B16, rootY B16, eventX B16, eventY B16;
 	    KeyButMask state B16;
@@ -1011,7 +1011,7 @@ typedef struct _xEvent {
 	} keyButtonPointer;
 	struct {
             CARD32 pad00 B32;
-            Time time B32;
+            XXTime time B32;
 	    Window root B32, event B32, child B32;
 	    INT16 rootX B16, rootY B16, eventX B16, eventY B16;
 	    KeyButMask state B16;
@@ -1137,26 +1137,26 @@ typedef struct _xEvent {
             CARD32 pad00 B32;
 	    Window window B32;
 	    Atom atom B32;
-	    Time time B32;
+	    XXTime time B32;
 	    BYTE state;			/* NewValue or Deleted */
 	    BYTE pad1;
 	    CARD16 pad2 B16;
 	} property;
 	struct {
             CARD32 pad00 B32;
-            Time time B32;     
+            XXTime time B32;     
 	    Window window B32;
 	    Atom atom B32;
 	} selectionClear;
 	struct {
             CARD32 pad00 B32;
-            Time time B32;    
+            XXTime time B32;    
 	    Window owner B32, requestor B32;
 	    Atom selection B32, target B32, property B32;
 	} selectionRequest;
 	struct {
             CARD32 pad00 B32;
-            Time time B32;   
+            XXTime time B32;   
 	    Window requestor B32;
 	    Atom selection B32, target B32, property B32;
 	} selectionNotify;
@@ -1434,7 +1434,7 @@ typedef struct {
     CARD16 length B16;
     Window window B32;
     Atom selection B32;
-    Time time B32;
+    XXTime time B32;
 } xSetSelectionOwnerReq;
 
 typedef struct {
@@ -1443,7 +1443,7 @@ typedef struct {
     CARD16 length B16;
     Window requestor B32;
     Atom selection B32, target B32, property B32;
-    Time time B32;
+    XXTime time B32;
     } xConvertSelectionReq;
 
 typedef struct {
@@ -1464,7 +1464,7 @@ typedef struct {
     BYTE pointerMode, keyboardMode;
     Window confineTo B32;
     Cursor cursor B32;
-    Time time B32;
+    XXTime time B32;
 } xGrabPointerReq;
 
 typedef struct {
@@ -1495,7 +1495,7 @@ typedef struct {
     BYTE pad;
     CARD16 length B16;
     Cursor cursor B32;
-    Time time B32;
+    XXTime time B32;
     CARD16 eventMask B16;
     CARD16 pad2 B16;
 } xChangeActivePointerGrabReq;
@@ -1505,7 +1505,7 @@ typedef struct {
     BOOL ownerEvents;
     CARD16 length B16;
     Window grabWindow B32;
-    Time time B32;
+    XXTime time B32;
     BYTE pointerMode, keyboardMode;  
     CARD16 pad B16;
 } xGrabKeyboardReq;
@@ -1534,7 +1534,7 @@ typedef struct {
     CARD8 reqType;
     CARD8 mode;
     CARD16 length B16;
-    Time time B32;
+    XXTime time B32;
 } xAllowEventsReq;
 
 typedef struct {
@@ -1542,7 +1542,7 @@ typedef struct {
     BYTE pad;
     CARD16 length B16;
     Window window B32;
-    Time start B32, stop B32;
+    XXTime start B32, stop B32;
 } xGetMotionEventsReq;
 
 typedef struct {
@@ -1568,7 +1568,7 @@ typedef struct {
     CARD8 revertTo;
     CARD16 length B16;
     Window focus B32;
-    Time time B32;
+    XXTime time B32;
 } xSetInputFocusReq;
 
 typedef struct {

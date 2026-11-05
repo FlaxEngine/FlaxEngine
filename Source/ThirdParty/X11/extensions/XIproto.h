@@ -52,7 +52,7 @@ SOFTWARE.
 
 /* make sure types have right sizes for protocol structures. */
 #define Window CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define Mask CARD32
 #define Atom CARD32
@@ -468,8 +468,8 @@ typedef struct {
     CARD8	reqType;	/* input extension major code	*/
     CARD8	ReqType;        /* always X_GetDeviceMotionEvents*/
     CARD16	length B16;
-    Time	start B32;
-    Time	stop B32;
+    XXTime	start B32;
+    TXXTimeime	stop B32;
     CARD8	deviceid;
     BYTE	pad1, pad2, pad3;
 } xGetDeviceMotionEventsReq;
@@ -558,7 +558,7 @@ typedef struct {
     CARD8	ReqType;        /* always X_GrabDevice */
     CARD16	length B16;
     Window	grabWindow B32;
-    Time	time B32;
+    XXTime	time B32;
     CARD16	event_count B16;
     CARD8	this_device_mode;
     CARD8	other_devices_mode;
@@ -591,7 +591,7 @@ typedef struct {
     CARD8	reqType;	/* input extension major code	*/
     CARD8	ReqType;        /* always X_UnGrabDevice	*/
     CARD16	length B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceid;
     BYTE	pad1, pad2, pad3;
 } xUngrabDeviceReq;
@@ -686,7 +686,7 @@ typedef struct {
     CARD8	reqType;	/* input extension major code	*/
     CARD8	ReqType;        /* always X_AllowDeviceEvents	*/
     CARD16	length B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	mode;
     CARD8	deviceid;
     BYTE	pad1, pad2;
@@ -712,7 +712,7 @@ typedef struct {
     CARD16	sequenceNumber B16;
     CARD32	length B32;
     CARD32	focus B32;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	revertTo;
     BYTE	pad1, pad2, pad3;
     CARD32	pad01 B32;
@@ -731,7 +731,7 @@ typedef struct {
     CARD8	ReqType;        /* always X_SetDeviceFocus	*/
     CARD16	length B16;
     Window	focus B32;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	revertTo;
     CARD8	device;
     CARD16	pad01 B16;
@@ -1567,7 +1567,7 @@ typedef struct
     BYTE	type;
     BYTE        detail;
     CARD16	sequenceNumber B16;
-    Time        time B32;
+    XXTime        time B32;
     Window      root B32;
     Window      event B32;
     Window      child B32;
@@ -1591,7 +1591,7 @@ typedef struct
     BYTE	type;
     BYTE        detail;
     CARD16	sequenceNumber B16;
-    Time        time B32;
+    XXTime        time B32;
     Window      window B32;
     BYTE	mode;
     CARD8       deviceid;
@@ -1617,7 +1617,7 @@ typedef struct
     BYTE	type;
     BYTE        deviceid;
     CARD16	sequenceNumber B16;
-    Time        time B32;
+    XXTime        time B32;
     CARD8	num_keys;
     CARD8	num_buttons;
     CARD8	num_valuators;
@@ -1673,7 +1673,7 @@ typedef struct
     KeyCode     firstKeyCode;
     CARD8       count;
     BYTE        pad1;
-    Time        time B32;
+    XXTime        time B32;
     CARD32	pad00 B32;
     CARD32	pad01 B32;
     CARD32	pad02 B32;
@@ -1692,7 +1692,7 @@ typedef struct
     BYTE	type;
     BYTE        deviceid;
     CARD16	sequenceNumber B16;
-    Time        time B32;
+    XXTime        time B32;
     CARD8       request;
     BYTE        pad1, pad2, pad3;
     CARD32	pad00 B32;
@@ -1713,7 +1713,7 @@ typedef struct
     BYTE	type;
     BYTE        pad00;
     CARD16	sequenceNumber B16;
-    Time        time B32;
+    XXTime        time B32;
     BYTE        devchange; /* Device{Added|Removed|Enabled|Disabled|ControlChanged} */
     BYTE        deviceid;
     CARD16      control B16;
@@ -1749,7 +1749,7 @@ typedef struct
     } devicePropertyNotify;
 
 #undef Window
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef Mask
 #undef Atom

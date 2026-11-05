@@ -124,8 +124,6 @@ int32 CalculateDpi(HMODULE shCoreDll)
                 dpiY = (int32)y;
             }
         }
-
-        FreeLibrary(shCoreDll);
     }
 
     return (dpiX + dpiY) / 2;
@@ -434,6 +432,8 @@ cleanup:
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
+    PROFILE_CPU();
+
     // Construct input flags
     UINT flags = 0;
     switch (buttons)
@@ -1143,6 +1143,8 @@ void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType l
         {
             // Skip Windows-style lines
             rawData.RemoveAllKeepOrder('\r');
+            if (rawData.IsEmpty())
+                return;
 
             // Remove last new line character
             if (rawData.Last() == '\n')
@@ -1194,6 +1196,11 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
             DWORD exitCode;
             if (GetExitCodeProcess(shExecInfo.hProcess, &exitCode) != 0)
                 result = exitCode;
+            CloseHandle(shExecInfo.hProcess);
+        }
+        else if (shExecInfo.hProcess)
+        {
+            // Not waiting for the process, so close its handle (SEE_MASK_NOCLOSEPROCESS returns it)
             CloseHandle(shExecInfo.hProcess);
         }
     }

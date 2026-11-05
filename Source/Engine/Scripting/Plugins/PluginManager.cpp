@@ -104,12 +104,8 @@ namespace PluginManagerImpl
                     continue;
 
                 // Check if attribute references a valid class
-                MTypeObject* refType = nullptr;
-                typeField->GetValue(attribute, &refType);
-                if (refType == nullptr)
-                    continue;
-
-                MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
+                MType* type = nullptr;
+                typeField->GetValue(attribute, &type);
                 if (type == nullptr)
                     continue;
                 MClass* typeClass = MCore::Type::GetClass(type);

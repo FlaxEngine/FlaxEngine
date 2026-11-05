@@ -97,17 +97,22 @@ public:
     float GetOpacity() const override;
     void SetOpacity(float opacity) override;
     void Focus() override;
-    String GetTitle() const override;
     void SetTitle(const StringView& title) override;
     DragDropEffect DoDragDrop(const StringView& data) override;
     DragDropEffect DoDragDrop(const StringView& data, const Float2& offset, Window* dragSourceWindow) override;
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
+    void StartTextInput() override;
+    void EndTextInput() override;
     void StartClippingCursor(const Rectangle& bounds) override;
     void EndClippingCursor() override;
     void SetMousePosition(const Float2& position) const override;
     void SetCursor(CursorType type) override;
-    void SetIcon(TextureData& icon) override;
+    void SetIcon(const TextureData& icon) override;
+    void SetCursorImage(void* image) override;
+    static void* LoadCursorImage(const StringView& path);
+    static void* LoadCursorImage(const TextureData& image, const Int2& hotSpot = Int2::Zero);
+    static void DestroyCursorImage(void* image);
 
 #if USE_EDITOR && PLATFORM_WINDOWS
     // [IUnknown]

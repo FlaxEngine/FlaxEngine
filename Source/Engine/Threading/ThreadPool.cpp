@@ -22,6 +22,11 @@ FLAXENGINE_API bool IsInMainThread()
     return Globals::MainThreadID == Platform::GetCurrentThreadID();
 }
 
+FLAXENGINE_API bool IsInRenderThread()
+{
+    return Globals::RenderThreadID == Platform::GetCurrentThreadID();
+}
+
 String ThreadPoolTask::ToString() const
 {
     return String::Format(TEXT("Thread Pool Task ({0})"), (int32)GetState());

@@ -150,11 +150,18 @@ void Transform::LocalToWorldVector(const Vector3& vector, Vector3& result) const
     Vector3::Transform(tmp, Orientation, result);
 }
 
-void Transform::LocalToWorld(const Vector3& point, Vector3& result) const
+void Transform::LocalToWorld(const Float3& point, Float3& result) const
 {
-    Vector3 tmp = point * Scale;
-    Vector3::Transform(tmp, Orientation, tmp);
-    Vector3::Add(tmp, Translation, result);
+    Float3 tmp = point * Scale;
+    Float3::Transform(tmp, Orientation, tmp);
+    Float3::Add(tmp, Translation, result);
+}
+
+void Transform::LocalToWorld(const Double3& point, Double3& result) const
+{
+    Double3 tmp = point * Scale;
+    Double3::Transform(tmp, Orientation, tmp);
+    Double3::Add(tmp, Translation, result);
 }
 
 void Transform::WorldToLocal(const Transform& other, Transform& result) const

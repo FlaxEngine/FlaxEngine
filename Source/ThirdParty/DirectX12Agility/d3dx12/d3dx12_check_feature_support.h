@@ -240,6 +240,15 @@ public: // Function declaration
     D3D12_TIGHT_ALIGNMENT_TIER TightAlignmentSupportTier() const noexcept;
 #endif
 
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+    // D3D12_OPTIONS22
+    BOOL ShaderExecutionReorderingActuallyReorders() const noexcept;
+    BOOL CreateByteOffsetViewsSupported() const noexcept;
+    UINT Max1DDispatchSize() const noexcept;
+    UINT Max1DDispatchMeshSize() const noexcept;
+#endif
+
+
 private: // Private structs and helpers declaration
     struct ProtectedResourceSessionTypesLocal : D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES
     {
@@ -328,6 +337,9 @@ private: // Member data
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
     D3D12_FEATURE_DATA_D3D12_OPTIONS21 m_dOptions21;
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+    D3D12_FEATURE_DATA_D3D12_OPTIONS22 m_dOptions22;
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
     D3D12_FEATURE_DATA_TIGHT_ALIGNMENT m_dTightAlignment;
@@ -425,6 +437,9 @@ inline CD3DX12FeatureSupport::CD3DX12FeatureSupport() noexcept
 #endif
 #if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
 , m_dOptions21{}
+#endif
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+, m_dOptions22{}
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
 , m_dTightAlignment{}
@@ -603,6 +618,15 @@ inline HRESULT CD3DX12FeatureSupport::Init(ID3D12Device* pDevice)
         m_dOptions21 = {};
     }
 #endif
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+    if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS22, &m_dOptions22, sizeof(m_dOptions22))))
+    {
+        m_dOptions22 = {};
+    }
+#endif
+
+
 
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 617)
     if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_TIGHT_ALIGNMENT, &m_dTightAlignment, sizeof(m_dTightAlignment))))
@@ -994,6 +1018,15 @@ FEATURE_SUPPORT_GET(D3D12_WORK_GRAPHS_TIER, m_dOptions21, WorkGraphsTier);
 FEATURE_SUPPORT_GET_NAME(D3D12_TIGHT_ALIGNMENT_TIER, m_dTightAlignment, SupportTier, TightAlignmentSupportTier);
 #endif
 
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 619)
+// 52: Options22
+FEATURE_SUPPORT_GET(BOOL, m_dOptions22, ShaderExecutionReorderingActuallyReorders);
+FEATURE_SUPPORT_GET(BOOL, m_dOptions22, CreateByteOffsetViewsSupported);
+FEATURE_SUPPORT_GET(UINT, m_dOptions22, Max1DDispatchSize);
+FEATURE_SUPPORT_GET(UINT, m_dOptions22, Max1DDispatchMeshSize);
+#endif
+
+
 // Helper function to decide the highest shader model supported by the system
 // Stores the result in m_dShaderModel
 // Must be updated whenever a new shader model is added to the d3d12.h header
@@ -1158,5 +1191,3 @@ inline HRESULT CD3DX12FeatureSupport::QueryProtectedResourceSessionTypes(UINT No
 #undef FEATURE_SUPPORT_GET_NODE_INDEXED_NAME
 
 // end CD3DX12FeatureSupport
-
-

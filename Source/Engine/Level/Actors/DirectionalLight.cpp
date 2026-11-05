@@ -2,7 +2,7 @@
 
 #include "DirectionalLight.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -10,16 +10,21 @@
 DirectionalLight::DirectionalLight(const SpawnParams& params)
     : LightWithShadow(params)
 {
+    ShadowsDepthBias = 0.002f;
+    ShadowsNormalOffsetScale = 20.0f;
+
     _drawNoCulling = 1;
     Brightness = 8.0f;
 }
 
-void DirectionalLight::Draw(RenderContext& renderContext)
+void DirectionalLight::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
+    Float3 color = Color.ToFloat3() * (Color.A * brightness);
     Float3 position;
-    if (Brightness > ZeroTolerance
+    if (color.SumValues() > ZeroTolerance
         && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DirectionalLights)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
@@ -28,7 +33,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
-        data.Color = Color.ToFloat3() * (Color.A * brightness);
+        data.Color = color;
         data.ShadowsStrength = ShadowsStrength;
         data.Direction = GetForward();
         data.ShadowsFadeDistance = ShadowsFadeDistance;
@@ -48,6 +53,8 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.Cascade2Spacing = Cascade2Spacing;
         data.Cascade3Spacing = Cascade3Spacing;
         data.Cascade4Spacing = Cascade4Spacing;
+        data.CascadeBlendSize = CascadeBlendSize;
+        data.SourceAngle = Math::Tan(SourceAngle * DegreesToRadians * 0.5f);
         data.PartitionMode = PartitionMode;
         data.ContactShadowsLength = ContactShadowsLength;
         data.StaticFlags = GetStaticFlags();
@@ -64,11 +71,13 @@ void DirectionalLight::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(DirectionalLight);
 
+    SERIALIZE(SourceAngle);
     SERIALIZE(CascadeCount);
     SERIALIZE(Cascade1Spacing);
     SERIALIZE(Cascade2Spacing);
     SERIALIZE(Cascade3Spacing);
     SERIALIZE(Cascade4Spacing);
+    SERIALIZE(CascadeBlendSize);
     SERIALIZE(PartitionMode);
 }
 
@@ -77,11 +86,13 @@ void DirectionalLight::Deserialize(DeserializeStream& stream, ISerializeModifier
     // Base
     LightWithShadow::Deserialize(stream, modifier);
 
+    DESERIALIZE(SourceAngle);
     DESERIALIZE(CascadeCount);
     DESERIALIZE(Cascade1Spacing);
     DESERIALIZE(Cascade2Spacing);
     DESERIALIZE(Cascade3Spacing);
     DESERIALIZE(Cascade4Spacing);
+    DESERIALIZE(CascadeBlendSize);
     DESERIALIZE(PartitionMode);
 }
 

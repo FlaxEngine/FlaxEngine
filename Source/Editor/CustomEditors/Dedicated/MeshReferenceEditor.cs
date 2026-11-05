@@ -179,11 +179,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 Focus();
 
-                // Open model editor window
-                if (_value.Actor is StaticModel staticModel)
-                    Editor.Instance.ContentEditing.Open(staticModel.Model);
-                else if (_value.Actor is AnimatedModel animatedModel)
-                    Editor.Instance.ContentEditing.Open(animatedModel.SkinnedModel);
+                if (button == MouseButton.Left)
+                {
+                    // Open model editor window
+                    if (_value.Actor is StaticModel staticModel)
+                        Editor.Instance.ContentEditing.Open(staticModel.Model);
+                    else if (_value.Actor is AnimatedModel animatedModel)
+                        Editor.Instance.ContentEditing.Open(animatedModel.SkinnedModel);
+                    else
+                        return base.OnMouseDoubleClick(location, button);
+                    
+                    return true;
+                }
 
                 return base.OnMouseDoubleClick(location, button);
             }

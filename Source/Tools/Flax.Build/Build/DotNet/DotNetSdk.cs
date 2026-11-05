@@ -131,12 +131,12 @@ namespace Flax.Build
         /// <summary>
         /// The minimum SDK version.
         /// </summary>
-        public static Version MinimumVersion => new Version(8, 0);
+        public static Version MinimumVersion => new Version(10, 0);
 
         /// <summary>
         /// The maximum SDK version.
         /// </summary>
-        public static Version MaximumVersion => new Version(10, 0);
+        public static Version MaximumVersion => new Version(11, 0);
 
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
@@ -167,6 +167,7 @@ namespace Flax.Build
         /// </summary>
         public string CSharpLanguageVersion => Version.Major switch
         {
+            _ when Version.Major >= 11 => "15.0",
             _ when Version.Major >= 10 => "14.0",
             _ when Version.Major >= 9 => "13.0",
             _ when Version.Major >= 8 => "12.0",

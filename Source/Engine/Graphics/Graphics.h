@@ -39,7 +39,7 @@ public:
     API_FIELD() static Quality VolumetricFogQuality;
 
     /// <summary>
-    /// The shadows quality. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
+    /// The shadows filtering quality (sampling). Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality ShadowsQuality;
 
@@ -69,9 +69,19 @@ public:
     API_FIELD() static Quality GIQuality;
 
     /// <summary>
+    /// The Global Illumination probes spacing distance (in world units). Defines the quality of the GI resolution. Adjust to 200-500 to improve performance and lower frequency GI data.
+    /// </summary>
+    API_FIELD() static float GIProbesSpacing;
+
+    /// <summary>
     /// Enables cascades splits blending for Global Illumination.
     /// </summary>
     API_FIELD() static bool GICascadesBlending;
+
+    /// <summary>
+    /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow (eg. to 4096).
+    /// </summary>
+    API_FIELD() static int32 GlobalSurfaceAtlasResolution;
 
     /// <summary>
     /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
@@ -108,6 +118,22 @@ public:
 
         // The minimum size in pixels of objects to cast shadows. Improves performance by skipping too small objects (eg. sub-pixel) from rendering into shadow maps.
         API_FIELD() static float MinObjectPixelSize;
+
+#if COMPILE_WITH_PROFILER
+        /// <summary>
+        /// Dumps active shadow projections info to the log (the next frame). Can be used to inspect what lights are casting shadows (for optimization).
+        /// </summary>
+        API_FUNCTION(Attributes="DebugCommand") static void Dump();
+#endif
+    };
+
+    // Motion Vectors rendering configuration.
+    API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API MotionVectors
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(MotionVectors);
+
+        // The minimum screen size of objects to draw motion vectors. Improves performance by skipping too small objects (eg. sub-pixel) from rendering motion vectors.
+        API_FIELD() static float MinObjectScreenSize;
     };
 
     // Post Processing effects rendering configuration.
@@ -117,6 +143,23 @@ public:
 
         // Toggles between 2D and 3D LUT texture for Color Grading.
         API_FIELD() static bool ColorGradingVolumeLUT;
+    };
+
+    // Global Illumination rendering configuration and API.
+    API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API GI
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(GI);
+
+        // Gets the normalized 0-1 progress of the Global Illumination lighting bounces convergence (0 = no GI, 1 = full GI convergence). Can be used to continue displaying loading screen after scene load to ensure indirect lighting has been evaluated. Non-zero value means GI has started to be calculated.
+        API_FUNCTION(Attributes="DebugCommand(Hide=true)")
+        static float GetConvergence(const RenderBuffers* buffers);
+
+#if COMPILE_WITH_PROFILER
+        /// <summary>
+        /// Dumps Global Illumination rendering info to the log (the next frame). Can be used to inspect DDGI, Global Surface Atlas and Global SDF memory and usage (for optimization). Prints info about the number of probes, cascades and draw state.
+        /// </summary>
+        API_FUNCTION(Attributes="DebugCommand") static void Dump();
+#endif
     };
 
 public:

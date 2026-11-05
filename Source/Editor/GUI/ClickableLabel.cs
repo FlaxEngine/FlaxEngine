@@ -34,7 +34,8 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            DoubleClick?.Invoke();
+            if (button == MouseButton.Left)
+                DoubleClick?.Invoke();
 
             return base.OnMouseDoubleClick(location, button);
         }

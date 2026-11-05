@@ -23,7 +23,7 @@ API_ENUM() enum class GlobalIlluminationMode
     None = 0,
 
     /// <summary>
-    /// Dynamic Diffuse Global Illumination algorithm with scrolling probes volume (with cascades). Uses software raytracing - requires Global SDF and Global Surface Atlas.
+    /// Dynamic Diffuse Global Illumination algorithm with scrolling probes volume (and cascades). Uses software raytracing - requires Global SDF and Global Surface Atlas.
     /// </summary>
     DDGI = 1,
 
@@ -159,6 +159,22 @@ API_ENUM() enum class ResolutionMode : int32
     /// Half resolution
     /// </summary>
     Half = 2,
+};
+
+/// <summary>
+/// The reflections modes.
+/// </summary>
+API_ENUM() enum class ReflectionsMode : int32
+{
+    /// <summary>
+    /// Reflections from Environment Probes placed on the scene.
+    /// </summary>
+    EnvironmentProbes = 0,
+
+    /// <summary>
+    /// Reflections from Dynamic Diffuse Global Illumination algorithm with scrolling probes volume (and cascades). Uses software raytracing - requires Global SDF and Global Surface Atlas.
+    /// </summary>
+    DDGI = 1,
 };
 
 /// <summary>
@@ -335,9 +351,29 @@ API_ENUM(Attributes="Flags") enum class GlobalIlluminationSettingsOverride : int
     BounceIntensity = 1 << 5,
 
     /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.IndirectShadowsStrength"/> property.
+    /// </summary>
+    IndirectShadowsStrength = 1 << 6,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.IndirectResolution"/> property.
+    /// </summary>
+    IndirectResolution = 1 << 7,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.Reflections"/> property.
+    /// </summary>
+    Reflections = 1 << 8,
+
+    /// <summary>
+    /// Overrides <see cref="GlobalIlluminationSettings.ReflectionsResolution"/> property.
+    /// </summary>
+    ReflectionsResolution = 1 << 9,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity,
+    All = Mode | Intensity | TemporalResponse | Distance | FallbackIrradiance | BounceIntensity | IndirectShadowsStrength | IndirectResolution | Reflections | ReflectionsResolution,
 };
 
 /// <summary>
@@ -382,14 +418,38 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     /// <summary>
     /// Camera-centered draw distance of the Global Illumination effect. Scene outside the range will use fallback irradiance. DDGI automatically derives its cascade layout from this distance and the global probe spacing, so continuously blending this value can recreate probe resources and cause a visible lighting reset.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(1000), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Distance)")
+    API_FIELD(Attributes="EditorOrder(30), Limit(1000), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Distance), ValueCategory(Utils.ValueCategory.Distance)")
     float Distance = 20000.0f;
+
+    /// <summary>
+    /// Indirect lighting shadows intensity. Default is 1 for fully opaque shadowing, lower values bleed the lighting into shadowed areas. Can be sued for artistic control over GI.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(35), Limit(0.0f, 1.0f, 0.001f), PostProcessSetting((int)GlobalIlluminationSettingsOverride.IndirectShadowsStrength)")
+    float IndirectShadowsStrength = 1.0f;
 
     /// <summary>
     /// The irradiance lighting outside the GI range used as a fallback to prevent pure-black scene outside the Global Illumination range.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40), PostProcessSetting((int)GlobalIlluminationSettingsOverride.FallbackIrradiance)")
     Color FallbackIrradiance = Color::Transparent;
+
+    /// <summary>
+    /// The indirect lighting render resolution. Full gives better quality, but half improves performance.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(50), PostProcessSetting((int)GlobalIlluminationSettingsOverride.IndirectResolution)")
+    ResolutionMode IndirectResolution = ResolutionMode::Full;
+
+    /// <summary>
+    /// The indirect specular reflections rendering mode to use.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(100), PostProcessSetting((int)GlobalIlluminationSettingsOverride.Reflections)")
+    ReflectionsMode Reflections = ReflectionsMode::EnvironmentProbes;
+
+    /// <summary>
+    /// The indirect specular reflections render resolution. Full gives better quality, but half improves performance.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(110), PostProcessSetting((int)GlobalIlluminationSettingsOverride.ReflectionsResolution)")
+    ResolutionMode ReflectionsResolution = ResolutionMode::Full;
 
 public:
     /// <summary>
@@ -1819,17 +1879,17 @@ API_STRUCT() struct FLAXENGINE_API ScreenSpaceReflectionsSettings : ISerializabl
     /// <summary>
     /// The effect fade out end distance from camera (in world units).
     /// </summary>
-    API_FIELD(Attributes="Limit(0), EditorOrder(31), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(31), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeOutDistance), ValueCategory(Utils.ValueCategory.Distance)")
     float FadeOutDistance = 5000.0f;
 
     /// <summary>
     /// The effect fade distance (in world units). Defines the size of the effect fade from fully visible to fully invisible at FadeOutDistance.
     /// </summary>
-    API_FIELD(Attributes="Limit(0), EditorOrder(32), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance)")
+    API_FIELD(Attributes="Limit(0), EditorOrder(32), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.FadeDistance), ValueCategory(Utils.ValueCategory.Distance)")
     float FadeDistance = 500.0f;
 
     /// <summary>
-    /// "The input color buffer downscale mode that uses blurred mipmaps when resolving the reflection color. Produces more realistic results by blurring distant parts of reflections in rough (low-gloss) materials. It also improves performance on most platforms but uses more memory.
+    /// The input color buffer downscale mode that uses blurred mipmaps when resolving the reflection color. Produces more realistic results by blurring distant parts of reflections in rough (low-gloss) materials. It also improves performance on most platforms but uses more memory.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40), PostProcessSetting((int)ScreenSpaceReflectionsSettingsOverride.UseColorBufferMips), EditorDisplay(null, \"Use Color Buffer Mips\")")
     bool UseColorBufferMips = true;
@@ -1953,7 +2013,7 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// The anti-aliasing effect mode.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)AntiAliasingSettingsOverride.Mode)")
-    AntialiasingMode Mode = AntialiasingMode::FastApproximateAntialiasing;
+    AntialiasingMode Mode = AntialiasingMode::TemporalAntialiasing;
 
     /// <summary>
     /// The diameter (in texels) inside which jitter samples are spread. Smaller values result in crisper but more aliased output, while larger values result in more stable but blurrier output.

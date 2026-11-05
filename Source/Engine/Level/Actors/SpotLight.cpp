@@ -1,13 +1,13 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SpotLight.h"
-
 #include "Engine/Content/Deprecated.h"
-#include "Engine/Graphics/RenderView.h"
-#include "Engine/Renderer/RenderList.h"
 #include "Engine/Content/Assets/IESProfile.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderView.h"
+#include "Engine/Graphics/RenderBuffers.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
@@ -19,8 +19,8 @@ SpotLight::SpotLight(const SpawnParams& params)
 {
     CastVolumetricShadow = false;
     ShadowsDistance = 2000.0f;
-    ShadowsFadeDistance = 100.0f;
-    ShadowsDepthBias = 0.5f;
+    ShadowsFadeDistance = 500.0f;
+    ShadowsDepthBias = 0.05f;
 
     _direction = Vector3::Forward;
     _cosOuterCone = Math::Cos(_outerConeAngle * DegreesToRadians);
@@ -128,8 +128,9 @@ void SpotLight::OnTransformChanged()
     UpdateBounds();
 }
 
-void SpotLight::Draw(RenderContext& renderContext)
+void SpotLight::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
     Float3 position;
@@ -174,6 +175,12 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
         data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
+        uint32 cullingId = 0;
+        if (data.CanRenderShadow(renderContext.View) && !renderContext.Buffers->TestOcclusionCulling(this, cullingId))
+        {
+            // Occlusion cull dynamic shadow
+            data.ShadowsMode = ShadowsCastingMode::None;
+        }
         renderContext.List->SpotLights.Add(data);
     }
 }

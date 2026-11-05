@@ -147,14 +147,14 @@ public:
         return BoundingBox(_transform.Translation - size, _transform.Translation + size);
     }
 #endif
-    void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool HasContentLoaded() const override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
     // [IFogRenderer]
-    void GetVolumetricFogOptions(VolumetricFogOptions& result) const override;
+    void GetVolumetricFogOptions(const RenderView& view, VolumetricFogOptions& result) const override;
     void GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const override;
     void DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output) override;
 

@@ -162,7 +162,7 @@ namespace FlaxEngine.Windows.Search
             /// <inheritdoc />
             protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
             {
-                if (Navigate != null)
+                if (button == MouseButton.Left && Navigate != null)
                 {
                     Navigate.Invoke(this);
                     return true;

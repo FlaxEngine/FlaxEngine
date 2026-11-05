@@ -121,6 +121,20 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override void StartTextInput()
+        {
+            var parent = Parent?.Root;
+            parent?.StartTextInput();
+        }
+
+        /// <inheritdoc />
+        public override void EndTextInput()
+        {
+            var parent = Parent?.Root;
+            parent?.EndTextInput();
+        }
+
+        /// <inheritdoc />
         public override bool GetKey(KeyboardKeys key)
         {
             return Input.GetKey(key);
@@ -195,6 +209,14 @@ namespace FlaxEngine.GUI
         {
             return base.ContainsPoint(ref location, precise)
                    && (_canvas.TestCanvasIntersection == null || _canvas.TestCanvasIntersection(ref location));
+        }
+
+        /// <inheritdoc />
+        public override void GetDesireClientArea(out Rectangle rect)
+        {
+            var size = Size;
+            var viewportRect = _canvas.ViewportRect;
+            rect = new Rectangle(size * new Float2(viewportRect.X, viewportRect.Y), size * new Float2(viewportRect.Z, viewportRect.W));
         }
 
         /// <inheritdoc />
@@ -284,6 +306,20 @@ namespace FlaxEngine.GUI
             {
                 heldTime = rateTime = 0;
             }
+        }
+        
+        /// <inheritdoc />
+        public override void OnGotFocus()
+        {
+            StartTextInput();
+            base.OnGotFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            EndTextInput();
+            base.OnLostFocus();
         }
 
         /// <inheritdoc />

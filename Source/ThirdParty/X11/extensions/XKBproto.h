@@ -27,12 +27,14 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef _XKBPROTO_H_
 #define	_XKBPROTO_H_
 
+#include "Xvproto.h"
+
 #include <X11/Xmd.h>
 #include <X11/extensions/XKB.h>
 
 #define Window CARD32
 #define Atom CARD32
-#define Time CARD32
+#define XXTime CARD32
 #define KeyCode CARD8
 #define KeySym CARD32
 
@@ -1012,7 +1014,7 @@ typedef struct _xkbAnyEvent {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	pad1;
     CARD16	pad2 B16;
@@ -1028,7 +1030,7 @@ typedef	struct _xkbNewKeyboardNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	oldDeviceID;
     KeyCode	minKeyCode;
@@ -1050,7 +1052,7 @@ typedef	struct _xkbMapNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	ptrBtnActions;
     CARD16	changed B16;
@@ -1079,7 +1081,7 @@ typedef	struct _xkbStateNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	mods;
     CARD8	baseMods;
@@ -1107,7 +1109,7 @@ typedef struct _xkbControlsNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	numGroups;
     CARD16	pad1 B16;
@@ -1126,7 +1128,7 @@ typedef struct _xkbIndicatorNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	pad1;
     CARD16	pad2 B16;
@@ -1142,7 +1144,7 @@ typedef struct _xkbNamesNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	pad1;
     CARD16	changed B16;
@@ -1166,7 +1168,7 @@ typedef struct _xkbCompatMapNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	changedGroups;
     CARD16	firstSI B16;
@@ -1183,7 +1185,7 @@ typedef struct _xkbBellNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	bellClass;
     CARD8	bellID;
@@ -1203,7 +1205,7 @@ typedef struct _xkbActionMessage {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     KeyCode	keycode;
     BOOL	press;
@@ -1221,7 +1223,7 @@ typedef struct _xkbAccessXNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     KeyCode	keycode;
     CARD16	detail B16;
@@ -1238,7 +1240,7 @@ typedef struct _xkbExtensionDeviceNotify {
     BYTE	type;
     BYTE	xkbType;
     CARD16	sequenceNumber B16;
-    Time	time B32;
+    XXTime	time B32;
     CARD8	deviceID;
     CARD8	pad1;
     CARD16	reason B16;
@@ -1274,7 +1276,7 @@ typedef struct _xkbEvent {
 
 #undef Window
 #undef Atom
-#undef Time
+#undef XXTime
 #undef KeyCode
 #undef KeySym
 

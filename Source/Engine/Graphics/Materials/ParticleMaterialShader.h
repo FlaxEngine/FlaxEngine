@@ -15,8 +15,9 @@ private:
         PipelineStateCache Default;
         PipelineStateCache Depth;
         PipelineStateCache Distortion;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
         PipelineStateCache QuadOverdraw;
+        PipelineStateCache Wireframe;
 #endif
 
         FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass)
@@ -29,9 +30,11 @@ private:
                 return &Distortion;
             case DrawPass::Forward:
                 return &Default;
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:
                 return &QuadOverdraw;
+            case DrawPass::Wireframe:
+                return &Wireframe;
 #endif
             default:
                 return nullptr;
@@ -43,8 +46,9 @@ private:
             Default.Release();
             Depth.Release();
             Distortion.Release();
-#if USE_EDITOR
+#if GPU_ENABLE_DEVELOPMENT
             QuadOverdraw.Release();
+            Wireframe.Release();
 #endif
         }
     };
@@ -54,7 +58,6 @@ private:
     Cache _cacheModel;
     Cache _cacheRibbon;
     PipelineStateCache _cacheVolumetricFog;
-    DrawPass _drawModes = DrawPass::None;
 
 public:
     /// <summary>
@@ -68,7 +71,6 @@ public:
 
 public:
     // [MaterialShader]
-    DrawPass GetDrawModes() const override;
     void Bind(BindParameters& params) override;
     void Unload() override;
 

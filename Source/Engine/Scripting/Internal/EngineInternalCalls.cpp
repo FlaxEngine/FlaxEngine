@@ -9,10 +9,6 @@
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
-#if USE_MONO
-#include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/ManagedCLR/MField.h"
-#endif
 #include "Engine/Scripting/Internal/InternalCalls.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Profiler/Profiler.h"
@@ -23,17 +19,6 @@
 #include "Engine/Threading/Threading.h"
 
 #if !COMPILE_WITHOUT_CSHARP
-
-#if USE_MONO
-DEFINE_INTERNAL_CALL(MObject*) UtilsInternal_ExtractArrayFromList(MObject* obj)
-{
-    MClass* klass = MCore::Object::GetClass(obj);
-    MField* field = klass->GetField("_items");
-    MObject* o;
-    field->GetValue(obj, &o);
-    return o;
-}
-#endif
 
 DEFINE_INTERNAL_CALL(void) PlatformInternal_MemoryCopy(void* dst, const void* src, uint64 size)
 {
@@ -195,9 +180,9 @@ DEFINE_INTERNAL_CALL(bool) ScriptingInternal_HasGameModulesLoaded()
     return Scripting::HasGameModulesLoaded();
 }
 
-DEFINE_INTERNAL_CALL(bool) ScriptingInternal_IsTypeFromGameScripts(MTypeObject* type)
+DEFINE_INTERNAL_CALL(bool) ScriptingInternal_IsTypeFromGameScripts(MType* type)
 {
-    return Scripting::IsTypeFromGameScripts(MUtils::GetClass(INTERNAL_TYPE_OBJECT_GET(type)));
+    return Scripting::IsTypeFromGameScripts(MUtils::GetClass(type));
 }
 
 DEFINE_INTERNAL_CALL(void) ScriptingInternal_FlushRemovedObjects()
@@ -207,37 +192,11 @@ DEFINE_INTERNAL_CALL(void) ScriptingInternal_FlushRemovedObjects()
 
 #endif
 
-void registerFlaxEngineInternalCalls()
-{
-    AnimGraphExecutor::initRuntime();
-#if USE_CSHARP
-    ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCopy", &PlatformInternal_MemoryCopy);
-    ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryClear", &PlatformInternal_MemoryClear);
-    ADD_INTERNAL_CALL("FlaxEngine.Utils::MemoryCompare", &PlatformInternal_MemoryCompare);
-#if USE_MONO
-    ADD_INTERNAL_CALL("FlaxEngine.Utils::Internal_ExtractArrayFromList", &UtilsInternal_ExtractArrayFromList);
-#endif
-    ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_LogWrite", &DebugLogHandlerInternal_LogWrite);
-    ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_Log", &DebugLogHandlerInternal_Log);
-    ADD_INTERNAL_CALL("FlaxEngine.DebugLogHandler::Internal_LogException", &DebugLogHandlerInternal_LogException);
-#endif
-}
-
 class ScriptingInternal
 {
 public:
     static void InitRuntime()
     {
-        // Scripting API
-        ADD_INTERNAL_CALL("FlaxEngine.Scripting::HasGameModulesLoaded", &ScriptingInternal_HasGameModulesLoaded);
-        ADD_INTERNAL_CALL("FlaxEngine.Scripting::IsTypeFromGameScripts", &ScriptingInternal_IsTypeFromGameScripts);
-        ADD_INTERNAL_CALL("FlaxEngine.Scripting::FlushRemovedObjects", &ScriptingInternal_FlushRemovedObjects);
-
-        // Profiler API
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::BeginEvent", &ProfilerInternal_BeginEvent);
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEvent", &ProfilerInternal_EndEvent);
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::BeginEventGPU", &ProfilerInternal_BeginEventGPU);
-        ADD_INTERNAL_CALL("FlaxEngine.Profiler::EndEventGPU", &ProfilerInternal_EndEventGPU);
     }
 };
 

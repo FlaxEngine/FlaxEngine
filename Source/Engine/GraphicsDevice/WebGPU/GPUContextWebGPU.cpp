@@ -229,7 +229,7 @@ void GPUContextWebGPU::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureVi
 
 void GPUContextWebGPU::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts)
 {
-    ASSERT(Math::IsInRange(rts.Length(), 1, GPU_MAX_RT_BINDED));
+    ASSERT(Math::IsInRange(rts.Length(), 0, GPU_MAX_RT_BINDED));
     auto depthBufferGPU = (GPUTextureViewWebGPU*)depthBuffer;
     if (_renderTargetCount != rts.Length() || _depthStencil != depthBufferGPU || Platform::MemoryCompare(_renderTargets, rts.Get(), rts.Length() * sizeof(void*)) != 0)
     {
@@ -364,6 +364,7 @@ void GPUContextWebGPU::UpdateCB(GPUConstantBuffer* cb, const void* data)
         cbWebGPU->AllocationSize = alignedSize;
         // TODO: consider holding CPU-side staging buffer and copying data to the GPU buffer in a single batch for all uniforms (before flushing the active command encoder)
         wgpuQueueWriteBuffer(_device->Queue, allocation.Buffer, allocation.Offset, data, size);
+        RENDER_STAT_DATA_UPLOAD(size);
         _bindGroupDirty = true;
     }
 }
@@ -442,6 +443,13 @@ uint64 GPUContextWebGPU::BeginQuery(GPUQueryType type)
         else if (_activeOcclusionQuerySet == query.Set && _renderPass)
         {
             // Begin occlusion query on the active set
+            wgpuRenderPassEncoderBeginOcclusionQuery(_renderPass, query.Index);
+        }
+        else if (_activeOcclusionQuerySet == -1 && !_renderPass)
+        {
+            // Begin new render pass and then begin occlusion query
+            _pendingOcclusionQuerySet = query.Set;
+            FlushRenderPass();
             wgpuRenderPassEncoderBeginOcclusionQuery(_renderPass, query.Index);
         }
         else
@@ -593,6 +601,7 @@ void GPUContextWebGPU::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
         // Efficient upload via queue
         wgpuQueueWriteBuffer(_device->Queue, bufferWebGPU->Buffer, offset, data, size);
     }
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextWebGPU::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -633,6 +642,7 @@ void GPUContextWebGPU::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     dataLayout.rowsPerImage = mipHeight;
     WGPUExtent3D writeSize = { (uint32_t)mipWidth, (uint32_t)mipHeight, (uint32_t)mipDepth };
     wgpuQueueWriteTexture(_device->Queue, &copyInfo, data, slicePitch, &dataLayout, &writeSize);
+    RENDER_STAT_DATA_UPLOAD(slicePitch);
 }
 
 void GPUContextWebGPU::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)
@@ -953,6 +963,8 @@ WGPUComputePassEncoder GPUContextWebGPU::OnDispatch(GPUShaderProgramCS* shader)
 
 void GPUContextWebGPU::EndRenderPass()
 {
+    _activeOcclusionQuerySet = -1;
+    _pendingOcclusionQuerySet = -1;
     wgpuRenderPassEncoderEnd(_renderPass);
     wgpuRenderPassEncoderRelease(_renderPass);
     _renderPass = nullptr;
@@ -1230,7 +1242,7 @@ void GPUContextWebGPU::BuildBindGroup(uint32 groupIndex, const SpirvShaderDescri
             break;
         }
         default:
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DEBUG_LAYER
             LOG(Fatal, "Unknown descriptor type: {} used as {}", (uint32)descriptor.DescriptorType, (uint32)descriptor.BindingType);
 #else
             CRASH;

@@ -108,6 +108,7 @@ namespace FlaxEditor.Surface
             case MaterialParameterType.GameplayGlobal: return typeof(GameplayGlobals);
             case MaterialParameterType.TextureGroupSampler: return typeof(int);
             case MaterialParameterType.GlobalSDF: return typeof(object);
+            case MaterialParameterType.GPUBuffer: return typeof(GPUBuffer);
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
@@ -237,7 +238,7 @@ namespace FlaxEditor.Surface
                     surfaceParameters.Remove(surfaceParameter);
                     surfaceParameters.Add(surfaceParameter);
                 }
-                var attributes = surfaceParameter?.Meta.GetAttributes() ?? FlaxEngine.Utils.GetEmptyArray<Attribute>();
+                var attributes = surfaceParameter?.Meta.GetAttributes() ?? Array.Empty<Attribute>();
                 data[i] = new GraphParameterData(null, index++, parameter.Name, parameter.IsPublic, ToType(parameter.ParameterType), attributes, parameter);
                 i++;
             }

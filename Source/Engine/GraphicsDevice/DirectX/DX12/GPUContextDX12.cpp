@@ -32,7 +32,6 @@
 #include "Engine/Graphics/GPUResourceAccess.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
-#include "Engine/Threading/Threading.h"
 
 #define DX12_ENABLE_RESOURCE_BARRIERS_BATCHING 1
 #define DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING (0 && LOG_ENABLE)
@@ -88,6 +87,44 @@ FORCE_INLINE D3D12_RESOURCE_STATES GetResourceState(GPUResourceAccess access)
     return D3D12_RESOURCE_STATE_COMMON;
 }
 
+#if DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING
+
+String ResourceStateToString(D3D12_RESOURCE_STATES state)
+{
+    if (state == D3D12_RESOURCE_STATE_COMMON)
+        return TEXT("Common");
+    String result;
+    while (state)
+    {
+        if (result.HasChars())
+            result += TEXT('|');
+#define CHECK_STATE(type, name) if ((type & state) == type) { state &= ~type; result += TEXT(name); continue; }
+        CHECK_STATE(D3D12_RESOURCE_STATE_GENERIC_READ, "GenericRead");
+        CHECK_STATE(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, "VertexConstantBuffer");
+        CHECK_STATE(D3D12_RESOURCE_STATE_INDEX_BUFFER, "IndexBuffer");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RENDER_TARGET, "RenderTarget");
+        CHECK_STATE(D3D12_RESOURCE_STATE_UNORDERED_ACCESS, "UAV");
+        CHECK_STATE(D3D12_RESOURCE_STATE_DEPTH_WRITE, "DepthWrite");
+        CHECK_STATE(D3D12_RESOURCE_STATE_DEPTH_READ, "DepthRead");
+        CHECK_STATE(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, "SRV-PS");
+        CHECK_STATE(D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, "SRV-VS");
+        CHECK_STATE(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, "IndirectArg");
+        CHECK_STATE(D3D12_RESOURCE_STATE_COPY_DEST, "CopyDst");
+        CHECK_STATE(D3D12_RESOURCE_STATE_COPY_SOURCE, "CopySrc");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RESOLVE_DEST, "ResolveDst");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RESOLVE_SOURCE, "ResolveSrc");
+        CHECK_STATE(D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE, "ShadingRate");
+        CHECK_STATE(D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "RtxAcceleration");
+        CHECK_STATE(D3D12_RESOURCE_STATE_PRESENT, "Present");
+#undef CHECK_STATE
+        result += TEXT("Unknown");
+        break;
+    }
+    return result;
+}
+
+#endif
+
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(D3D12_DISPATCH_ARGUMENTS), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountX) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountX), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountX");
@@ -114,7 +151,6 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
     , _currentAllocator(nullptr)
     , _currentState(nullptr)
     , _currentCompute(nullptr)
-    , _swapChainsUsed(0)
     , _vbCount(0)
     , _rtCount(0)
     , _rbBufferSize(0)
@@ -149,6 +185,9 @@ GPUContextDX12::~GPUContextDX12()
 #if GPU_ENABLE_TRACY
     tracy::DestroyD3D12Context(_tracyContext);
 #endif
+#ifdef __ID3D12GraphicsCommandList1_FWD_DEFINED__
+    SAFE_RELEASE(_commandList1);
+#endif
     DX_SAFE_RELEASE_CHECK(_commandList, 0);
 }
 
@@ -164,7 +203,7 @@ void GPUContextDX12::AddTransitionBarrier(ResourceOwnerDX12* resource, const D3D
         resourceName = gpuResource->GetName();
     else
         resourceName = StringUtils::ToString((uint32)(uint64)resource->GetResource());
-    const auto info = String::Format(TEXT("[DX12 Resource Barrier]: 0x{0:x} -> 0x{1:x}: {2} (subresource: {3})"), before, after, resourceName, subresourceIndex);
+    const auto info = String::Format(TEXT("[DX12 Resource Barrier]: {0} -> {1}: {2} (subresource: {3})"), ResourceStateToString(before), ResourceStateToString(after), resourceName, subresourceIndex);
     Log::Logger::Write(LogType::Info, info);
 #endif
 
@@ -269,6 +308,7 @@ void GPUContextDX12::Reset()
         _currentAllocator = _device->GetCommandQueue()->RequestAllocator();
         _commandList->Reset(_currentAllocator, nullptr);
     }
+    IsOpen = true;
 
     // Setup initial state
     _currentState = nullptr;
@@ -295,7 +335,7 @@ void GPUContextDX12::Reset()
     _ibHandle = nullptr;
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
-    _swapChainsUsed = 0;
+    _swapChains.Clear();
     
     // Bind dummy vertex buffer (used by missing bindings)
     D3D12_VERTEX_BUFFER_VIEW dummyVBView;
@@ -310,6 +350,11 @@ void GPUContextDX12::Reset()
     _commandList->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBView);
 
     ForceRebindDescriptors();
+
+    // Discard resources not created during rendering
+    for (auto* resource : _device->PendingResourceDiscards)
+        _commandList->DiscardResource(resource, nullptr);
+    _device->PendingResourceDiscards.Clear();
 }
 
 uint64 GPUContextDX12::Execute(bool waitForCompletion)
@@ -322,6 +367,7 @@ uint64 GPUContextDX12::Execute(bool waitForCompletion)
     _currentState = nullptr;
 
     // Execute commands
+    IsOpen = false;
     const uint64 fenceValue = queue->ExecuteCommandList(_commandList);
 
     // Cleanup used allocator
@@ -335,14 +381,15 @@ uint64 GPUContextDX12::Execute(bool waitForCompletion)
     return fenceValue;
 }
 
-void GPUContextDX12::OnSwapChainFlush()
+void GPUContextDX12::OnSwapChainFlush(ResourceOwnerDX12* backBuffer)
 {
-    _swapChainsUsed++;
+    _swapChains.Add(backBuffer);
 
     // Flush per-window (excluding the main window)
-    if (_swapChainsUsed > 1)
+    if (_swapChains.Count() > 1)
     {
         // Flush GPU commands
+        flushSwapChains();
         Flush();
     }
 }
@@ -354,6 +401,17 @@ void GPUContextDX12::GetActiveHeapDescriptor(const D3D12_CPU_DESCRIPTOR_HANDLE& 
 
     // Copy descriptor
     _device->GetDevice()->CopyDescriptorsSimple(1, descriptor.CPU, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
+
+void GPUContextDX12::flushSwapChains()
+{
+    // Transition swapchains to the present state
+    for (ResourceOwnerDX12* backBuffer : _swapChains)
+    {
+        SetResourceState(backBuffer, D3D12_RESOURCE_STATE_PRESENT);
+    }
+    _swapChains.Clear();
+    flushRBs();
 }
 
 void GPUContextDX12::flushSRVs()
@@ -747,6 +805,8 @@ void GPUContextDX12::FrameBegin()
 
 void GPUContextDX12::FrameEnd()
 {
+    flushSwapChains();
+
     // Base
     GPUContext::FrameEnd();
 
@@ -935,7 +995,7 @@ void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView
 
 void GPUContextDX12::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts)
 {
-    ASSERT(Math::IsInRange(rts.Length(), 1, GPU_MAX_RT_BINDED));
+    ASSERT(Math::IsInRange(rts.Length(), 0, GPU_MAX_RT_BINDED));
 
     const auto depthBufferDX12 = static_cast<GPUTextureViewDX12*>(depthBuffer);
 
@@ -992,7 +1052,6 @@ void GPUContextDX12::ResetUA()
             _srMaskDirtyGraphics |= 1 << slot;
             _srMaskDirtyCompute |= 1 << slot;
             _uaHandles[slot] = nullptr;
-            break;
         }
     }
 }
@@ -1124,6 +1183,7 @@ void GPUContextDX12::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
     // Allocate bytes for the buffer
     auto allocation = _device->UploadBuffer.Allocate(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    RENDER_STAT_DATA_UPLOAD(size);
 
     // Copy data
     Platform::MemoryCopy(allocation.CPUAddress, data, allocation.Size);
@@ -1381,6 +1441,7 @@ void GPUContextDX12::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 si
     flushRBs();
 
     _device->UploadBuffer.UploadBuffer(GetCommandList(), bufferDX12->GetResource(), offset, data, size);
+    RENDER_STAT_DATA_UPLOAD(size);
 }
 
 void GPUContextDX12::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -1407,6 +1468,7 @@ void GPUContextDX12::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 
     flushRBs();
 
     _device->UploadBuffer.UploadTexture(GetCommandList(), textureDX12->GetResource(), data, rowPitch, slicePitch, mipIndex, arrayIndex);
+    RENDER_STAT_DATA_UPLOAD(slicePitch);
 }
 
 void GPUContextDX12::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)
@@ -1462,6 +1524,7 @@ void GPUContextDX12::ResetCounter(GPUBuffer* buffer)
 
     uint32 value = 0;
     _device->UploadBuffer.UploadBuffer(GetCommandList(), counter->GetResource(), 0, &value, 4);
+    RENDER_STAT_DATA_UPLOAD(4);
 
     SetResourceState(counter, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 }

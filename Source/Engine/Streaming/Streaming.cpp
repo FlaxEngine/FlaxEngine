@@ -115,8 +115,6 @@ void StreamableResource::StopStreaming()
 
 void UpdateResource(StreamableResource* resource, double currentTime)
 {
-    ASSERT(resource && resource->CanBeUpdated());
-
     // Pick group and handler dedicated for that resource
     auto group = resource->GetGroup();
     auto handler = group->GetHandler();
@@ -327,4 +325,14 @@ GPUSampler* Streaming::GetTextureGroupSampler(int32 index)
         sampler = FallbackSampler;
     }
     return sampler;
+}
+
+void Streaming::UpdateResource(StreamableResource* resource)
+{
+    if (!resource || !resource->CanBeUpdated())
+        return;
+    PROFILE_MEM(ContentStreaming);
+    ScopeLock lock(ResourcesLock);
+    const double currentTime = Platform::GetTimeSeconds();
+    ::UpdateResource(resource, currentTime);
 }

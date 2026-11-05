@@ -700,6 +700,8 @@ protected:
 
     // [Vehicle]
     void OnTransformChanged() override;
+    void OnEnable() override;
+    void OnDisable() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 };

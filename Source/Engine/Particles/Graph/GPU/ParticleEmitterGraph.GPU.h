@@ -5,7 +5,7 @@
 /// <summary>
 /// Current GPU particles emitter shader version.
 /// </summary>
-#define PARTICLE_GPU_GRAPH_VERSION 12
+#define PARTICLE_GPU_GRAPH_VERSION 13
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
 

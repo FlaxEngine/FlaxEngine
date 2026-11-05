@@ -51,20 +51,20 @@ public:
 #if !GPU_VULKAN_QUERY_NEW
 public:
     /// <summary>
-    /// Interrupts an in-progress query, allowing the command buffer to submitted. Interrupted queries must be resumed using Resume().
+    /// Interrupts an in-progress query, allowing the command buffer to submit. Interrupted queries must be resumed using Resume().
     /// </summary>
-    /// <param name="cmdBuffer">The GPU commands buffer.</param>
-    void Interrupt(CmdBufferVulkan* cmdBuffer);
+    /// <param name="context">The GPU context.</param>
+    void Interrupt(GPUContextVulkan* context);
 
     /// <summary>
     /// Resumes an interrupted query, restoring it back to its original in-progress state.
     /// </summary>
-    /// <param name="cmdBuffer">The GPU commands buffer.</param>
-    void Resume(CmdBufferVulkan* cmdBuffer);
+    /// <param name="context">The GPU context.</param>
+    void Resume(GPUContextVulkan* context);
 
 private:
     bool GetResult(Query& query);
-    void WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query, VkPipelineStageFlagBits stage) const;
+    void WriteTimestamp(GPUContextVulkan* context, Query& query, VkPipelineStageFlagBits stage) const;
     bool TryGetResult();
     bool UseQueries();
 #endif

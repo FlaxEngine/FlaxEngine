@@ -15,12 +15,6 @@ public abstract class GraphicsDeviceBaseModule : EngineModule
     {
         base.Setup(options);
 
-        if (options.Configuration == TargetConfiguration.Debug && true)
-        {
-            // Enables GPU diagnostic tools (debug layer etc.)
-            options.PublicDefinitions.Add("GPU_ENABLE_DIAGNOSTICS");
-        }
-
         if (Profiler.Use(options) && tracy.Use(options) && tracy.GPU && true)
         {
             // Enables GPU profiling with Tracy

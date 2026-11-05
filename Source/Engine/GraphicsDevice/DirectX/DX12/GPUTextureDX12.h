@@ -15,7 +15,6 @@
 class GPUTextureViewDX12 : public GPUTextureView, public IShaderResourceDX12
 {
 private:
-
     GPUDeviceDX12* _device = nullptr;
     ResourceOwnerDX12* _owner = nullptr;
     DescriptorHeapWithSlotsDX12::Slot _rtv, _srv, _dsv, _uav;
@@ -31,7 +30,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -55,14 +53,11 @@ public:
     void Release();
 
 public:
-
     bool ReadOnlyDepthView = false;
     void SetRTV(D3D12_RENDER_TARGET_VIEW_DESC& rtvDesc);
     void SetSRV(D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc);
     void SetDSV(D3D12_DEPTH_STENCIL_VIEW_DESC& dsvDesc);
     void SetUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc, ID3D12Resource* counterResource = nullptr);
-
-public:
 
     /// <summary>
     /// Gets the CPU handle to the render target view descriptor.
@@ -81,7 +76,6 @@ public:
     }
 
 public:
-
     // [GPUResourceView]
     void* GetNativePtr() const override
     {
@@ -113,7 +107,6 @@ public:
 class GPUTextureDX12 : public GPUResourceDX12<GPUTexture>, public ResourceOwnerDX12, public IShaderResourceDX12
 {
 private:
-
     GPUTextureViewDX12 _handleArray;
     GPUTextureViewDX12 _handleVolume;
     GPUTextureViewDX12 _handleReadOnlyDepth;
@@ -130,18 +123,15 @@ private:
     DXGI_FORMAT _dxgiFormatUAV;
 
 public:
-
     GPUTextureDX12(GPUDeviceDX12* device, const StringView& name)
         : GPUResourceDX12<GPUTexture>(device, name)
     {
     }
 
 private:
-
     void initHandles();
 
 public:
-
     // [GPUTexture]
     GPUTextureView* View(int32 arrayOrDepthIndex) const override
     {

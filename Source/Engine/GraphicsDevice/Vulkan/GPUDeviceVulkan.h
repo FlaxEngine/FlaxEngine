@@ -198,16 +198,18 @@ struct RenderTargetLayoutVulkan
     {
         struct
         {
-            uint32 Layers : 10; // Limited by GPU_MAX_TEXTURE_ARRAY_SIZE
-            uint32 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
-            uint32 ReadDepth : 1;
-            uint32 WriteDepth : 1;
-            uint32 ReadStencil : 1;
-            uint32 WriteStencil : 1;
-            uint32 BlendEnable : 1;
+            uint64 Layers : 10; // Limited by GPU_MAX_TEXTURE_ARRAY_SIZE
+            uint64 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
+            uint64 ReadDepth : 1;
+            uint64 WriteDepth : 1;
+            uint64 ReadStencil : 1;
+            uint64 WriteStencil : 1;
+            uint64 LoadClear : 7; // GPU_MAX_RT_BINDED + 1
+            uint64 LoadDontCare : 7; // GPU_MAX_RT_BINDED + 1
+            uint64 StoreDontCare : 7; // GPU_MAX_RT_BINDED + 1
         };
 
-        uint32 Flags;
+        uint64 Flags;
     };
 
     MSAALevel MSAA;
@@ -258,7 +260,7 @@ public:
     GPUDeviceVulkan* Device;
     VkRenderPass Handle;
     RenderTargetLayoutVulkan Layout;
-    bool CanDepthWrite;
+    bool CanDepthStencilWrite;
 #if VULKAN_USE_DEBUG_DATA
     VkRenderPassCreateInfo DebugCreateInfo;
 #endif
@@ -297,7 +299,7 @@ public:
 
 #if VULKAN_RESET_QUERY_POOLS
     bool ResetBeforeUse;
-    void Reset(CmdBufferVulkan* cmdBuffer);
+    void Reset(GPUContextVulkan* context);
 #endif
 };
 
@@ -310,15 +312,18 @@ private:
     Array<uint64> _readResultsBits;
 
     // Last potentially free index in the pool
-    int32 _lastBeginIndex;
+    int32 _lastBeginIndex = 0;
+    // Last frame when pool was used
+    uint64 _lastUsedFrame = 0;
 
 public:
     BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, GPUQueryType type);
-    bool AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex);
+    bool AcquireQuery(GPUContextVulkan* context, uint32& resultIndex);
     void ReleaseQuery(uint32 queryIndex);
     void MarkQueryAsStarted(uint32 queryIndex);
     bool GetResults(uint32 index, uint64& result);
     bool HasRoom() const;
+    bool TryExpire();
 };
 
 /// <summary>
@@ -357,7 +362,7 @@ class GPUDeviceVulkan : public GPUDevice
 
 private:
     CriticalSection _fenceLock;
-    mutable void* _nativePtr[2];
+    mutable void* _nativePtr[4];
 
     Dictionary<RenderTargetLayoutVulkan, RenderPassVulkan*> _renderPasses;
     Dictionary<FramebufferVulkan::Key, FramebufferVulkan*> _framebuffers;
@@ -393,8 +398,8 @@ public:
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
 
 private:
-    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
-    void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
+    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils, bool useDebugLayer = false);
+    void GetDeviceExtensions(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions);
     static void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
 
 public:
@@ -529,6 +534,13 @@ public:
     PipelineLayoutVulkan* GetOrCreateLayout(DescriptorSetLayoutInfoVulkan& key);
     void OnImageViewDestroy(VkImageView imageView);
 
+#if VULKAN_USE_PERF_SDK
+    // NVIDIA Perf SDK integration for usage in plugin
+    static bool UsePerfSDK;
+    static void PerfSDKInit();
+    void PerfSDKInitDeviceInfo(VkDeviceCreateInfo& deviceInfo, const Array<const char*>& deviceExtensions, VkPhysicalDeviceFeatures2* enabledFeatures2);
+#endif
+
 public:
     /// <summary>
     /// Setups the present queue to be ready for the given window surface.
@@ -567,6 +579,8 @@ public:
     GPUContext* GetMainContext() override;
     GPUAdapter* GetAdapter() const override;
     void* GetNativePtr() const override;
+    QueueInfo GetNativeQueue() const override;
+    GPUMemoryStats GetMemoryStats() override;
     bool Init() override;
     void DrawBegin() override;
     void Dispose() override;

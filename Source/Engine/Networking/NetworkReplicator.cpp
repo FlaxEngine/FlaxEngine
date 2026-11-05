@@ -6,6 +6,7 @@
 #include "NetworkInternal.h"
 #include "NetworkStream.h"
 #include "NetworkMessage.h"
+#include "NetworkSettings.h"
 #include "NetworkPeer.h"
 #include "NetworkChannelType.h"
 #include "NetworkEvent.h"
@@ -19,6 +20,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/SceneObject.h"
 #include "Engine/Level/Prefabs/Prefab.h"
@@ -33,6 +35,12 @@
 #if USE_EDITOR
 #include "FlaxEngine.Gen.h"
 #endif
+
+// Max number of parts for replication and RPC messages, in case of large data that is split into smaller chunks
+#define NETWORK_MAX_PARTS 64
+
+// Max size of the network stream buffer (in bytes) to use for replication and RPC messages
+#define NETWORK_STREAM_SIZE_LIMIT 65535
 
 #if !BUILD_RELEASE
 bool NetworkReplicator::EnableLog = false;
@@ -194,6 +202,7 @@ struct PartsItem
     uint16 PartsLeft;
     uint32 OwnerFrame;
     uint32 OwnerClientId;
+    float LastPartTime;
     const void* Tag;
     Array<byte> Data;
 };
@@ -205,12 +214,15 @@ struct SpawnItem
     bool HasOwnership = false;
     bool HierarchicalOwnership = false;
     uint32 OwnerClientId;
+    float LastPartTime;
     NetworkObjectRole Role;
 };
 
 struct SpawnItemParts
 {
     NetworkMessageObjectSpawn MsgData;
+    uint32 OwnerClientId; // Duplicate of MsgData.OwnerClientId to reuse template code for other structs
+    float LastPartTime;
     Guid PrefabId;
     Array<NetworkMessageObjectSpawnItem> Items;
 };
@@ -259,6 +271,24 @@ namespace
     Array<Guid> DespawnedObjects;
     uint32 SpawnId = 0;
     uint32 RpcId = 0;
+    float NetworkTime = 0;
+
+    NetworkStream* GetWriteStream()
+    {
+        if (CachedWriteStream == nullptr)
+            CachedWriteStream = New<NetworkStream>();
+        CachedWriteStream->Initialize();
+        return CachedWriteStream;
+    }
+
+    NetworkStream* GetReadStream(byte* data, uint32 dataSize, uint32 senderId)
+    {
+        if (CachedReadStream == nullptr)
+            CachedReadStream = New<NetworkStream>();
+        CachedReadStream->Initialize(data, dataSize);
+        CachedReadStream->SenderId = senderId;
+        return CachedReadStream;
+    }
 
 #if USE_EDITOR
     void OnScriptsReloading()
@@ -488,6 +518,67 @@ FORCE_INLINE void BuildCachedTargets(const NetworkReplicatedObject& item, const 
     BuildCachedTargets(NetworkManager::Clients, item.TargetClientIds, item.OwnerClientId, clientsMask);
 }
 
+template<typename T>
+void RemoveClientFromTargets(Array<T>& items, uint32 clientId)
+{
+    for (int32 i = items.Count() - 1; i >= 0; i--)
+    {
+        auto& rpc = items[i];
+        if (SpanContains(rpc.Targets, clientId))
+        {
+            if (rpc.Targets.Length() == 1)
+            {
+                items.RemoveAt(i);
+            }
+            else
+            {
+                Array<uint32> targets = rpc.Targets;
+                targets.Remove(clientId);
+                rpc.Targets = MoveTemp(targets);
+            }
+        }
+    }
+}
+
+template<typename T>
+void RemoveOwnerFromItems(Array<T>& items, uint32 clientId)
+{
+    for (int32 i = items.Count() - 1; i >= 0; i--)
+    {
+        if (items[i].OwnerClientId == clientId)
+            items.RemoveAt(i);
+    }
+}
+
+template<typename T>
+void CleanupOldParts(Array<T>& items, int32 maxParts, float ttl, const Char* hint)
+{
+    // Limit amount of parts
+    if (items.Count() > maxParts && maxParts > 0)
+    {
+        LOG(Warning, "Too many {} network parts in-flight: {}, limit: {}", hint, items.Count(), maxParts);
+        items.Resize(maxParts);
+    }
+
+    // Remove expired parts
+    if (ttl > 0.0f)
+    {
+        int32 count = 0;
+        for (int32 i = items.Count() - 1; i >= 0; i--)
+        {
+            if (NetworkTime - items[i].LastPartTime > ttl)
+            {
+                items.RemoveAt(i);
+                count++;
+            }
+        }
+        if (count > 0)
+        {
+            LOG(Warning, "Removed {} expired {} network parts (TTL is {}s)", count, hint, ttl);
+        }
+    }
+}
+
 void SetupObjectSpawnMessageItem(SpawnItem* e, NetworkMessage& msg)
 {
     ScriptingObject* obj = e->Object.Get();
@@ -541,7 +632,7 @@ void SendInParts(NetworkPeer* peer, NetworkChannelType channel, const byte* data
     msgDataPayload.PartSize = msgDataSize;
     msg.WriteStructure(msgDataPayload);
     msg.WriteBytes(data, msgDataSize);
-    uint32 messageSize = msg.Length;
+    uint32 messageSize = msg.Position;
     if (toServer)
         peer->EndSendMessage(channel, msg);
     else
@@ -561,7 +652,7 @@ void SendInParts(NetworkPeer* peer, NetworkChannelType channel, const byte* data
         msg.WriteStructure(msgDataPart);
         msg.WriteNetworkId(objectId);
         msg.WriteBytes(data + msgDataPart.PartStart, msgDataPart.PartSize);
-        messageSize += msg.Length;
+        messageSize += msg.Position;
         dataStart += msgDataPart.PartSize;
         if (toServer)
             peer->EndSendMessage(channel, msg);
@@ -713,18 +804,21 @@ void SendReplication(ScriptingObject* obj, NetworkClientsMask targetClients)
         item.AsNetworkObject->OnNetworkSerialize();
 
     // Serialize object
-    NetworkStream* stream = CachedWriteStream;
-    stream->Initialize();
+    NetworkStream* stream = GetWriteStream();
+    stream->SenderId = NetworkManager::LocalClientId;
     const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, true);
     if (failed)
     {
-        //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
+        if (stream->HasError())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to serialize object {} of type {}", item.ToString(), obj->GetType().ToString());
+        }
         return;
     }
     const uint32 size = stream->GetPosition();
-    if (size > MAX_uint16)
+    if (size > NETWORK_STREAM_SIZE_LIMIT)
     {
-        LOG(Error, "Too much data for object {} replication ({} bytes provided while limit is {}).", item.ToString(), size, MAX_uint16);
+        LOG(Error, "Too much data for object {} replication ({} bytes provided while limit is {}).", item.ToString(), size, NETWORK_STREAM_SIZE_LIMIT);
         return;
     }
 
@@ -788,9 +882,9 @@ void SendRpc(RpcSendItem& e)
         return;
     }
     auto& item = it->Item;
-    if (e.ArgsData.Length() > MAX_uint16)
+    if (e.ArgsData.Length() > NETWORK_STREAM_SIZE_LIMIT)
     {
-        LOG(Error, "Too much data for object RPC method '{}.{}' on object '{}' ({} bytes provided while limit is {}).", e.Name.First.ToString(), e.Name.Second.ToString(), obj->GetID(), e.ArgsData.Length(), MAX_uint16);
+        LOG(Error, "Too much data for object RPC method '{}.{}' on object '{}' ({} bytes provided while limit is {}).", e.Name.First.ToString(), e.Name.Second.ToString(), obj->GetID(), e.ArgsData.Length(), NETWORK_STREAM_SIZE_LIMIT);
         return;
     }
     const NetworkManagerMode mode = NetworkManager::Mode;
@@ -927,6 +1021,7 @@ void FindObjectsForSpawn(SpawnGroup& group, ChunkedArray<SpawnItem, 256>& spawnI
             spawnItem.Object = obj;
             spawnItem.Targets.Link(item.TargetClientIds);
             spawnItem.OwnerClientId = item.OwnerClientId;
+            spawnItem.LastPartTime = NetworkTime;
             spawnItem.Role = item.Role;
             group.Items.Add(&spawnItem);
         }
@@ -973,12 +1068,17 @@ PartsItem* AddPartsItem(Array<PartsItem>& items, NetworkEvent& event, uint32 own
         item->Data.Resize(dataSize);
     }
 
+    // Validate item and part data
+    if (item->PartsLeft == 0 || partStart + partSize > item->Data.Count())
+        return nullptr;
+
     // Copy part data
-    ASSERT(item->PartsLeft > 0);
     item->PartsLeft--;
-    ASSERT(partStart + partSize <= item->Data.Count());
     const void* partData = event.Message.SkipBytes(partSize);
+    if (!partData || EnumHasAnyFlags(event.Message.Flags, NetworkMessageFlags::HasError))
+        return nullptr;
     Platform::MemoryCopy(item->Data.Get() + partStart, partData, partSize);
+    item->LastPartTime = NetworkTime;
 
     return item;
 }
@@ -1004,18 +1104,18 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
     item.LastOwnerFrame = ownerFrame;
 
     // Setup message reading stream
-    if (CachedReadStream == nullptr)
-        CachedReadStream = New<NetworkStream>();
-    NetworkStream* stream = CachedReadStream;
-    stream->Initialize(data, dataSize);
-    stream->SenderId = senderClientId;
+    NetworkStream* stream = GetReadStream(data, dataSize, senderClientId);
 
     // Deserialize object
     Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
     const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, false);
     if (failed)
     {
-        //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
+        if (stream->HasError())
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to deserialize object {} of type {}", item.ToString(), obj->GetType().ToString());
+        }
+        return;
     }
 
     if (item.AsNetworkObject)
@@ -1041,14 +1141,14 @@ FORCE_INLINE PartsItem* AddObjectRpcItem(NetworkEvent& event, uint32 ownerFrame,
 void InvokeObjectRpc(const NetworkRpcInfo* info, byte* data, uint32 dataSize, uint32 senderClientId, ScriptingObject* obj)
 {
     // Setup message reading stream
-    if (CachedReadStream == nullptr)
-        CachedReadStream = New<NetworkStream>();
-    NetworkStream* stream = CachedReadStream;
-    stream->SenderId = senderClientId;
-    stream->Initialize(data, dataSize);
+    NetworkStream* stream = GetReadStream(data, dataSize, senderClientId);
 
     // Execute RPC
     info->Execute(obj, stream, info->Tag);
+    if (stream->HasError())
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to read stream with arguments of RPC for object {}", obj->GetType().ToString());
+    }
 }
 
 void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const Guid& prefabId, const NetworkMessageObjectSpawnItem* msgDataItems)
@@ -1065,6 +1165,8 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const Guid& pre
         {
             auto& msgDataItem = msgDataItems[i];
             NetworkReplicatedObject* e = ResolveObject(msgDataItem.ObjectId, msgDataItem.ParentId, msgDataItem.ObjectTypeName);
+            if (!e)
+                return;
             auto& item = *e;
             item.Spawned = true;
             if (NetworkManager::IsClient())
@@ -1426,7 +1528,7 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
     // Invoke serializer
     const byte idx = serialize ? 0 : 1;
     serializer.Methods[idx](instance, stream, serializer.Tags[idx]);
-    return false;
+    return stream->HasError();
 }
 
 void NetworkReplicator::AddObject(ScriptingObject* obj, const ScriptingObject* parent)
@@ -1589,6 +1691,8 @@ bool NetworkReplicator::HasObject(const ScriptingObject* obj)
         const auto it = Objects.Find(obj->GetID());
         if (it != Objects.End())
             return true;
+
+            // Check in-flight spawn queue
         for (const SpawnItem& item : SpawnQueue)
         {
             if (item.Object == obj)
@@ -1634,17 +1738,14 @@ uint32 NetworkReplicator::GetObjectOwnerClientId(const ScriptingObject* obj)
             id = it->Item.OwnerClientId;
         else
         {
+            // Check in-flight spawn queue
             for (const SpawnItem& item : SpawnQueue)
             {
                 if (item.Object == obj)
                 {
                     if (item.HasOwnership)
                         id = item.OwnerClientId;
-#if USE_NETWORK_REPLICATOR_LOG
                     return id;
-#else
-                    break;
-#endif
                 }
             }
 #if USE_NETWORK_REPLICATOR_LOG
@@ -1666,17 +1767,14 @@ NetworkObjectRole NetworkReplicator::GetObjectRole(const ScriptingObject* obj)
             role = it->Item.Role;
         else
         {
+            // Check in-flight spawn queue
             for (const SpawnItem& item : SpawnQueue)
             {
                 if (item.Object == obj)
                 {
                     if (item.HasOwnership)
-                        role = item.Role;
-#if USE_NETWORK_REPLICATOR_LOG
+                        return item.Role;
                     return role;
-#else
-                    break;
-#endif
                 }
             }
 #if USE_NETWORK_REPLICATOR_LOG
@@ -1725,6 +1823,7 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
                 item.HasOwnership = true;
                 item.HierarchicalOwnership = hierarchical;
                 item.OwnerClientId = ownerClientId;
+                item.LastPartTime = NetworkTime;
                 item.Role = localRole;
                 break;
             }
@@ -1809,12 +1908,10 @@ Dictionary<NetworkRpcName, NetworkRpcInfo> NetworkRpcInfo::RPCsTable;
 NetworkStream* NetworkReplicator::BeginInvokeRPC()
 {
     PROFILE_MEM(Networking);
-    if (CachedWriteStream == nullptr)
-        CachedWriteStream = New<NetworkStream>();
-    CachedWriteStream->Initialize();
-    CachedWriteStream->SenderId = NetworkManager::LocalClientId;
+    NetworkStream* stream = GetWriteStream();
+    stream->SenderId = NetworkManager::LocalClientId;
     Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
-    return CachedWriteStream;
+    return stream;
 }
 
 bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds)
@@ -1825,6 +1922,11 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
     if (!info || !obj || NetworkManager::IsOffline())
         return false;
+    if (argsStream && argsStream->HasError())
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to write stream with RPC arguments {}::{}", type.ToString(), name.ToString());
+        return true;
+    }
     PROFILE_MEM(Networking);
     ObjectsLock.Lock();
     auto& rpc = RpcQueue.AddOne();
@@ -1832,7 +1934,8 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     rpc.Name.First = type;
     rpc.Name.Second = name;
     rpc.Info = *info;
-    rpc.ArgsData.Copy(Span<byte>(argsStream->GetBuffer(), argsStream->GetPosition()));
+    if (argsStream)
+        rpc.ArgsData.Copy(Span<byte>(argsStream->GetBuffer(), argsStream->GetPosition()));
     rpc.Targets.Copy(targetIds);
     ObjectsLock.Unlock();
 
@@ -1849,6 +1952,7 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
 
 void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 {
+    PROFILE_CPU();
     ScopeLock lock(ObjectsLock);
     NewClients.Add(client);
 
@@ -1881,6 +1985,7 @@ void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 
 void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
 {
+    PROFILE_CPU();
     ScopeLock lock(ObjectsLock);
     NewClients.Remove(client);
 
@@ -1907,10 +2012,19 @@ void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
             Objects.Remove(it);
         }
     }
+
+    // Remove any pending RPCs, replication or spawn actions for that client
+    RemoveClientFromTargets(RpcQueue, clientId);
+    RemoveClientFromTargets(SpawnQueue, clientId);
+    RemoveClientFromTargets(DespawnQueue, clientId);
+    RemoveOwnerFromItems(SpawnQueue, clientId);
+    RemoveOwnerFromItems(SpawnParts, clientId);
+    RemoveOwnerFromItems(ReplicationParts, clientId);
 }
 
 void NetworkInternal::NetworkReplicatorClear()
 {
+    PROFILE_CPU();
     ScopeLock lock(ObjectsLock);
 
     // Cleanup
@@ -1955,6 +2069,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (Objects.Count() == 0)
         return;
     const bool isClient = NetworkManager::IsClient();
+    NetworkTime = Time::Update.UnscaledTime.GetTotalSeconds();
 
     if (!isClient && NewClients.Count() != 0)
     {
@@ -1975,6 +2090,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             spawnItem.Object = obj;
             spawnItem.Targets.Link(item.TargetClientIds);
             spawnItem.OwnerClientId = item.OwnerClientId;
+            spawnItem.LastPartTime = NetworkTime;
             spawnItem.Role = item.Role;
 
             SetupObjectSpawnGroupItem(obj, spawnGroups, spawnItem);
@@ -2094,10 +2210,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
         {
             auto& e = ReplicationParts[i];
             if (e.PartsLeft > 0)
-            {
-                // TODO: remove replication items after some TTL to reduce memory usage
-                continue;
-            }
+                continue; // Wait for all parts to arrive
             ScriptingObject* obj = e.Object.Get();
             if (obj)
             {
@@ -2115,8 +2228,11 @@ void NetworkInternal::NetworkReplicatorUpdate()
         }
     }
 
-    // TODO: remove items from RpcParts after some TTL to reduce memory usage
-    // TODO: remove items from SpawnParts after some TTL to reduce memory usage
+    // Limit partial messages to avoid overallocating or plugging
+    const auto& settings = *NetworkSettings::Get();
+    CleanupOldParts(RpcParts, settings.MaxSyncParts, settings.MaxSyncPartTTL, TEXT("RPC"));
+    CleanupOldParts(SpawnParts, settings.MaxSyncParts, settings.MaxSyncPartTTL, TEXT("Spawn"));
+    CleanupOldParts(ReplicationParts, settings.MaxSyncParts, settings.MaxSyncPartTTL, TEXT("Replication"));
 
     // Replicate all owned networked objects with other clients or server
     if (!CachedReplicationResult)
@@ -2155,9 +2271,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
     if (CachedReplicationResult->_entries.HasItems())
     {
         PROFILE_CPU_NAMED("Replication");
-        if (CachedWriteStream == nullptr)
-            CachedWriteStream = New<NetworkStream>();
-        CachedWriteStream->SenderId = NetworkManager::LocalClientId;
         // TODO: use Job System when replicated objects count is large
         for (auto& e : CachedReplicationResult->_entries)
         {
@@ -2182,15 +2295,20 @@ void NetworkInternal::NetworkReplicatorUpdate()
 void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectReplicate msgData;
-    NetworkMessageObjectPartPayload msgDataPayload;
-    Guid objectId, parentId;
+    NetworkMessageObjectReplicate msgData = {};
+    NetworkMessageObjectPartPayload msgDataPayload = {};
+    Guid objectId = Guid::Empty, parentId = Guid::Empty;
     StringAnsiView objectTypeName;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     event.Message.ReadNetworkId(parentId);
     event.Message.ReadNetworkName(objectTypeName);
     event.Message.ReadStructure(msgDataPayload);
+    if (msgDataPayload.PartsCount > NETWORK_MAX_PARTS)
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Invalid replicate message parts count: {}", msgDataPayload.PartsCount);
+        return;
+    }
     ScopeLock lock(ObjectsLock);
     if (DespawnedObjects.Contains(objectId))
         return; // Skip replicating non-existing objects
@@ -2207,21 +2325,29 @@ void NetworkInternal::OnNetworkMessageObjectReplicate(NetworkEvent& event, Netwo
     if (msgDataPayload.PartsCount == 1)
     {
         // Replicate
+        if (event.Message.Position + msgDataPayload.DataSize > event.Message.BufferSize)
+        {
+            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Ignoring invalid replication data for object {} (data size: {}, bytes left: {})", item.ToString(), msgDataPayload.DataSize, (int32)event.Message.BufferSize - (int32)event.Message.Position);
+            return;
+        }
         InvokeObjectReplication(item, msgData.OwnerFrame, event.Message.Buffer + event.Message.Position, msgDataPayload.DataSize, senderClientId);
     }
     else
     {
         // Add to replication from multiple parts
         PartsItem* replicateItem = AddObjectReplicateItem(event, msgData.OwnerFrame, msgDataPayload.PartsCount, msgDataPayload.DataSize, objectId, 0, msgDataPayload.PartSize, senderClientId);
-        replicateItem->Object = e->Object;
+        if (replicateItem)
+        {
+            replicateItem->Object = e->Object;
+        }
     }
 }
 
 void NetworkInternal::OnNetworkMessageObjectReplicatePart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectPart msgData;
-    Guid objectId;
+    NetworkMessageObjectPart msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);
@@ -2235,17 +2361,24 @@ void NetworkInternal::OnNetworkMessageObjectReplicatePart(NetworkEvent& event, N
 void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectSpawn msgData;
-    Guid prefabId;
+    NetworkMessageObjectSpawn msgData = {};
+    Guid prefabId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(prefabId);
-    if (msgData.ItemsCount == 0)
+    if (msgData.ItemsCount > NETWORK_MAX_PARTS)
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Invalid spawn message parts count: {}", msgData.ItemsCount);
         return;
+    }
+    // TODO: add authority check (eg. only server can spawn objects) and ownership check (eg. only owner can spawn object)
+    // TODO: add prefabId check (eg. only registered prefabs can be spawned) and option to block spawning non-prefab objects (eg. dynamically created scripts/actors)
     if (msgData.UseParts)
     {
         // Allocate spawn message parts collecting
         auto& parts = SpawnParts.AddOne();
         parts.MsgData = msgData;
+        parts.OwnerClientId = msgData.OwnerClientId;
+        parts.LastPartTime = NetworkTime;
         parts.PrefabId = prefabId;
         parts.Items.Resize(msgData.ItemsCount);
         for (auto& item : parts.Items)
@@ -2254,6 +2387,8 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
     else
     {
         const auto* msgDataItems = (NetworkMessageObjectSpawnItem*)event.Message.SkipBytes(msgData.ItemsCount * sizeof(NetworkMessageObjectSpawnItem));
+        if (!msgDataItems)
+            return;
         InvokeObjectSpawn(msgData, prefabId, msgDataItems);
     }
 }
@@ -2261,7 +2396,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawn(NetworkEvent& event, NetworkCl
 void NetworkInternal::OnNetworkMessageObjectSpawnPart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectSpawnPart msgData;
+    NetworkMessageObjectSpawnPart msgData = {};
     event.Message.ReadStructure(msgData);
     int32 spawnPartsIndex;
     for (spawnPartsIndex = 0; spawnPartsIndex < SpawnParts.Count(); spawnPartsIndex++)
@@ -2277,6 +2412,7 @@ void NetworkInternal::OnNetworkMessageObjectSpawnPart(NetworkEvent& event, Netwo
         return;
     }
     auto& spawnParts = SpawnParts.Get()[spawnPartsIndex];
+    spawnParts.LastPartTime = NetworkTime;
 
     // Read all items from this part
     constexpr uint32 spawnItemMaxSize = sizeof(uint16) + sizeof(NetworkMessageObjectSpawnItem); // Index + Data
@@ -2285,6 +2421,8 @@ void NetworkInternal::OnNetworkMessageObjectSpawnPart(NetworkEvent& event, Netwo
         const uint16 itemIndex = event.Message.ReadUInt16();
         event.Message.ReadStructure(spawnParts.Items[itemIndex]);
     }
+    if (EnumHasAnyFlags(event.Message.Flags, NetworkMessageFlags::HasError))
+        return;
 
     // Invoke spawning if we've got all items
     for (auto& e : spawnParts.Items)
@@ -2299,8 +2437,8 @@ void NetworkInternal::OnNetworkMessageObjectSpawnPart(NetworkEvent& event, Netwo
 void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectDespawn msgData;
-    Guid objectId;
+    NetworkMessageObjectDespawn msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);
@@ -2337,8 +2475,8 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
 void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectRole msgData;
-    Guid objectId;
+    NetworkMessageObjectRole msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);
@@ -2387,9 +2525,9 @@ void NetworkInternal::OnNetworkMessageObjectRole(NetworkEvent& event, NetworkCli
 void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectRpc msgData;
-    NetworkMessageObjectPartPayload msgDataPayload;
-    Guid objectId, parentId;
+    NetworkMessageObjectRpc msgData = {};
+    NetworkMessageObjectPartPayload msgDataPayload = {};
+    Guid objectId = Guid::Empty, parentId = Guid::Empty;
     StringAnsiView objectTypeName, rpcTypeName, rpcName;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
@@ -2398,6 +2536,11 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
     event.Message.ReadNetworkName(rpcTypeName);
     event.Message.ReadNetworkName(rpcName);
     event.Message.ReadStructure(msgDataPayload);
+    if (msgDataPayload.PartsCount > NETWORK_MAX_PARTS)
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Invalid RPC parts count: {}", msgDataPayload.PartsCount);
+        return;
+    }
     ScopeLock lock(ObjectsLock);
 
     // Find RPC info
@@ -2435,14 +2578,22 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         if (msgDataPayload.PartsCount == 1)
         {
             // Call RPC
+            if (event.Message.Position + msgDataPayload.DataSize > event.Message.BufferSize)
+            {
+                NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Ignoring invalid RPC {}::{} data for object {} (data size: {}, bytes left: {})", String(rpcTypeName), String(rpcName), item.ToString(), msgDataPayload.DataSize, (int32)event.Message.BufferSize - (int32)event.Message.Position);
+                return;
+            }
             InvokeObjectRpc(info, event.Message.Buffer + event.Message.Position, msgDataPayload.DataSize, senderClientId, obj);
         }
         else
         {
             // Add to RPC from multiple parts
             PartsItem* rpcItem = AddObjectRpcItem(event, msgData.OwnerFrame, msgDataPayload.PartsCount, msgDataPayload.DataSize, objectId, 0, msgDataPayload.PartSize, senderClientId);
-            rpcItem->Object = e->Object;
-            rpcItem->Tag = info;
+            if (rpcItem)
+            {
+                rpcItem->Object = e->Object;
+                rpcItem->Tag = info;
+            }
         }
     }
     else if (info->Channel != static_cast<uint8>(NetworkChannelType::Unreliable) && info->Channel != static_cast<uint8>(NetworkChannelType::UnreliableOrdered))
@@ -2454,8 +2605,8 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
 void NetworkInternal::OnNetworkMessageObjectRpcPart(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
 {
     PROFILE_CPU();
-    NetworkMessageObjectPart msgData;
-    Guid objectId;
+    NetworkMessageObjectPart msgData = {};
+    Guid objectId = Guid::Empty;
     event.Message.ReadStructure(msgData);
     event.Message.ReadNetworkId(objectId);
     ScopeLock lock(ObjectsLock);
@@ -2474,7 +2625,7 @@ void NetworkInternal::OnNetworkMessageObjectRpcPart(NetworkEvent& event, Network
         }
 
         // Remove item
-        int32 partIndex = (int32)((RpcParts.Get() - rpcItem) / sizeof(rpcItem));
+        int32 partIndex = (int32)(rpcItem - RpcParts.Get());
         RpcParts.RemoveAt(partIndex);
     }
 }

@@ -115,7 +115,7 @@ bool StreamingTexture::Create(const TextureHeader& header)
         // Ensure that streaming doesn't go too low because the hardware expects the texture to be min in size of compressed texture block
         const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(_header.Format);
         int32 lastMip = header.MipLevels - 1;
-        while ((header.Width >> lastMip) < blockSize && (header.Height >> lastMip) < blockSize && lastMip > 0)
+        while (Math::Min(header.Width >> lastMip, header.Height >> lastMip) < blockSize && lastMip > 0)
             lastMip--;
         _minMipCountBlockCompressed = Math::Min(header.MipLevels - lastMip + 1, header.MipLevels);
     }
@@ -252,6 +252,7 @@ protected:
 
     void OnSync() override
     {
+        // Update residency
         _newTexture->SetResidentMipLevels(_uploadedMipCount);
         Swap(_streamingTexture->_texture, _newTexture);
         SAFE_DELETE_GPU_RESOURCE(_newTexture);
@@ -408,6 +409,8 @@ protected:
             }
             dataSource += dataPerSlice;
         }
+
+        UpdateResidency(texture);
 
         return Result::Ok;
     }

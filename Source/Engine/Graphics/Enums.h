@@ -172,6 +172,11 @@ API_ENUM() enum class ShaderProfileFeatures
     /// </summary>
     TessellationShaders = 4,
 
+    /// <summary>
+    /// Development-only shaders are supported. Enabled in Editor or non-Release builds.
+    /// </summary>
+    DevelopmentShaders = 8,
+
     API_ENUM(Attributes = "HideInEditor")
     MAX
 };
@@ -405,6 +410,11 @@ enum class GPUQueryType
     /// </summary>
     Occlusion = 1,
 
+    /// <summary>
+    /// Tests object visibility by checking depth and stencil tests. Works like Occlusion query, except returns simply a binary 0/1 result: 0 indicates that no samples passed depth and stencil testing; 1 indicates that at least one sample passed.
+    /// </summary>
+    BinaryOcclusion = 2,
+
     MAX
 };
 
@@ -629,6 +639,17 @@ public:
 
 uint32 GetHash(const BlendingMode& key);
 
+// Temp defines to put them into ComparisonFunc enum conditionally
+#if REVERSE_Z
+#define REVERSE_Z_COMP_DEFAULT 5
+#define REVERSE_Z_COMP_DEFAULT_INV 2
+#define REVERSE_Z_COMP_DEFAULT_EQ 7
+#else
+#define REVERSE_Z_COMP_DEFAULT 2
+#define REVERSE_Z_COMP_DEFAULT_INV 5
+#define REVERSE_Z_COMP_DEFAULT_EQ 4
+#endif
+
 /// <summary>
 /// Comparison function modes
 /// </summary>
@@ -651,8 +672,20 @@ API_ENUM() enum class ComparisonFunc : byte
     // Always pass the comparison.
     Always = 8,
 
-    API_ENUM(Attributes="HideInEditor") MAX
+    API_ENUM(Attributes="HideInEditor") MAX,
+
+    // Default comparision when rendering scene objects (Less or Greater).
+    API_ENUM(Attributes="HideInEditor") Default = REVERSE_Z_COMP_DEFAULT,
+    // Default comparision when rendering scene objects inverted (Greater or Less).
+    API_ENUM(Attributes="HideInEditor") DefaultInv = REVERSE_Z_COMP_DEFAULT_INV,
+    // Default comparision when rendering scene objects with equal (LessEqual or GreaterEqual).
+    API_ENUM(Attributes="HideInEditor") DefaultEqual = REVERSE_Z_COMP_DEFAULT_EQ,
 };
+
+// Remove temp defines to plug conditional value into the enum
+#undef REVERSE_Z_COMP_DEFAULT
+#undef REVERSE_Z_COMP_DEFAULT_INV
+#undef REVERSE_Z_COMP_DEFAULT_EQ
 
 /// <summary>
 /// Rendering quality levels.
@@ -823,10 +856,16 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     GlobalSurfaceAtlas = 1 << 6,
 
     /// <summary>
-    /// The debug quad overdraw rendering (editor-only).
+    /// The debug quad overdraw rendering (development-only).
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
     QuadOverdraw = 1 << 20,
+
+    /// <summary>
+    /// The debug wireframe rendering (development-only).
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor")
+    Wireframe = 1 << 21,
 
     /// <summary>
     /// The default set of draw passes for the scene objects.
@@ -849,82 +888,82 @@ DECLARE_ENUM_OPERATORS(DrawPass);
 API_ENUM() enum class ViewMode
 {
     /// <summary>
-    /// Full rendering
+    /// Shows the final result of the scene with all materials, lighting and post-processing applied.
     /// </summary>
     Default = 0,
 
     /// <summary>
-    /// Without post-process pass
+    /// Shows the scene with materials and lighting applied but without any post-processing.
     /// </summary>
     NoPostFx = 1,
 
     /// <summary>
-    /// Draw Diffuse
+    /// Shows materials diffuse color.
     /// </summary>
     Diffuse = 2,
 
     /// <summary>
-    /// Draw Normals
+    /// Shows materials surface normals.
     /// </summary>
     Normals = 3,
 
     /// <summary>
-    /// Draw Emissive
+    /// Shows materials emissive color.
     /// </summary>
     Emissive = 4,
 
     /// <summary>
-    /// Draw Depth
+    /// Shows the gradient based on pixels depth from camera (black to white).
     /// </summary>
     Depth = 5,
 
     /// <summary>
-    /// Draw Ambient Occlusion
+    /// Shows materials ambient occlusion value.
     /// </summary>
     AmbientOcclusion = 6,
 
     /// <summary>
-    /// Draw Material's Metalness
+    /// Shows materials metalness value.
     /// </summary>
     Metalness = 7,
 
     /// <summary>
-    /// Draw Material's Roughness
+    /// Shows materials roughness value.
     /// </summary>
     Roughness = 8,
 
     /// <summary>
-    /// Draw Material's Specular
+    /// Shows materials specular value.
     /// </summary>
     Specular = 9,
 
     /// <summary>
-    /// Draw Material's Specular Color
+    /// Shows materials specular color.
     /// </summary>
     SpecularColor = 10,
 
     /// <summary>
-    /// Draw Shading Model
+    /// Shows materials Shading Model type.
     /// </summary>
     ShadingModel = 11,
 
     /// <summary>
-    /// Draw Lights buffer
+    /// Shows diffuse lighting as if all materials were white.
     /// </summary>
     LightBuffer = 12,
 
     /// <summary>
-    /// Draw reflections buffer
+    /// Shows specular reflections lighting as if all materials were metal.
     /// </summary>
     Reflections = 13,
 
     /// <summary>
-    /// Draw scene objects in wireframe mode
+    /// Shows all polygon edges over the scene. Occluded edge pixels are darker and semi-transparent. Available only in non-Release builds and Editor.
     /// </summary>
     Wireframe = 14,
 
     /// <summary>
-    /// Draw motion vectors debug view
+    /// Shows motion of pixels in a screen-space (color based on direction). Static surfaces are rendered in grayscale, while dynamic objects are rendered on top with colors.
     /// </summary>
     MotionVectors = 15,
 
@@ -934,54 +973,69 @@ API_ENUM() enum class ViewMode
     SubsurfaceColor = 16,
 
     /// <summary>
-    /// Draw materials colors with ambient occlusion
+    /// Shows the material colors with ambient occlusion.
     /// </summary>
     Unlit = 17,
 
     /// <summary>
-    /// Draw meshes lightmaps coordinates density
+    /// Shows the lightmap density of objects. Color coding is used to display density with a grid that maps to the actual lightmap texels.
     /// </summary>
     LightmapUVsDensity = 18,
 
     /// <summary>
-    /// Draw meshes vertex colors
+    /// Shows the mesh vertex colors. It can be used to debug vertex color painting on meshes.
     /// </summary>
     VertexColors = 19,
 
     /// <summary>
-    /// Draw physics colliders debug view
+    /// Shows physics collider meshes. Dynamic and kinematic objects use coloring to distinguish them from the static environment.
     /// </summary>
     PhysicsColliders = 20,
 
     /// <summary>
-    /// Draw Level Of Detail number as colors to debug LOD switches.
+    /// Shows objects Level Of Detail as colors to debug LOD switches.
     /// </summary>
     LODPreview = 21,
 
     /// <summary>
-    /// Draw material shaders complexity to visualize performance of pixels rendering.
+    /// Shows material shaders complexity to visualize performance of pixels rendering.
     /// </summary>
     MaterialComplexity = 22,
 
     /// <summary>
-    /// Draw geometry overdraw to visualize performance of pixels rendering.
+    /// Shows geometry overdraw to visualize performance of pixels rendering.
     /// </summary>
     QuadOverdraw = 23,
 
     /// <summary>
-    /// Draw Global Sign Distant Field (SDF) preview.
+    /// Shows Global Sign Distant Field (SDF) preview.
     /// </summary>
     GlobalSDF = 24,
 
     /// <summary>
-    /// Draw Global Surface Atlas preview.
+    /// Shows Global Surface Atlas preview.
     /// </summary>
     GlobalSurfaceAtlas = 25,
 
     /// <summary>
-    /// Draw Global Illumination debug preview (eg. irradiance probes).
+    /// Shows Global Illumination debug preview (eg. irradiance probes).
     /// </summary>
     GlobalIllumination = 26,
+
+    /// <summary>
+    /// Shows Global Sign Distant Field (SDF) overdraw to visualize performance of SDF tracing.
+    /// </summary>
+    GlobalSDFOverdraw = 27,
+
+    /// <summary>
+    /// Shows lighting without diffuse color from materials to inspect both diffuse and specular light contributions.
+    /// </summary>
+    Lighting = 28,
+
+    /// <summary>
+    /// Shows local light volumes overlaps complexity to visualize how many lights affect each pixel (for performance optimization).
+    /// </summary>
+    LightOverlap = 29,
 };
 
 /// <summary>
@@ -1140,14 +1194,19 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     Particles = 1 << 28,
 
     /// <summary>
+    /// Shows/hides occlusion culling.
+    /// </summary>
+    OcclusionCulling = 1 << 29,
+
+    /// <summary>
     /// Default flags for Game.
     /// </summary>
-    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky | Particles,
+    DefaultGame = Reflections | DepthOfField | Fog | Decals | MotionBlur | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | ContactShadows | GlobalSDF | Sky | Particles | OcclusionCulling,
 
     /// <summary>
     /// Default flags for Editor.
     /// </summary>
-    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF | Sky | Particles,
+    DefaultEditor = Reflections | Fog | Decals | DebugDraw | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | EditorSprites | ContactShadows | GlobalSDF | Sky | Particles | OcclusionCulling,
 
     /// <summary>
     /// Default flags for materials/models previews generating.
@@ -1157,7 +1216,7 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     /// <summary>
     /// All flags enabled.
     /// </summary>
-    All = None | DebugDraw | EditorSprites | Reflections | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | Decals | DepthOfField | PhysicsDebug | Fog | MotionBlur | ContactShadows | GlobalSDF | Sky | LightsDebug | Particles,
+    All = None | DebugDraw | EditorSprites | Reflections | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | Decals | DepthOfField | PhysicsDebug | Fog | MotionBlur | ContactShadows | GlobalSDF | Sky | LightsDebug | Particles | OcclusionCulling,
 };
 
 DECLARE_ENUM_OPERATORS(ViewFlags);
@@ -1212,6 +1271,11 @@ enum class ShaderFlags : uint32
     /// Indicates that vertex shader function outputs data for the geometry shader.
     /// </summary>
     VertexToGeometryShader = 4,
+
+    /// <summary>
+    /// Marks shader as used only in development builds: non-release or in editor. Shader won't be compiled for final game release build.
+    /// </summary>
+    DevelopmentOnly = 8,
 };
 
 DECLARE_ENUM_OPERATORS(ShaderFlags);

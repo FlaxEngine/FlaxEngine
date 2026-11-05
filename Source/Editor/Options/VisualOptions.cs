@@ -36,7 +36,7 @@ namespace FlaxEditor.Options
         /// Gets or sets the selection outline size for UI controls.
         /// </summary>
         [DefaultValue(2.0f)]
-        [EditorDisplay("UI Gizmo", "UI Control Outline Size"), EditorOrder(103), Tooltip("The size of the selection outline for UI controls.")]
+        [EditorDisplay("UI Gizmo", "Control Outline Size"), EditorOrder(103), Tooltip("The size of the selection outline for UI controls.")]
         public float UISelectionOutlineSize { get; set; } = 2.0f;
 
         /// <summary>
@@ -106,28 +106,28 @@ namespace FlaxEditor.Options
         /// Gets or sets the output log text color.
         /// </summary>
         [DefaultValue(typeof(Color), "1,1,1,1")]
-        [EditorDisplay("Debug Log", "Info Color"), EditorOrder(1500), Tooltip("The color used for info messages in the Debug and Output Log.")]
+        [EditorDisplay("Log", "Info Color"), EditorOrder(1500), Tooltip("The color used for info messages in the Debug and Output Log.")]
         public Color LogInfoColor { get; set; } = Color.White;
 
         /// <summary>
         /// Gets or sets the output log text color for warnings
         /// </summary>
         [DefaultValue(typeof(Color), "1,1,0,1")]
-        [EditorDisplay("Debug Log", "Warning Color"), EditorOrder(1501), Tooltip("The color used for warnings in the Debug and Output Log.")]
+        [EditorDisplay("Log", "Warning Color"), EditorOrder(1501), Tooltip("The color used for warnings in the Debug and Output Log.")]
         public Color LogWarningColor { get; set; } = Color.Yellow;
 
         /// <summary>
         /// Gets or sets the output log text color for errors
         /// </summary>
         [DefaultValue(typeof(Color), "1,0,0,1")]
-        [EditorDisplay("Debug Log", "Error Color"), EditorOrder(1502), Tooltip("The color used for errors in the Debug and Output Log.")]
+        [EditorDisplay("Log", "Error Color"), EditorOrder(1502), Tooltip("The color used for errors in the Debug and Output Log.")]
         public Color LogErrorColor { get; set; } = Color.Red;
 
         /// <summary>
         /// Gets or sets a value whether the Debug Log entry text color should use the set color.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Debug Log", "Color Debug Log Text"), EditorOrder(1503), Tooltip("Wether to use the set colors in the text of a Debug Log entry.")]
+        [EditorDisplay("Log", "Color Debug Log Text"), EditorOrder(1503), Tooltip("Whether to use the set colors in the text of a Debug Log entry.")]
         public bool ColorDebugLogText = true;
     }
 }

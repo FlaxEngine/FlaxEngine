@@ -198,7 +198,7 @@ namespace
     GPUContext* Context = nullptr;
     GPUTextureView* Output = nullptr;
     GPUTextureView* DepthBuffer = nullptr;
-    Viewport View;
+    Viewport ViewViewport;
     Matrix ViewProjection;
 
     // Drawing
@@ -606,7 +606,7 @@ bool Render2D::IsRendering()
 
 const Viewport& Render2D::GetViewport()
 {
-    return View;
+    return ViewViewport;
 }
 
 #if COMPILE_WITH_DEV_ENV
@@ -628,7 +628,7 @@ bool Render2DService::Init()
     if (GUIShader == nullptr)
         return true;
 #if COMPILE_WITH_DEV_ENV
-    GUIShader.Get()->OnReloading.Bind<OnGUIShaderReloading>();
+    GUIShader.Get()->Reloading.Bind<OnGUIShaderReloading>();
 #endif
 
     VB.SetLayout(GPUVertexLayout::Get({
@@ -705,7 +705,7 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     Context = context;
     Output = output;
     DepthBuffer = depthBuffer;
-    View = viewport;
+    ViewViewport = viewport;
     ViewProjection = viewProjection;
     DrawCalls.Clear();
     IsRemoveGammaEnabled = Graphics::GammaColorSpace == false;
@@ -717,7 +717,7 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     TransformCached = defaultTransform;
 
     // Initialize default clip mask
-    const Rectangle defaultBounds(viewport.Location, viewport.Size);
+    const Rectangle defaultBounds(Float2::Zero, Float2(GPU_MAX_TEXTURE_SIZE, GPU_MAX_TEXTURE_SIZE));
     const RotatedRectangle defaultMask(defaultBounds);
     ClipLayersStack.Clear();
     ClipLayersStack.Add({ defaultMask, defaultBounds });
@@ -764,7 +764,7 @@ void Render2D::End()
             Output = nullptr;
             return;
         }
-        shader = GUIShader->GetShader();
+        shader = GUIShader->GPU;
     }
 
     // Flush geometry buffers
@@ -777,7 +777,7 @@ void Render2D::End()
     // Set output
     Context->ResetSR();
     Context->SetRenderTarget(DepthBuffer, Output);
-    Context->SetViewportAndScissors(View);
+    Context->SetViewportAndScissors(ViewViewport);
     Context->FlushState();
 
     // Prepare constant buffer
@@ -790,8 +790,8 @@ void Render2D::End()
     // Prepare PSO
     if (!PsoDepth.Inited)
     {
-        PsoDepth.Init(GUIShader.Get()->GetShader(), true);
-        PsoNoDepth.Init(GUIShader.Get()->GetShader(), false);
+        PsoDepth.Init(GUIShader.Get()->GPU, true);
+        PsoNoDepth.Init(GUIShader.Get()->GPU, false);
     }
     CurrentPso = DepthBuffer ? &PsoDepth : &PsoNoDepth;
 
@@ -1052,7 +1052,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Context->DrawIndexed(countIb, 0, d.StartIB);
 
         // Restore pipeline (material apply overrides it)
-        const auto cb = GUIShader->GetShader()->GetCB(0);
+        const auto cb = GUIShader->GPU->GetCB(0);
         Context->BindCB(0, cb);
 
         return;
@@ -1081,7 +1081,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Context->DrawIndexed(countIb, 0, d.StartIB);
 
         // Restore pipeline (material apply overrides it)
-        const auto cb = GUIShader->GetShader()->GetCB(0);
+        const auto cb = GUIShader->GPU->GetCB(0);
         Context->BindCB(0, cb);
 
         return;
@@ -1127,7 +1127,7 @@ void DrawBatch(int32 startIndex, int32 count)
         data.InvBufferSize.X = 1.0f / (float)renderTargetWidth;
         data.InvBufferSize.Y = 1.0f / (float)renderTargetHeight;
         data.SampleCount = ComputeBlurWeights(kernelSize, blurStrength, data.WeightAndOffsets);
-        const auto cb = GUIShader->GetShader()->GetCB(1);
+        const auto cb = GUIShader->GPU->GetCB(1);
         Context->UpdateCB(cb, &data);
         Context->BindCB(1, cb);
 
@@ -1156,7 +1156,7 @@ void DrawBatch(int32 startIndex, int32 count)
         // Restore output
         Context->ResetRenderTarget();
         Context->SetRenderTarget(DepthBuffer, Output);
-        Context->SetViewportAndScissors(View);
+        Context->SetViewportAndScissors(ViewViewport);
         Context->UnBindCB(1);
 
         // Link for drawing final blur as a texture
@@ -1982,7 +1982,7 @@ void Render2D::DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, 
     const Float2 d2 = p3 - p2;
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
-    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f * Platform::GetDpiScale()), 1, 100);
     const float segmentCountInv = 1.0f / (float)segmentCount;
 
     // Draw segmented curve
@@ -2008,7 +2008,7 @@ void Render2D::DrawSpline(const Float2& p1, const Float2& p2, const Float2& p3, 
     const Float2 d2 = p3 - p2;
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
-    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f * Platform::GetDpiScale()), 1, 100);
     const float segmentCountInv = 1.0f / (float)segmentCount;
 
     // Draw segmented curve

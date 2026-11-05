@@ -11,11 +11,6 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Actor\"), ActorToolbox(\"Other\")")
 class FLAXENGINE_API EmptyActor : public Actor
 {
     DECLARE_SCENE_OBJECT(EmptyActor);
-public:
-    // [Actor]
-#if USE_EDITOR
-    BoundingBox GetEditorBoundingBox() const override;
-#endif
 
 protected:
     // [Actor]

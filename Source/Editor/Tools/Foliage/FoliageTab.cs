@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph.Actors;
-using FlaxEditor.Viewport.Modes;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -214,7 +213,7 @@ namespace FlaxEditor.Tools.Foliage
 
         private void InitSculptMode()
         {
-            var tab = _modes.AddTab(FoliageTypes = new FoliageTypesTab(this));
+            var tab = _modes.AddTab(FoliageTypes = new FoliageTypesTab(this, Editor.Windows.EditWin.Viewport.EditFoliageTypesGizmo));
             tab.Selected += OnTabSelected;
         }
 
@@ -251,7 +250,7 @@ namespace FlaxEditor.Tools.Foliage
             switch (_modes.SelectedTabIndex)
             {
             case 0:
-                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<NoGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<FoliageTypesGizmoMode>();
                 break;
             case 1:
                 Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<PaintFoliageGizmoMode>();

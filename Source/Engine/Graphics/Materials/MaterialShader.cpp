@@ -2,11 +2,10 @@
 
 #include "MaterialShader.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Level/LargeWorlds.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/Graphics.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
@@ -38,7 +37,8 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
     Float4 TemporalAAJitter;
     Float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
-    Float3 ViewPadding0;
+    float MaterialTextureMipBias;
+    float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
     });
@@ -88,6 +88,7 @@ void IMaterial::BindParameters::BindViewData()
     cb.TemporalAAJitter = view.TemporalAAJitter;
     cb.LargeWorldsChunkIndex = LargeWorlds::Enable ? (Float3)Int3(view.Origin / LargeWorlds::ChunkSize) : Float3::Zero;
     cb.LargeWorldsChunkSize = LargeWorlds::ChunkSize;
+    cb.MaterialTextureMipBias = RenderContext.List->Setup.MaterialTextureMipBias;
     cb.TestValue = Graphics::TestValue;
 
     // Update constants
@@ -117,12 +118,20 @@ void IMaterial::BindParameters::BindDrawData()
     GPUContext->BindCB(2, PerDrawConstants);
 }
 
-GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)
+GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(const MaterialShader* owner, CullMode mode)
 {
     Desc.CullMode = mode;
-    Desc.Wireframe = wireframe;
     auto ps = GPUDevice::Instance->CreatePipelineState();
-    ps->Init(Desc);
+    if (ps->Init(Desc))
+    {
+#if GPU_ENABLE_RESOURCE_NAMING
+        LOG(Error, "Failed to initialize PSO for material '{}'", owner->GetShader()->GetName());
+#else
+        LOG(Error, "Failed to initialize PSO");
+#endif
+        SAFE_DELETE_GPU_RESOURCE(ps);
+        return nullptr;
+    }
     return ps;
 }
 
@@ -221,6 +230,11 @@ GPUShader* MaterialShader::GetShader() const
     return _shader;
 }
 
+DrawPass MaterialShader::GetDrawModes() const
+{
+    return _drawModes;
+}
+
 const MaterialInfo& MaterialShader::GetInfo() const
 {
     return _info;
@@ -238,6 +252,7 @@ bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInf
 
     // Cache material info
     _info = info;
+    _drawModes = DrawPass::None;
 
     // Create shader
     if (_shader->Create(shaderCacheStream))

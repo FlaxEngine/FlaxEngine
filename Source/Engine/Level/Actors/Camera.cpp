@@ -12,7 +12,7 @@
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
 #include "Engine/Renderer/DrawCall.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #else
 #include "Engine/Engine/Engine.h"
@@ -233,8 +233,13 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
     ivp.Invert();
 
     // Create near and far points
+#if REVERSE_Z
+    Vector3 nearPoint(mousePosition, _far);
+    Vector3 farPoint(mousePosition, _near);
+#else
     Vector3 nearPoint(mousePosition, _near);
     Vector3 farPoint(mousePosition, _far);
+#endif
     viewport.Unproject(nearPoint, ivp, nearPoint);
     viewport.Unproject(farPoint, ivp, farPoint);
 
@@ -290,15 +295,20 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 
 void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewport, const Vector3& origin) const
 {
+    // Adjust viewport rectangle
+    Viewport viewportRect = viewport;
+    viewportRect.Location += viewportRect.Size * Float2(ViewportRect.X, ViewportRect.Y);
+    viewportRect.Size *= Float2(ViewportRect.Z, ViewportRect.W);
+
     // Create projection matrix
-    const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
+    const float aspect = _customAspectRatio <= 0.0f ? viewportRect.GetAspectRatio() : _customAspectRatio;
     if (_usePerspective)
     {
         Matrix::PerspectiveFov(_fov * DegreesToRadians, aspect, _near, _far, projection);
     }
     else
     {
-        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewport.Height) * _orthoScale;
+        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewportRect.Height) * _orthoScale;
         Matrix::Ortho(orthoSize * aspect, orthoSize, _near, _far, projection);
     }
 
@@ -350,8 +360,9 @@ bool Camera::HasContentLoaded() const
     return _previewModel == nullptr || _previewModel->IsLoaded();
 }
 
-void Camera::Draw(RenderContext& renderContext)
+void Camera::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::EditorSprites)
         && renderContext.View.CullingFrustum.Intersects(_previewModelBox)
         && _previewModel
@@ -361,24 +372,14 @@ void Camera::Draw(RenderContext& renderContext)
         renderContext.View.GetWorldMatrix(_transform, tmp);
         Matrix::RotationY(PI * -0.5f, rot);
         Matrix::Multiply(rot, tmp, world);
-        GeometryDrawStateData drawState;
         Mesh::DrawInfo draw;
         draw.Buffer = &_previewModelBuffer;
         draw.World = &world;
-        draw.DrawState = &drawState;
-        draw.Deformation = nullptr;
-        draw.Lightmap = nullptr;
-        draw.LightmapUVs = nullptr;
         draw.Flags = StaticFlags::Transform;
         draw.DrawModes = (DrawPass::Depth | DrawPass::GBuffer | DrawPass::Forward) & renderContext.View.Pass;
         BoundingSphere::FromBox(_previewModelBox, draw.Bounds);
         draw.Bounds.Center -= renderContext.View.Origin;
         draw.PerInstanceRandom = GetPerInstanceRandom();
-        draw.StencilValue = 0;
-        draw.LODBias = 0;
-        draw.ForcedLOD = -1;
-        draw.SortOrder = 0;
-        draw.VertexColors = nullptr;
         if (draw.DrawModes != DrawPass::None)
         {
             _previewModel->Draw(renderContext, draw);
@@ -459,6 +460,7 @@ void Camera::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(RenderLayersMask);
     SERIALIZE(RenderFlags);
     SERIALIZE(RenderMode);
+    SERIALIZE(ViewportRect);
 }
 
 void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -476,6 +478,7 @@ void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE(RenderLayersMask);
     DESERIALIZE(RenderFlags);
     DESERIALIZE(RenderMode);
+    DESERIALIZE(ViewportRect);
 }
 
 void Camera::OnEnable()
@@ -494,7 +497,7 @@ void Camera::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #endif
-    Cameras.Remove(this);
+    Cameras.RemoveKeepOrder(this);
     if (CutSceneCamera == this)
         CutSceneCamera = nullptr;
 

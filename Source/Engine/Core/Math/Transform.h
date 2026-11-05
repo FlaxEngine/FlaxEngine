@@ -219,7 +219,14 @@ public:
     /// </summary>
     /// <param name="point">The local space point.</param>
     /// <param name="result">The world space point.</param>
-    void LocalToWorld(const Vector3& point, Vector3& result) const;
+    void LocalToWorld(const Float3& point, Float3& result) const;
+
+    /// <summary>
+    /// Performs transformation of the given point in local space to the world space of this transform.
+    /// </summary>
+    /// <param name="point">The local space point.</param>
+    /// <param name="result">The world space point.</param>
+    void LocalToWorld(const Double3& point, Double3& result) const;
 
     /// <summary>
     /// Performs transformation of the given transform in local space to the world space of this transform.

@@ -15,6 +15,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/DynamicBuffer.h"
@@ -136,7 +137,7 @@ typedef DebugDraw::Vertex Vertex;
 
 GPU_CB_STRUCT(ShaderData {
     Matrix ViewProjection;
-    Float2 Padding;
+    Float2 SceneDepthUVScale;
     float ClipPosZBias;
     uint32 EnableDepthTest;
     });
@@ -674,19 +675,19 @@ void DebugDrawService::Update()
     // Lazy-init resources
     if (DebugDrawShader == nullptr)
     {
-        DebugDrawShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/DebugDraw"));
+        DebugDrawShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/DebugDraw"));
         if (DebugDrawShader == nullptr)
         {
             LOG(Fatal, "Cannot load DebugDraw shader");
         }
 #if COMPILE_WITH_DEV_ENV
-        DebugDrawShader->OnReloading.Bind(&OnShaderReloading);
+        DebugDrawShader->Reloading.Bind(&OnShaderReloading);
 #endif
     }
     if (DebugDrawPsWireTrianglesDepthTest.Depth == nullptr && DebugDrawShader && DebugDrawShader->IsLoaded())
     {
         bool failed = false;
-        const auto shader = DebugDrawShader->GetShader();
+        const auto shader = DebugDrawShader->GPU;
 
         // Create pipeline states
         GPUPipelineState::Description desc = GPUPipelineState::Description::Default;
@@ -860,12 +861,15 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     }
 
     // Update constant buffer
-    const auto cb = DebugDrawShader->GetShader()->GetCB(0);
+    const auto cb = DebugDrawShader->GPU->GetCB(0);
     ShaderData data;
     Matrix vp;
     Matrix::Multiply(view.View, view.Projection, vp);
     Matrix::Transpose(vp, data.ViewProjection);
     data.ClipPosZBias = view.IsPerspectiveProjection() ? -0.2f : 0.0f; // Reduce Z-fighting artifacts (eg. editor grid)
+    data.SceneDepthUVScale = Float2::One;
+    if (enableDepthTest && renderContext.Buffers->DepthBuffer && target && ScriptingObject::Cast<GPUTexture>(target->GetParent()))
+        data.SceneDepthUVScale = renderContext.Buffers->DepthBuffer->Size() / ((GPUTexture*)target->GetParent())->Size();
     data.EnableDepthTest = enableDepthTest;
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);

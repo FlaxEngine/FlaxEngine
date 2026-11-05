@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
@@ -140,7 +141,7 @@ namespace FlaxEditor.Surface.Archetypes
                 const int firstBox = 2;
                 const int maxBoxes = 40;
                 bool isInvalid = false;
-                var data = Utils.GetEmptyArray<byte>();
+                var data = Array.Empty<byte>();
 
                 if (valueBox.HasAnyConnection)
                 {
@@ -285,7 +286,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Performs the flow logic branch based on the enum value",
                 Flags = NodeFlags.VisualScriptGraph,
                 Size = new Float2(160, 60),
-                DefaultValues = new object[] { Utils.GetEmptyArray<byte>() },
+                DefaultValues = new object[] { Array.Empty<byte>() },
                 ConnectionsHints = ConnectionsHint.Enum,
                 Elements = new[]
                 {

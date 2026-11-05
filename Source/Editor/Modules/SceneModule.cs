@@ -387,7 +387,7 @@ namespace FlaxEditor.Modules
             {
                 // Ask user for further action
                 var result = MessageBox.Show(
-                                             string.Format("Scene \'{0}\' has been edited. Save before closing?", scene.Name),
+                                             string.Format("Scene \'{0}\' has been edited.\nSave before closing?", scene.Name),
                                              "Close without saving?",
                                              MessageBoxButtons.YesNoCancel,
                                              MessageBoxIcon.Question
@@ -421,7 +421,7 @@ namespace FlaxEditor.Modules
                 // Ask user for further action
                 var scenes = Level.Scenes;
                 var result = MessageBox.Show(
-                                             scenes.Length == 1 ? string.Format("Scene \'{0}\' has been edited. Save before closing?", scenes[0].Name) : string.Format("{0} scenes have been edited. Save before closing?", scenes.Length),
+                                             scenes.Length == 1 ? string.Format("Scene \'{0}\' has been edited.\nSave before closing?", scenes[0].Name) : string.Format("{0} scenes have been edited.\nSave before closing?", scenes.Length),
                                              "Close without saving?",
                                              MessageBoxButtons.YesNoCancel,
                                              MessageBoxIcon.Question

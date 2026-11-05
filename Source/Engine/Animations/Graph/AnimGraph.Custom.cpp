@@ -79,13 +79,6 @@ DEFINE_INTERNAL_CALL(AnimGraphImpulse*) AnimGraphInternal_GetOutputImpulseData(I
 
 #endif
 
-void AnimGraphExecutor::initRuntime()
-{
-    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_HasConnection", &AnimGraphInternal_HasConnection);
-    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetInputValue", &AnimGraphInternal_GetInputValue);
-    ADD_INTERNAL_CALL("FlaxEngine.AnimationGraph::Internal_GetOutputImpulseData", &AnimGraphInternal_GetOutputImpulseData);
-}
-
 void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& value)
 {
 #if USE_CSHARP

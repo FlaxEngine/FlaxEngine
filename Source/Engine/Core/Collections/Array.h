@@ -77,6 +77,15 @@ public:
     }
 
     /// <summary>
+    /// Initializes <see cref="Array"/> by copying span of elements.
+    /// </summary>
+    /// <param name="span">The initial values defined in the array.</param>
+    FORCE_INLINE Array(class Span<T> span)
+        : Array(span.Get(), span.Length())
+    {
+    }
+
+    /// <summary>
     /// Initializes <see cref="Array"/> by copying listed elements.
     /// </summary>
     /// <param name="initList">The initial values defined in the array.</param>
@@ -228,7 +237,7 @@ public:
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns><c>true</c> if is valid a index; otherwise, <c>false</c>.</returns>
-    bool IsValidIndex(const int32 index) const
+    FORCE_INLINE bool IsValidIndex(const int32 index) const
     {
         return index < _count && index >= 0;
     }
@@ -370,10 +379,7 @@ public:
     {
         T* data = Get();
         for (int32 i = 0; i < _count; i++)
-        {
-            if (data[i])
-                Delete(data[i]);
-        }
+            AllocationUtils::DeleteHelper(data[i]);
         Clear();
     }
 

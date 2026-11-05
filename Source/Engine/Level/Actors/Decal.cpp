@@ -6,7 +6,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Graphics/RenderView.h"
-#include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/RenderTools.h"
 
 Decal::Decal(const SpawnParams& params)
@@ -67,8 +67,9 @@ void Decal::OnLayerChanged()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
-void Decal::Draw(RenderContext& renderContext)
+void Decal::Draw(RenderContextBatch& renderContextBatch)
 {
+    const RenderContext& renderContext = renderContextBatch.GetMainContext();
     MaterialBase* material = Material;
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Decals) &&
         EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer) &&

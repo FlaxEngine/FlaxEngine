@@ -140,11 +140,11 @@ public:
     /// </summary>
     /// <typeparam name="T">Type of the object.</typeparam>
     /// <returns>Found actors list.</returns>
-    template<typename T>
+    template<typename T = Asset>
     static Array<T*, HeapAllocation> GetAssets()
     {
         Array<Asset*, HeapAllocation> assets = GetAssets(T::GetStaticClass());
-        return *(Array<T*, HeapAllocation>*) & assets;
+        return *(Array<T*, HeapAllocation>*)&assets;
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ public:
     /// </summary>
     /// <param name="id">Asset unique ID</param>
     /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
-    /// <returns>Loaded asset or null if cannot</returns>
+    /// <returns>Loaded asset or null if failed.</returns>
     API_FUNCTION() static Asset* LoadAsync(const Guid& id, API_PARAM(Attributes="TypeReference(typeof(Asset))") const MClass* type);
 
     /// <summary>
@@ -166,7 +166,7 @@ public:
     /// </summary>
     /// <param name="id">Asset unique ID</param>
     /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
-    /// <returns>Loaded asset or null if cannot</returns>
+    /// <returns>Loaded asset or null if failed.</returns>
     static Asset* LoadAsync(const Guid& id, const ScriptingTypeHandle& type);
 
     /// <summary>
@@ -174,8 +174,8 @@ public:
     /// </summary>
     /// <param name="id">Asset unique ID</param>
     /// <typeparam name="T">Type of the asset to load. Includes any asset types derived from the type.</typeparam>
-    /// <returns>Loaded asset or null if cannot</returns>
-    template<typename T>
+    /// <returns>Loaded asset or null if failed.</returns>
+    template<typename T = Asset>
     FORCE_INLINE static T* LoadAsync(const Guid& id)
     {
         return static_cast<T*>(LoadAsync(id, T::TypeInitializer));
@@ -186,7 +186,7 @@ public:
     /// </summary>
     /// <param name="path">The path of the asset (absolute or relative to the current workspace directory).</param>
     /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
-    /// <returns>Loaded asset or null if cannot</returns>
+    /// <returns>Loaded asset or null if failed.</returns>
     API_FUNCTION(Attributes="HideInEditor") static Asset* LoadAsync(const StringView& path, const MClass* type);
 
     /// <summary>
@@ -194,7 +194,7 @@ public:
     /// </summary>
     /// <param name="path">The path of the asset (absolute or relative to the current workspace directory).</param>
     /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
-    /// <returns>Loaded asset or null if cannot</returns>
+    /// <returns>Loaded asset or null if failed.</returns>
     static Asset* LoadAsync(const StringView& path, const ScriptingTypeHandle& type);
 
     /// <summary>
@@ -202,8 +202,8 @@ public:
     /// </summary>
     /// <param name="path">The path of the asset (absolute or relative to the current workspace directory).</param>
     /// <typeparam name="T">Type of the asset to load. Includes any asset types derived from the type.</typeparam>
-    /// <returns>Loaded asset or null if cannot</returns>
-    template<typename T>
+    /// <returns>Loaded asset or null if failed.</returns>
+    template<typename T = Asset>
     FORCE_INLINE static T* LoadAsync(const StringView& path)
     {
         return static_cast<T*>(LoadAsync(path, T::TypeInitializer));
@@ -238,7 +238,7 @@ public:
     /// </summary>
     /// <param name="internalPath">The path of the asset relative to the engine internal content (excluding the extension).</param>
     /// <returns>The loaded asset or null if failed.</returns>
-    template<typename T>
+    template<typename T = Asset>
     FORCE_INLINE static T* LoadAsyncInternal(const Char* internalPath)
     {
         return static_cast<T*>(LoadAsyncInternal(internalPath, T::TypeInitializer));
@@ -252,7 +252,7 @@ public:
     /// <param name="timeoutInMilliseconds">Custom timeout value in milliseconds.</param>
     /// <typeparam name="T">Type of the asset to load. Includes any asset types derived from the type.</typeparam>
     /// <returns>Asset instance if loaded, null otherwise.</returns>
-    template<typename T>
+    template<typename T = Asset>
     static T* Load(const Guid& id, double timeoutInMilliseconds = 30000.0)
     {
         auto asset = LoadAsync<T>(id);
@@ -269,7 +269,7 @@ public:
     /// <param name="timeoutInMilliseconds">Custom timeout value in milliseconds.</param>
     /// <typeparam name="T">Type of the asset to load. Includes any asset types derived from the type.</typeparam>
     /// <returns>Asset instance if loaded, null otherwise.</returns>
-    template<typename T>
+    template<typename T = Asset>
     static T* Load(const StringView& path, double timeoutInMilliseconds = 30000.0)
     {
         auto asset = LoadAsync<T>(path);

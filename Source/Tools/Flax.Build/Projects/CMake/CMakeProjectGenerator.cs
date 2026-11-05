@@ -439,8 +439,7 @@ namespace Flax.Build.Projects.CMake
                 var args = new List<string>();
                 if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
                     args.Add("-std");
-                args.Add("-project");
-                args.Add(project.WorkspaceRootPath);
+                args.Add($"-project=\"{project.WorkspaceRootPath}\"");
                 args.Add("-skipCompile");
                 arguments = args.ToArray();
                 return program;

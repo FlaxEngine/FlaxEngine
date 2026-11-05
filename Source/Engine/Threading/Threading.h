@@ -11,6 +11,11 @@
 FLAXENGINE_API bool IsInMainThread();
 
 /// <summary>
+/// Checks if current execution in on the rendering thread (main thread in most cases).
+/// </summary>
+FLAXENGINE_API bool IsInRenderThread();
+
+/// <summary>
 /// Scope lock for critical section (mutex). Ensures no other thread can enter scope.
 /// </summary>
 class ScopeLock

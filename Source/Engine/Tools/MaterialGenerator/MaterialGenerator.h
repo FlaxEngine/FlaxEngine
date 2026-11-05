@@ -179,8 +179,8 @@ private:
     SerializedMaterialParam* findParam(const Guid& id, MaterialLayer* layer);
     MaterialGraphParameter* findGraphParam(const Guid& id);
 
-    MaterialValue* sampleTextureRaw(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture);
-    void sampleTexture(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture);
+    MaterialValue* sampleTextureRaw(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture, bool useGlobalMipBias = false);
+    void sampleTexture(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture, bool useGlobalMipBias = false);
     void sampleSceneDepth(Node* caller, Value& value, Box* box);
     void linearizeSceneDepth(Node* caller, const Value& depth, Value& value);
 

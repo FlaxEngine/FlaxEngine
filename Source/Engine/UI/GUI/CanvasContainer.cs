@@ -250,10 +250,7 @@ namespace FlaxEngine.GUI
 
             // Test 3D
             if (RayCast3D(ref location, out var hit, out var hitLocation))
-            {
-                hit.OnMouseDoubleClick(hitLocation, button);
-                return true;
-            }
+                return hit.OnMouseDoubleClick(hitLocation, button);
 
             return false;
         }

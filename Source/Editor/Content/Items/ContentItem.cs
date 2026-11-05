@@ -796,10 +796,14 @@ namespace FlaxEditor.Content
         {
             Focus();
 
-            // Open
-            (Parent as ContentView).OnItemDoubleClick(this);
+            if (button == MouseButton.Left)
+            {
+                // Open
+                (Parent as ContentView).OnItemDoubleClick(this);
+                return true;
+            }
 
-            return true;
+            return false;
         }
 
         /// <inheritdoc />

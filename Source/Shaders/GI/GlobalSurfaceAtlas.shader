@@ -4,9 +4,10 @@
 #define LIGHTING_NO_SPECULAR 1
 
 #include "./Flax/Common.hlsl"
-#include "./Flax/Math.hlsl"
-#include "./Flax/LightingCommon.hlsl"
-#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/Math/Math.hlsl"
+#include "./Flax/Math/Noise.hlsl"
+#include "./Flax/Lighting/LightingCommon.hlsl"
+#include "./Flax/Utils/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
 #include "./Flax/GI/DDGI.hlsl"
 
@@ -43,11 +44,33 @@ META_VS(true, FEATURE_LEVEL_SM5)
 AtlasVertexOutput VS_Atlas(AtlasVertexInput input)
 {
 	AtlasVertexOutput output;
-	output.Position = float4(input.Position, 1, 1);
+	output.Position = float4(input.Position, DEPTH_RANGE_MAX, 1);
 	output.TileUV = input.TileUV;
 	output.TileAddress = input.TileAddress;
 	return output;
 }
+
+#ifdef _PS_Copy
+
+Texture2D DepthTexture : register(t0);
+Texture2D EmissiveTexture : register(t1);
+Texture2D GBuffer0Texture : register(t2);
+Texture2D GBuffer1Texture : register(t3);
+Texture2D LightingTexture : register(t4);
+
+// Pixel shader for Global Surface Atlas copying (eg. after defragmentation)
+META_PS(true, FEATURE_LEVEL_SM5)
+void PS_Copy(AtlasVertexOutput input, out float Depth : SV_Depth, out float4 Emissive : SV_Target0, out float4 GBuffer0 : SV_Target1, out float4 GBuffer1 : SV_Target2, out float4 Lighting : SV_Target3)
+{
+	float2 atlasUV = input.TileUV; // Old-atlas UVs computed on CPU
+    Depth = SAMPLE_RT_DEPTH(DepthTexture, atlasUV);
+    Emissive = SAMPLE_RT(EmissiveTexture, atlasUV);
+    GBuffer0 = SAMPLE_RT(GBuffer0Texture, atlasUV);
+    GBuffer1 = SAMPLE_RT(GBuffer1Texture, atlasUV);
+    Lighting = SAMPLE_RT(LightingTexture, atlasUV);
+}
+
+#endif
 
 // Pixel shader for Global Surface Atlas software clearing
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -64,7 +87,7 @@ void PS_Clear(out float4 Light : SV_Target0, out float4 RT0 : SV_Target1, out fl
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
 Texture2D Texture : register(t7);
 
-// Pixel shader for Global Surface Atlas clearing
+// Pixel shader for Global Surface Atlas clearing (copies emissive texture)
 META_PS(true, FEATURE_LEVEL_SM5)
 float4 PS_ClearLighting(AtlasVertexOutput input) : SV_Target
 {
@@ -78,8 +101,8 @@ float4 PS_ClearLighting(AtlasVertexOutput input) : SV_Target
 #ifdef _PS_Lighting
 
 #include "./Flax/GBuffer.hlsl"
-#include "./Flax/Matrix.hlsl"
-#include "./Flax/Lighting.hlsl"
+#include "./Flax/Math/Matrix.hlsl"
+#include "./Flax/Lighting/Lighting.hlsl"
 
 // GBuffer+Depth at 0-3 slots
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);
@@ -121,7 +144,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	}
 
 	// Reconstruct world-space position manually (from uv+depth within a tile)
-	float tileDepth = SampleZ(atlasUV);
+	float tileDepth = DEPTH_01(SampleZ(atlasUV));
 	float3 tileSpacePos = float3(input.TileUV.x - 0.5f, 0.5f - input.TileUV.y, tileDepth);
 	float3 gBufferTilePos = tileSpacePos * tile.ViewBoundsSize;
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);
@@ -187,7 +210,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 
 	// Calculate lighting
 #if RADIAL_LIGHT
-	bool isSpotLight = Light.SpotAngles.x > -2.0f;
+	bool isSpotLight = IsSpotLight(Light);
 #else
 	bool isSpotLight = false;
 #endif
@@ -201,7 +224,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 
 #if defined(_CS_CullObjects)
 
-#include "./Flax/Collisions.hlsl"
+#include "./Flax/Math/Collisions.hlsl"
 
 RWByteAddressBuffer RWGlobalSurfaceAtlasChunks : register(u0);
 RWByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(u1);
@@ -248,11 +271,12 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 		}
 	}
 	GroupMemoryBarrierWithGroupSync();
+    uint culledObjectsCount = min(SharedCulledObjectsCount, GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE);
 
     // Cull objects from the shared buffer against active thread's chunk
     uint objectsCount = 0;
 	LOOP
-	for (uint i = 0; i < SharedCulledObjectsCount; i++)
+	for (uint i = 0; i < culledObjectsCount; i++)
 	{
         uint objectAddress = SharedCulledObjects[i];
 		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
@@ -287,7 +311,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 
 	// Copy objects data in this chunk (cull from the shared buffer)
     LOOP
-	for (uint i = 0; i < SharedCulledObjectsCount; i++)
+	for (uint i = 0; i < culledObjectsCount; i++)
     {
         uint objectAddress = SharedCulledObjects[i];
 		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
@@ -314,6 +338,7 @@ TextureCube Skybox : register(t7);
 
 // Pixel shader for Global Surface Atlas debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)
+META_FLAG(DevelopmentOnly)
 META_PERMUTATION_1(GLOBAL_SURFACE_ATLAS_DEBUG_MODE=0)
 META_PERMUTATION_1(GLOBAL_SURFACE_ATLAS_DEBUG_MODE=1)
 float4 PS_Debug(Quad_VS2PS input) : SV_Target
@@ -328,7 +353,9 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	float3 viewRay = lerp(lerp(ViewFrustumWorldRays[3], ViewFrustumWorldRays[0], input.TexCoord.x), lerp(ViewFrustumWorldRays[2], ViewFrustumWorldRays[1], input.TexCoord.x), 1 - input.TexCoord.y).xyz;
 	viewRay = normalize(viewRay - ViewWorldPos);
 	trace.Init(ViewWorldPos, viewRay, ViewNearPlane, ViewFarPlane);
-	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
+    trace.WorldPosition += rand3dTo3d(float3(input.TexCoord, viewRay.x)); // Noise a bit
+    float stepScale = lerp(rand3dTo1d(trace.WorldPosition), 0.7f, 0.9f); // Boost precision
+	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace, 0.0f, stepScale);
 
     float3 color;
 	if (hit.IsHit())

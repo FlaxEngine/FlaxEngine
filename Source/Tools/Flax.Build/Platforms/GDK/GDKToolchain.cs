@@ -35,11 +35,26 @@ namespace Flax.Build.Platforms
             // Setup system paths
             SystemIncludePaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Include"));
             SystemLibraryPaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Lib\\amd64"));
-            var xboxServicesPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.Services.API.C\\DesignTime\\CommonConfiguration\\Neutral\\");
             var xboxServicesToolset = XboxServicesToolset;
+            var extensionLibraries = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries");
+            var xboxServicesPath = Path.Combine(extensionLibraries, "Xbox.Services.API.C\\DesignTime\\CommonConfiguration\\Neutral\\");
+            if (Directory.Exists(xboxServicesPath))
+            {
+                SystemLibraryPaths.Add(xboxServicesPath + "Lib\\Release\\" + xboxServicesToolset);
+            }
+            else
+            {
+                // New location since 250402
+                xboxServicesPath = Path.Combine(extensionLibraries, "Xbox.Services.API.C\\");
+                SystemLibraryPaths.Add(xboxServicesPath + "Lib\\x64\\Release\\" + xboxServicesToolset);
+
+                // httpClient.h
+                SystemIncludePaths.Add(Path.Combine(extensionLibraries, "Xbox.LibHttpClient\\Include"));
+                SystemLibraryPaths.Add(Path.Combine(extensionLibraries, "Xbox.LibHttpClient\\Lib\\x64"));
+                SystemLibraryPaths.Add(Path.Combine(extensionLibraries, "Xbox.XCurl.API\\Lib\\x64"));
+            }
             SystemIncludePaths.Add(xboxServicesPath + "Include");
-            SystemLibraryPaths.Add(xboxServicesPath + "Lib\\Release\\" + xboxServicesToolset);
-            var curlPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.XCurl.API\\DesignTime\\CommonConfiguration\\Neutral\\");
+            var curlPath = Path.Combine(extensionLibraries, "Xbox.XCurl.API\\DesignTime\\CommonConfiguration\\Neutral\\");
             SystemIncludePaths.Add(curlPath + "Include");
             SystemLibraryPaths.Add(curlPath + "Lib");
         }
@@ -65,11 +80,25 @@ namespace Flax.Build.Platforms
                 throw new Exception("Don't use debug CRT on GDK.");
             var name = Path.GetFileName(toolsetPath);
             var redistToolsPath = Path.Combine(toolsPath, "..", "..", "..", "..", "..", "..", "Redist/MSVC/");
+            redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
             var paths = Directory.GetDirectories(redistToolsPath, name.Substring(0, 2) + "*");
             if (paths.Length == 0)
                 throw new Exception($"Failed to find MSVC redistribute binaries for toolset '{Toolset}' inside folder '{toolsPath}'");
-            var crtToolset = Toolset > WindowsPlatformToolset.v143 ? WindowsPlatformToolset.v143 : Toolset;
-            redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".CRT");
+            int crtToolset = 0;
+            string redistToolsPathBase = string.Empty;
+            for (int i = 0; i < paths.Length; i++)
+            {
+                redistToolsPathBase = paths[i];
+                for (crtToolset = (int)WindowsPlatformToolset.v145; crtToolset >= (int)Toolset; crtToolset--)
+                {
+                    redistToolsPath = Path.Combine(redistToolsPathBase, "x64", "Microsoft.VC" + (int)crtToolset + ".CRT");
+                    if (Directory.Exists(redistToolsPath))
+                        break;
+                }
+                if (Directory.Exists(redistToolsPath))
+                    break;
+            }
+            Log.Verbose("GDK CRT toolset version: " + (WindowsPlatformToolset)crtToolset);
             redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "concrt140.dll"));
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "msvcp140.dll"));
@@ -81,7 +110,7 @@ namespace Flax.Build.Platforms
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcruntime140_1.dll"));
             if (OpenMP)
             {
-                redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".OpenMP");
+                redistToolsPath = Path.Combine(redistToolsPathBase, "x64", "Microsoft.VC" + crtToolset + ".OpenMP");
                 redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
                 options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcomp140.dll"));
             }

@@ -8,6 +8,7 @@
 class GPUTexture;
 class GPUContext;
 struct RenderContext;
+struct RenderContextBatch;
 
 /// <summary>
 /// Custom PostFx which can modify final image by processing it with material based filters. The base class for all post process effects used by the graphics pipeline. Allows to extend frame rendering logic and apply custom effects such as outline, night vision, contrast etc.
@@ -58,6 +59,14 @@ public:
     /// Pre-rendering event called before scene rendering begin. Can be used to perform custom rendering or customize render view/setup.
     /// </summary>
     virtual void PreRender(GPUContext* context, RenderContext& renderContext)
+    {
+    }
+
+    /// <summary>
+    /// Performs custom scene drawing to collect draw calls. Can be used to draw custom objects or visuals (eg. outline meshes). After that draw calls are processed (sorted and batched).
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    API_FUNCTION() virtual void CollectDrawCalls(API_PARAM(Ref) RenderContextBatch& renderContextBatch)
     {
     }
 

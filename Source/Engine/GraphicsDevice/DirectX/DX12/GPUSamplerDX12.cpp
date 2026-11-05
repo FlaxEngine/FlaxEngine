@@ -77,6 +77,9 @@ bool GPUSamplerDX12::OnInit()
     case GPUSamplerCompareFunction::Less:
         samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS;
         break;
+    case GPUSamplerCompareFunction::Greater:
+        samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_GREATER;
+        break;
     default:
         return true;
     }

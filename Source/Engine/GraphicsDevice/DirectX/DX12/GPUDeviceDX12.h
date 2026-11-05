@@ -25,6 +25,19 @@ class GPUSwapChainDX12;
 class CommandQueueDX12;
 class CommandSignatureDX12;
 
+// D3D12MemoryAllocator config
+namespace D3D12MA
+{
+    class Allocator;
+    class Allocation;
+};
+#define _D3D12MA_JSON_WRITER 0
+#define _D3D12MA_STRING_BUILDER 0
+#define D3D12MA_NO_HELPERS 1
+#if !BUILD_DEBUG
+#define D3D12MA_ASSERT(cond)
+#endif
+
 /// <summary>
 /// Implementation of Graphics Device for DirectX 12 rendering system
 /// </summary>
@@ -38,6 +51,7 @@ private:
     struct DisposeResourceEntry
     {
         IGraphicsUnknown* Resource;
+        D3D12MA::Allocation* Allocation;
         uint64 TargetFrame;
     };
 
@@ -71,6 +85,7 @@ public:
     ~GPUDeviceDX12();
 
 public:
+    D3D12MA::Allocator* Allocator = nullptr;
     UploadBufferDX12 UploadBuffer;
     bool AllowTearing = false;
     CommandSignatureDX12* DispatchIndirectCommandSignature = nullptr;
@@ -78,6 +93,7 @@ public:
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
     GPUBuffer* DummyVB = nullptr;
     Array<QueryHeapDX12*, InlinedAllocation<8>> QueryHeaps;
+    Array<ID3D12Resource*> PendingResourceDiscards;
 
     D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;
@@ -154,7 +170,7 @@ public:
 public:
 
     // Add resource to late release service (will be released after 'safeFrameCount' frames)
-    void AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount = DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT);
+    void AddResourceToLateRelease(IGraphicsUnknown* resource, D3D12MA::Allocation* allocation = nullptr, uint32 safeFrameCount = DX12_RESOURCE_DELETE_SAFE_FRAMES_COUNT);
 
     static FORCE_INLINE uint32 GetMaxMSAAQuality(uint32 sampleCount)
     {
@@ -176,7 +192,6 @@ private:
     void updateRes2Dispose();
 
 public:
-
     // [GPUDeviceDX]
     GPUContext* GetMainContext() override
     {
@@ -186,9 +201,12 @@ public:
     {
         return _device;
     }
+    QueueInfo GetNativeQueue() const override;
+    GPUMemoryStats GetMemoryStats() override;
     bool Init() override;
     void DrawBegin() override;
     void RenderEnd() override;
+    void OnCrash() override;
     void Dispose() final override;
     void WaitForGPU() override;
     bool GetQueryResult(uint64 queryID, uint64& result, bool wait = false) override;

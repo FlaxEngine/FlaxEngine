@@ -6,8 +6,8 @@
 #include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Renderer/RenderList.h"
 #include "RenderBuffers.h"
-#include "RenderTask.h"
 #include "RenderTools.h"
+#include "RenderContext.h"
 
 void RenderView::Prepare(RenderContext& renderContext)
 {
@@ -65,7 +65,11 @@ void RenderView::Prepare(RenderContext& renderContext)
 void RenderView::PrepareCache(const RenderContext& renderContext, float width, float height, const Float2& temporalAAJitter, const RenderView* mainView)
 {
     // The same format used by the Flax common shaders and postFx materials
-    ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, Far / (Far - Near), (-Far * Near) / (Far - Near) / Far);
+#if REVERSE_Z
+    ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, -Near / (Far - Near), (Far * Near) / (Far - Near) / Far);
+#else
+    ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, Far / (Far - Near), -(Far * Near) / (Far - Near) / Far);
+#endif
     ScreenSize = Float4(width, height, 1.0f / width, 1.0f / height);
 
     TemporalAAJitter.Z = TemporalAAJitter.X;
@@ -121,7 +125,7 @@ void RenderView::SetUp(const Matrix& view, const Matrix& projection)
     CullingFrustum = Frustum;
 }
 
-void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& position)
+void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& position, float fov)
 {
     // Copy data
     Near = nearPlane;
@@ -129,7 +133,7 @@ void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& positi
     Position = position;
 
     // Create projection matrix
-    Matrix::PerspectiveFov(PI_OVER_2, 1.0f, nearPlane, farPlane, Projection);
+    Matrix::PerspectiveFov(fov, 1.0f, nearPlane, farPlane, Projection);
     NonJitteredProjection = Projection;
     Matrix::Invert(Projection, IP);
 }
@@ -208,6 +212,7 @@ void RenderView::CopyFrom(const Camera* camera, const Viewport* viewport)
     RenderLayersMask = camera->RenderLayersMask;
     Flags = camera->RenderFlags;
     Mode = camera->RenderMode;
+    ViewportRect = camera->ViewportRect;
 }
 
 void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const

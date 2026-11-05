@@ -16,10 +16,7 @@ class FLAXENGINE_API MProperty
     friend MCore;
 
 protected:
-#if USE_MONO
-    MonoProperty* _monoProperty;
-    StringAnsi _name;
-#elif USE_NETCORE
+#if USE_NETCORE
     void* _handle;
     StringAnsiView _name;
 #else
@@ -37,9 +34,7 @@ protected:
     mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
-#if USE_MONO
-    explicit MProperty(MonoProperty* monoProperty, const char* name, MClass* parentClass);
-#elif USE_NETCORE
+#if USE_NETCORE
     MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes);
 #endif
 

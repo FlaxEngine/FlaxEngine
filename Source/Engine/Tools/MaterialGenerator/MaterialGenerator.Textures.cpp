@@ -24,7 +24,7 @@ namespace
     };
 };
 
-MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture)
+MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture, bool useGlobalMipBias)
 {
     ASSERT(texture && box);
     const auto parent = box->GetParent<ShaderGraphNode<>>();
@@ -42,6 +42,7 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
         && texture->Type != MaterialParameterType::GPUTextureVolume
         && texture->Type != MaterialParameterType::GPUTextureCube
         && texture->Type != MaterialParameterType::GPUTextureArray
+        && texture->Type != MaterialParameterType::GPUBuffer
         && texture->Type != MaterialParameterType::CubeTexture)
     {
         OnError(caller, box, TEXT("No parameter for texture sample node."));
@@ -60,14 +61,26 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
     // Check if hasn't been sampled during that tree eating
     if (valueBox->Cache.IsInvalid())
     {
-        bool canUseSample = CanUseSample(_treeType);
+        bool useLevel = !CanUseSample(_treeType), useBias = false;
         String mipLevel = TEXT("0");
         const auto layer = GetRootLayer();
         if (layer && layer->Domain == MaterialDomain::Decal && _treeType == MaterialTreeType::PixelShader)
         {
             // Decals use computed mip level due to ddx/ddy being unreliable
-            canUseSample = false;
+            useLevel = true;
             mipLevel = String::Format(TEXT("CalculateTextureMipmap(input, {})"), texture->ShaderName);
+        }
+        if (useGlobalMipBias)
+        {
+            if (useLevel)
+            {
+                mipLevel += TEXT(" + MaterialTextureMipBias");
+            }
+            else
+            {
+                useBias = true;
+                mipLevel = TEXT("MaterialTextureMipBias");
+            }
         }
 
         // Check if use custom UVs
@@ -93,23 +106,24 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
             uv = use3dUVs ? TEXT("float3(input.TexCoord.xy, 0)") : TEXT("input.TexCoord.xy");
         }
 
-        // Select sampler
-        // TODO: add option for texture groups and per texture options like wrap mode etc.
-        // TODO: changing texture sampler option
-        const Char* sampler = TEXT("SamplerLinearWrap");
-
         // Sample texture
+        const Char* sampler = TEXT("SamplerLinearWrap");
         if (texture->AsInteger == (int32)MaterialSceneTextures::SceneDepth)
         {
             // Sample depth buffer
             String sampledValue = String::Format(TEXT("SAMPLE_RT_DEPTH({0}, {1})"), texture->ShaderName, uv);
             valueBox->Cache = writeLocal(VariantType::Float, sampledValue, parent);
         }
+        else if (texture->Type == MaterialParameterType::GPUBuffer)
+        {
+            // Load buffer
+            String sampledValue = String::Format(TEXT("{0}.Load({1})"), texture->ShaderName, uv);
+            valueBox->Cache = writeLocal(VariantType::Float, sampledValue, parent);
+        }
         else if (isNormalMap)
         {
-            const Char* format = canUseSample ? TEXT("{0}.Sample({1}, {2}).xyz") : TEXT("{0}.SampleLevel({1}, {2}, {3}).xyz");
-
             // Sample encoded normal map
+            const Char* format = useLevel ? TEXT("{0}.SampleLevel({1}, {2}, {3}).xyz") : (useBias ? TEXT("{0}.SampleBias({1}, {2}, {3}).xyz") : TEXT("{0}.Sample({1}, {2}).xyz"));
             const String sampledValue = String::Format(format, texture->ShaderName, sampler, uv, mipLevel);
             const auto normalVector = writeLocal(VariantType::Float3, sampledValue, parent);
 
@@ -120,27 +134,8 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
         }
         else
         {
-            // Select format string based on texture type
-            const Char* format;
-            /*if (isCubemap)
-            {
-            MISSING_CODE("sampling cube maps and 3d texture in material generator");
-            //format = TEXT("SAMPLE_CUBEMAP({0}, {1})");
-            }
-            else*/
-            {
-                /*if (useCustomUVs)
-                {
-                createGradients(writer, parent);
-                format = TEXT("SAMPLE_TEXTURE_GRAD({0}, {1}, {2}, {3})");
-                }
-                else*/
-                {
-                    format = canUseSample ? TEXT("{0}.Sample({1}, {2})") : TEXT("{0}.SampleLevel({1}, {2}, {3})");
-                }
-            }
-
             // Sample texture
+            const Char* format = useLevel ? TEXT("{0}.SampleLevel({1}, {2}, {3})") : (useBias ? TEXT("{0}.SampleBias({1}, {2}, {3})") : TEXT("{0}.Sample({1}, {2})"));
             String sampledValue = String::Format(format, texture->ShaderName, sampler, uv, mipLevel);
             valueBox->Cache = writeLocal(VariantType::Float4, sampledValue, parent);
         }
@@ -149,9 +144,9 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
     return &valueBox->Cache;
 }
 
-void MaterialGenerator::sampleTexture(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture)
+void MaterialGenerator::sampleTexture(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture, bool useGlobalMipBias)
 {
-    const auto sample = sampleTextureRaw(caller, value, box, texture);
+    const auto sample = sampleTextureRaw(caller, value, box, texture, useGlobalMipBias);
     if (sample == nullptr)
         return;
 
@@ -202,16 +197,26 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     {
     // Texture
     case 1:
+    // Cube Texture
+    case 3:
+    // Normal Map
+    case 4:
     {
         // Check if texture has been selected
         Guid textureId = (Guid)node->Values[0];
         if (textureId.IsValid())
         {
             // Get or create parameter for that texture
-            auto param = findOrAddTexture(textureId);
+            SerializedMaterialParam param;
+            if (node->TypeID == 1) // Texture
+                param = findOrAddTexture(textureId);
+            else if (node->TypeID == 3) // Cube Texture
+                param = findOrAddCubeTexture(textureId);
+            else if (node->TypeID == 4) // Normal Map
+                param = findOrAddNormalMap(textureId);
 
             // Sample texture
-            sampleTexture(node, value, box, &param);
+            sampleTexture(node, value, box, &param, true);
         }
         else
         {
@@ -233,46 +238,6 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         {
             // TODO: migrate all material domain templates to TexCoords array (of size MATERIAL_TEXCOORDS=1)
             value = getUVs;
-        }
-        break;
-    }
-    // Cube Texture
-    case 3:
-    {
-        // Check if texture has been selected
-        Guid textureId = (Guid)node->Values[0];
-        if (textureId.IsValid())
-        {
-            // Get or create parameter for that cube texture
-            auto param = findOrAddCubeTexture(textureId);
-
-            // Sample texture
-            sampleTexture(node, value, box, &param);
-        }
-        else
-        {
-            // Use default value
-            value = Value::Zero;
-        }
-        break;
-    }
-    // Normal Map
-    case 4:
-    {
-        // Check if texture has been selected
-        Guid textureId = (Guid)node->Values[0];
-        if (textureId.IsValid())
-        {
-            // Get or create parameter for that texture
-            auto param = findOrAddNormalMap(textureId);
-
-            // Sample texture
-            sampleTexture(node, value, box, &param);
-        }
-        else
-        {
-            // Use default value
-            value = Value::Zero;
         }
         break;
     }
@@ -327,10 +292,11 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             "	float currRayHeight = 1.0;\n"
             "	float lastSampledHeight = 1;\n"
             "	int currSample = 0;\n"
+            "   float mipBiasDerivScale = pow(2, MaterialTextureMipBias);\n"
 
             "	while (currSample < (int)numSamples)\n"
             "	{{\n"
-            "		float currSampledHeight = {1}.SampleGrad(SamplerLinearWrap, {10} + currOffset, {5}, {6}){7};\n"
+            "		float currSampledHeight = {1}.SampleGrad(SamplerLinearWrap, {10} + currOffset, {5} * mipBiasDerivScale, {6} * mipBiasDerivScale){7};\n"
 
             "		if (currSampledHeight > currRayHeight)\n"
             "		{{\n"
@@ -584,6 +550,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const bool isVolume = textureParam->Type == MaterialParameterType::GPUTextureVolume;
         const bool isNormalMap = textureParam->Type == MaterialParameterType::NormalMap;
         const bool use3dUVs = isCubemap || isArray || isVolume;
+        const bool useGlobalMipBias = true; // Could be exposed as node option (separate check or within new set of CommonSamplerType values)
         uvs = Value::Cast(uvs, use3dUVs ? VariantType::Float3 : VariantType::Float2);
 
         // Get other inputs
@@ -609,11 +576,30 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
 
         // Create texture sampling code
-        if (node->TypeID == 9)
+        if (textureParam->Type == MaterialParameterType::GPUBuffer)
+        {
+            // Load buffer
+            String sampledValue = String::Format(TEXT("{0}.Load({1})"), texture.Value, uvs.Value);
+            textureBox->Cache = writeLocal(VariantType::Float, sampledValue, node);
+        }
+        else if (node->TypeID == 9)
         {
             // Sample Texture
             const Char* format;
-            if (useLevel || !canUseSample)
+            if (useGlobalMipBias)
+            {
+                if (useLevel && useOffset)
+                    format = TEXT("{0}.SampleLevel({1}, {2}, {3} + MaterialTextureMipBias, {4})");
+                else if (useLevel)
+                    format = TEXT("{0}.SampleLevel({1}, {2}, {3} + MaterialTextureMipBias)");
+                else if (!canUseSample)
+                    format = TEXT("{0}.SampleLevel({1}, {2}, MaterialTextureMipBias)");
+                else if (useOffset)
+                    format = TEXT("{0}.SampleBias({1}, {2}, MaterialTextureMipBias, {4})");
+                else
+                    format = TEXT("{0}.SampleBias({1}, {2}, MaterialTextureMipBias)");
+            }
+            else if (useLevel || !canUseSample)
             {
                 if (useOffset)
                     format = TEXT("{0}.SampleLevel({1}, {2}, {3}, {4})");
@@ -662,8 +648,9 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
                 "   uv1 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex1)) * 43758.5453);\n"
                 "   uv2 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex2)) * 43758.5453);\n"
                 "   uv3 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex3)) * 43758.5453);\n"
-                "   float2 fdx = ddx({0});\n"
-                "   float2 fdy = ddy({0});\n"
+                "   float mipBiasDerivScale = pow(2, MaterialTextureMipBias);\n"
+                "   float2 fdx = ddx({0}) * mipBiasDerivScale;\n"
+                "   float2 fdy = ddy({0}) * mipBiasDerivScale;\n"
                 "   float4 tex1 = {1}.SampleGrad({2}, uv1, fdx, fdy, {4}) * weights.x;\n"
                 "   float4 tex2 = {1}.SampleGrad({2}, uv2, fdx, fdy, {4}) * weights.y;\n"
                 "   float4 tex3 = {1}.SampleGrad({2}, uv3, fdx, fdy, {4}) * weights.z;\n"
@@ -707,7 +694,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Float3);
         Value startCascade = tryGetValue(node->TryGetBox(2), 0, Value::Zero).Cast(VariantType::Uint);
         value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {0}_Mip, {1}, {2})"), param.ShaderName, worldPosition.Value, startCascade.Value), node);
-        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        _includes.Add(TEXT("./Flax/Utils/GlobalSignDistanceField.hlsl"));
         break;
     }
     // Sample Global SDF Gradient
@@ -720,7 +707,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         Value startCascade = tryGetValue(node->TryGetBox(3), 0, Value::Zero).Cast(VariantType::Uint);
         auto distance = writeLocal(VariantType::Float, node);
         auto gradient = writeLocal(VariantType::Float3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {0}_Mip, {1}, {2}, {3})"), param.ShaderName, worldPosition.Value, distance.Value, startCascade.Value), node);
-        _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
+        _includes.Add(TEXT("./Flax/Utils/GlobalSignDistanceField.hlsl"));
         gradientBox->Cache = gradient;
         distanceBox->Cache = distance;
         value = box == gradientBox ? gradient : distance;
@@ -767,7 +754,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         {
             // Get world position and normal
             float3 tiling = %SCALE% * 0.001f;
-            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / tiling)) * tiling;
             float3 normal = normalize(%NORMAL%);
 
             // Compute triplanar blend weights using power distribution
@@ -857,7 +844,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         {
             // Get world position and normal
             float3 tiling = %SCALE% * 0.001f;
-            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / tiling)) * tiling;
             float3 normal = normalize(%NORMAL%);
 
             // Compute triplanar blend weights using power distribution

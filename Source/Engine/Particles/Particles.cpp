@@ -14,6 +14,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/RenderContext.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
@@ -175,7 +176,9 @@ void Particles::OnEffectDestroy(ParticleEffect* effect)
 {
     UpdateList.Remove(effect);
 #if COMPILE_WITH_GPU_PARTICLES
+    GpuUpdateListLocker.Lock();
     GpuUpdateList.Remove(effect);
+    GpuUpdateListLocker.Unlock();
 #endif
 }
 
@@ -695,10 +698,10 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
     if (sorting && GPUParticlesSorting == nullptr)
     {
         // TODO: preload shader if platform supports GPU particles (eg. inside ParticleEmitter::load if it's GPU sim with any sort module)
-        GPUParticlesSorting = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GPUParticlesSorting"));
+        GPUParticlesSorting = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Utils/GPUParticlesSorting"));
 #if COMPILE_WITH_DEV_ENV
         if (GPUParticlesSorting)
-            GPUParticlesSorting.Get()->OnReloading.Bind<OnShaderReloading>();
+            GPUParticlesSorting.Get()->Reloading.Bind<OnShaderReloading>();
 #endif
     }
     if (GPUParticlesSorting == nullptr || !GPUParticlesSorting->IsLoaded())
@@ -708,7 +711,7 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
     }
     else if (!GPUParticlesSortingCB)
     {
-        const auto shader = GPUParticlesSorting->GetShader();
+        const auto shader = GPUParticlesSorting->GPU;
         const StringAnsiView CS_Sort("CS_Sort");
         GPUParticlesSortingCS[0] = shader->GetCS(CS_Sort, 0);
         GPUParticlesSortingCS[1] = shader->GetCS(CS_Sort, 1);
@@ -1134,7 +1137,7 @@ void DrawEmitterGPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
 
 #endif
 
-void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect)
+void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect, DrawPass drawModes)
 {
     PROFILE_CPU();
     PROFILE_MEM(Particles);
@@ -1150,7 +1153,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
     {
         const RenderView& view = renderContextBatch.Contexts.Get()[i].View;
-        const bool visible = (view.Pass & effect->DrawModes) != DrawPass::None && (view.IsCullingDisabled || view.CullingFrustum.Intersects(bounds));
+        const bool visible = (view.Pass & drawModes) != DrawPass::None && (view.IsCullingDisabled || view.CullingFrustum.Intersects(bounds));
         if (visible)
         {
             drawAnyView = true;
@@ -1160,7 +1163,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     }
     if (drawAnyView == false)
         return;
-    viewsDrawModes &= effect->DrawModes;
+    viewsDrawModes &= drawModes;
 
     // Setup
     ScopeReadLock systemScope(SystemLocker);

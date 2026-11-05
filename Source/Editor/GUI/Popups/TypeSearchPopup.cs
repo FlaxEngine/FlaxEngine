@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using FlaxEditor.History;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -105,7 +104,7 @@ namespace FlaxEditor.GUI
                 if (_isValid(type))
                 {
                     var attributes = type.GetAttributes(true);
-                    if (IsHideAttributes(attributes))
+                    if (!ContainsHideAttribute(attributes))
                     {
                         var mType = type.Type;
                         if (mType != null)
@@ -115,7 +114,7 @@ namespace FlaxEditor.GUI
                                 continue;
 
                             // Skip if outer type is hidden
-                            if (mType.DeclaringType != null && IsHideAttributes(mType.DeclaringType.GetCustomAttributes(true)))
+                            if (mType.DeclaringType != null && ContainsHideAttribute(mType.DeclaringType.GetCustomAttributes(true)))
                                 continue;
 
                             // Blacklist some types
@@ -144,9 +143,9 @@ namespace FlaxEditor.GUI
             SortItems();
         }
 
-        private bool IsHideAttributes(object[] attributes)
+        private bool ContainsHideAttribute(object[] attributes)
         {
-            return attributes.FirstOrDefault(IsHideAttribute) == null;
+            return attributes.Length != 0 && attributes.FirstOrDefault(IsHideAttribute) != null;
         }
 
         private bool IsHideAttribute(object attr)
