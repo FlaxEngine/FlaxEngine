@@ -384,7 +384,7 @@ namespace FlaxEditor.SceneGraph.GUI
         }
 
         /// <inheritdoc />
-        protected override Color CacheTextColor()
+        protected override Color GetTextColor()
         {
             // Update node text color (based on ActorNode.IsActiveInHierarchy but with optimized logic a little)
             if (Parent is ActorTreeNode)
@@ -416,7 +416,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 return color;
             }
 
-            return base.CacheTextColor();
+            return base.GetTextColor();
         }
 
         /// <inheritdoc />

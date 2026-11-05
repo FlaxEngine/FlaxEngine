@@ -17,6 +17,7 @@ namespace FlaxEditor.Content
         public FileItem(string path)
         : base(path)
         {
+            ShowFileExtension = true;
         }
 
         /// <inheritdoc />

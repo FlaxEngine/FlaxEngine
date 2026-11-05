@@ -117,6 +117,15 @@ public sealed class ContentItemTreeNode : TreeNode, IContentItemOwner
     }
 
     /// <inheritdoc />
+    protected override Color GetTextColor()
+    {
+        var item = Item;
+        if (item.ShowFileExtension && string.IsNullOrEmpty(item.ShortName))
+            return Style.Current.ForegroundGrey; // Different color for extension-only files like .gitignore or .editorocnfig
+        return base.GetTextColor();
+    }
+
+    /// <inheritdoc />
     protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
     {
         if (button == MouseButton.Left)

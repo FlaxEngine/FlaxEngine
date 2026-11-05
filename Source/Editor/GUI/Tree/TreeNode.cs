@@ -593,10 +593,10 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <summary>
-        /// Caches the color of the text for this node. Called during update before children nodes but after parent node so it can reuse parent tree node data.
+        /// Gets the text color for the node.
         /// </summary>
         /// <returns>Text color.</returns>
-        protected virtual Color CacheTextColor()
+        protected virtual Color GetTextColor()
         {
             return Enabled ? TextColor : TextColor * 0.6f;
         }
@@ -739,8 +739,7 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Draw text
-            Color textColor = CacheTextColor();
-            Render2D.DrawText(TextFont.GetFont(), _text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(TextFont.GetFont(), _text, textRect, GetTextColor(), TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)

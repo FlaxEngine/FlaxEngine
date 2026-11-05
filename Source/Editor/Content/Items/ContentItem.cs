@@ -749,10 +749,15 @@ namespace FlaxEditor.Content
             }
 
             // Draw short name
-            Render2D.PushClip(ref textRect);
-            var scale = 0.95f * view.ViewScale;
-            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, scale);
-            Render2D.PopClip();
+            {
+                Render2D.PushClip(ref textRect);
+                var scale = 0.95f * view.ViewScale;
+                var color = style.Foreground;
+                if (ShowFileExtension && string.IsNullOrEmpty(ShortName))
+                    color = style.ForegroundGrey; // Different color for extension-only files like .gitignore or .editorocnfig
+                Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, color, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, scale);
+                Render2D.PopClip();
+            }
 
             if (IsBeingCut)
             {
@@ -852,7 +857,10 @@ namespace FlaxEditor.Content
             {
                 if (otherItem.IsFolder)
                     return 1;
-                return string.Compare(ShortName, otherItem.ShortName, StringComparison.InvariantCulture);
+                int result = string.Compare(ShortName, otherItem.ShortName, StringComparison.InvariantCulture);
+                if (result == 0)
+                    result = string.Compare(FileName, otherItem.FileName, StringComparison.InvariantCulture);
+                return result;
             }
 
             return base.Compare(other);
