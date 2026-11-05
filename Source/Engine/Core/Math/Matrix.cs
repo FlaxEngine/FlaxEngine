@@ -2092,7 +2092,20 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the created look-at matrix.</param>
         public static void LookAt(ref Float3 eye, ref Float3 target, ref Float3 up, out Matrix result)
         {
-            Float3.Subtract(ref target, ref eye, out var zaxis);
+            Float3.Subtract(ref target, ref eye, out var direction);
+            LookTo(ref eye, ref direction, ref up, out result);
+        }
+
+        /// <summary>
+        /// Creates a left-handed, look-to matrix from the eye position and the view direction (<see cref="LookAt(ref Float3, ref Float3, ref Float3, out Matrix)"/> with target = eye + direction, without the rounding of that sum far from the origin).
+        /// </summary>
+        /// <param name="eye">The position of the viewer's eye.</param>
+        /// <param name="direction">The view direction.</param>
+        /// <param name="up">The camera's up vector.</param>
+        /// <param name="result">When the method completes, contains the created look-to matrix.</param>
+        public static void LookTo(ref Float3 eye, ref Float3 direction, ref Float3 up, out Matrix result)
+        {
+            var zaxis = direction;
             zaxis.Normalize();
             Float3.Cross(ref up, ref zaxis, out var xaxis);
             xaxis.Normalize();
@@ -2128,6 +2141,19 @@ namespace FlaxEngine
         public static Matrix LookAt(Float3 eye, Float3 target, Float3 up)
         {
             LookAt(ref eye, ref target, ref up, out var result);
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a left-handed, look-to matrix from the eye position and the view direction.
+        /// </summary>
+        /// <param name="eye">The position of the viewer's eye.</param>
+        /// <param name="direction">The view direction.</param>
+        /// <param name="up">The camera's up vector.</param>
+        /// <returns>The created look-to matrix.</returns>
+        public static Matrix LookTo(Float3 eye, Float3 direction, Float3 up)
+        {
+            LookTo(ref eye, ref direction, ref up, out var result);
             return result;
         }
 
