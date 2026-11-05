@@ -129,6 +129,7 @@ void FontAsset::SetOptions(const FontOptions& value)
 Font* FontAsset::CreateFont(float size)
 {
     PROFILE_CPU();
+    PROFILE_MEM(UIFonts);
 
     if (WaitForLoaded())
         return nullptr;
@@ -197,6 +198,7 @@ FontAsset* FontAsset::GetRasterMode(FontRasterMode rasterMode)
 
 bool FontAsset::Init(const BytesContainer& fontFile)
 {
+    PROFILE_MEM(UIFonts);
     ScopeLock lock(Locker);
     unload(true);
     _fontFile.Copy(fontFile);

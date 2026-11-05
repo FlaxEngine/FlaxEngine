@@ -64,6 +64,7 @@ FontTextureAtlasSlot* FontTextureAtlas::AddEntry(uint32 width, uint32 height, co
     }
     if (!slot)
     {
+        PROFILE_MEM(UIFonts);
         slot = _atlas.Insert(width, height);
     }
 
@@ -225,6 +226,7 @@ void FontTextureAtlas::EnsureTextureCreated() const
     if (_texture->IsAllocated() == false && GPUDevice::Instance->GetRendererType() != RendererType::Null)
     {
         // Initialize atlas texture
+        PROFILE_MEM(UIFonts);
         if (_texture->Init(GPUTextureDescription::New2D(_width, _height, 1, _format, GPUTextureFlags::ShaderResource)))
         {
             LOG(Warning, "Cannot initialize font atlas texture.");
