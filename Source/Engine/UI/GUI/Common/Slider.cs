@@ -423,29 +423,26 @@ public class Slider : ContainerControl
     /// <inheritdoc />
     public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
     {
-        _isNavSliding = IsFocused && direction != NavDirection.None;
+        _isNavSliding = IsNavFocused;
 
         // Control slider via navigation actions
         if (_isNavSliding)
         {
-            bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft) &&
-                direction is NavDirection.Right or NavDirection.Left;
-            float thumbLocation = isHorizontal ? location.X : location.Y;
-            
-            float numLocation = WholeNumbers ? 1f : 0.1f;
-            var thumbValue = (thumbLocation < _thumbCenter ? -numLocation : numLocation);
+            bool isHorizontal = (Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft);
+            bool inputHorizontal = (direction is NavDirection.Left or NavDirection.Right);
+            bool inputVertical = (direction is NavDirection.Up or NavDirection.Down);
+            bool matchesAxis = (isHorizontal && inputHorizontal) || (!isHorizontal && inputVertical);
 
-            switch (isHorizontal, Direction)
+            if (matchesAxis)
             {
-                case (true, SliderDirection.HorizontalRight) or (false, SliderDirection.VerticalDown):
-                    Value += thumbValue;
-                    break;
+                float pointerPos = isHorizontal ? location.X : location.Y;
+                float step = WholeNumbers ? 1f : 0.1f;
+                float signedStep = (pointerPos < _thumbCenter) ? -step : step;
 
-                case (true, SliderDirection.HorizontalLeft) or (false, SliderDirection.VerticalUp):
-                    Value -= thumbValue;
-                    break;
+                bool growsForward = Direction is SliderDirection.HorizontalRight or SliderDirection.VerticalDown;
+                Value += growsForward ? signedStep : -signedStep;
 
-                default: break;
+                return this;
             }
         }
 
