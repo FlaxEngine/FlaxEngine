@@ -22,6 +22,7 @@ public class Tests : EngineModule
 
         options.PrivateDependencies.Add("ModelTool");
         options.PrivateDependencies.Add("ShadersCompilation");
+        options.PrivateDependencies.Add("ContentImporters");
     }
 
     /// <inheritdoc />
