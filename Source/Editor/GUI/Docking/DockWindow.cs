@@ -332,6 +332,12 @@ namespace FlaxEditor.GUI.Docking
             }
             else
             {
+                if (reason == ClosingReason.ScriptsReload && _dockedTo is FloatWindowDockPanel floatPanel)
+                {
+                    // Unlink the window to keep it alive during scripts reload
+                    floatPanel.UnlinkWindow();
+                }
+
                 // Undock
                 Undock();
 
@@ -379,8 +385,8 @@ namespace FlaxEditor.GUI.Docking
         protected virtual void Undock()
         {
             // Defocus itself
-            if (ContainsFocus)
-                Focus();
+            //if (ContainsFocus)
+            //    Focus();
             Defocus();
 
             // Call undock
