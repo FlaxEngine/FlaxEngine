@@ -461,6 +461,14 @@ public:
     API_FUNCTION() bool Init(API_PARAM(Ref) const GPUTextureDescription& desc);
 
     /// <summary>
+    /// Initializes a texture resource from the native resource created by the external code (eg. XR runtime swapchain image). The texture doesn't own the native resource memory. The native resource has to be in the render target state (or the depth write state for depth-stencil textures).
+    /// </summary>
+    /// <param name="desc">The texture description (must match the native resource, the format can be used to create views of the typeless resource).</param>
+    /// <param name="nativeResource">The native resource (eg. ID3D11Texture2D on DirectX 11, ID3D12Resource on DirectX 12 or VkImage on Vulkan).</param>
+    /// <returns>True if cannot create texture, otherwise false.</returns>
+    bool InitFromNative(const GPUTextureDescription& desc, void* nativeResource);
+
+    /// <summary>
     /// Creates new staging readback texture with the same dimensions and properties as a source texture (but without a data transferred; warning: caller must delete object).
     /// </summary>
     /// <returns>The staging readback texture.</returns>
@@ -566,6 +574,7 @@ public:
 
 protected:
     virtual bool OnInit() = 0;
+    virtual bool OnInitFromNative(void* nativeResource);
     uint64 calculateMemoryUsage() const;
     virtual void OnResidentMipsChanged() = 0;
 

@@ -22,6 +22,21 @@ public:
 public:
     void GetDriverVersion();
 
+    // Packs the locally unique identifier (LUID) into a single value (see GPUDeviceCreationHints::RequiredAdapterLuid).
+    static uint64 PackLuid(const LUID& luid)
+    {
+        return ((uint64)(uint32)luid.HighPart << 32) | (uint64)luid.LowPart;
+    }
+
+    // Gets the locally unique identifier (LUID) of the adapter packed into a single value.
+    uint64 GetLuid() const
+    {
+        return PackLuid(Description.AdapterLuid);
+    }
+
+    // Selects the adapter required by the graphics device creation hints (if any). Keeps the selected adapter if the required one is missing.
+    static void SelectRequired(const Array<GPUAdapterDX>& adapters, GPUAdapterDX& selectedAdapter);
+
 private:
     void SetDriverVersion(Version& ver);
 

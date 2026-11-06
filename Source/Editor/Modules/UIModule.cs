@@ -72,6 +72,17 @@ namespace FlaxEditor.Modules
         private Label _progressLabel;
         private ProgressBar _progressBar;
         private Button _outputLogButton;
+        private enum XRStatus
+        {
+            Disconnected,
+            Connecting,
+            HeadsetNotFound,
+            Ready,
+            Active,
+        }
+
+        private Label _xrStatusLabel;
+        private XRStatus? _xrStatus;
         private List<Status> _statusMessages;
         private int _statusID = 1;
         private ContentStats _contentStats;
@@ -180,6 +191,7 @@ namespace FlaxEditor.Modules
         private ToolStripButton _toolStripPlay;
         private ToolStripButton _toolStripPause;
         private ToolStripButton _toolStripStep;
+        private ToolStripButton _toolStripPlayVR;
 
         /// <summary>
         /// The main menu control.
@@ -305,6 +317,13 @@ namespace FlaxEditor.Modules
             _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
             _toolStripBuildScenes.Visible = Editor.Options.Options.General.BuildActions?.Length != 0;
             _toolStripCook.Enabled = Editor.Windows.GameCookerWin.CanBuild(Platform.PlatformType) && Editor.Windows.GameCookerWin.CanCook();
+            var xrConnecting = XR.IsConnecting;
+            _toolStripPlayVR.Visible = XR.IsEnabled;
+            _toolStripPlayVR.Enabled = !xrConnecting;
+            _toolStripPlayVR.Checked = XR.IsConnected && Editor.Options.Options.Interface.PlayInVR;
+            var playVRText = xrConnecting ? "VR..." : "VR";
+            if (_toolStripPlayVR.Text != playVRText)
+                _toolStripPlayVR.Text = playVRText;
             //
             var play = _toolStripPlay;
             var pause = _toolStripPause;
@@ -572,6 +591,20 @@ namespace FlaxEditor.Modules
             else if (ProgressVisible)
             {
                 UpdateStatusBar();
+            }
+
+            // Show XR runtime state
+            if (_xrStatusLabel != null)
+            {
+                var xrStatus = GetXRStatus();
+                if (xrStatus != _xrStatus)
+                {
+                    _xrStatus = xrStatus;
+                    _xrStatusLabel.Text = GetXRStatusText(xrStatus);
+                    _xrStatusLabel.TooltipText = xrStatus == XRStatus.Ready || xrStatus == XRStatus.Active ? "Head-mounted display: " + XR.SystemName : null;
+                    UpdateToolstrip();
+                }
+                _xrStatusLabel.Visible = xrStatus != XRStatus.Disconnected && !ProgressVisible;
             }
         }
 
@@ -912,6 +945,11 @@ namespace FlaxEditor.Modules
             _toolStripScale = ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale", ref inputOptions.ScaleMode);
             ToolStrip.AddSeparator();
 
+            // Play In VR
+            _toolStripPlayVR = ToolStrip.AddButton("VR", TogglePlayInVR);
+            _toolStripPlayVR.LinkTooltip("Play In VR - renders the game to the head-mounted display in play mode. Connects to the XR runtime if it was not running (eg. SteamVR started after the editor, not supported when using Vulkan)");
+            Editor.Options.OptionsChanged += options => { _toolStripPlayVR.Checked = XR.IsConnected && options.Interface.PlayInVR; };
+
             // Play
             _toolStripPlay = ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip("Play In Editor", ref inputOptions.Play);
             _toolStripPlay.ContextMenu = new ContextMenu();
@@ -983,6 +1021,19 @@ namespace FlaxEditor.Modules
             _outputLogButton.HoverBegin += () => StatusBar.TextColor = Style.Current.BackgroundSelected;
             _outputLogButton.HoverEnd += () => StatusBar.TextColor = defaultTextColor;
             _outputLogButton.Clicked += () => { Editor.Windows.OutputLogWin.FocusOrShow(); };
+
+            // XR runtime state
+            const float xrStatusWidth = 400.0f;
+            const float xrStatusRightMargin = 16.0f;
+            _xrStatusLabel = new Label
+            {
+                Visible = false,
+                Text = string.Empty,
+                HorizontalAlignment = TextAlignment.Far,
+                AnchorPreset = AnchorPresets.MiddleRight,
+                Parent = StatusBar,
+                Offsets = new Margin(-xrStatusWidth - xrStatusRightMargin, xrStatusWidth, StatusBar.DefaultHeight * -0.5f, StatusBar.DefaultHeight),
+            };
 
             // Progress bar with label
             const float progressBarWidth = 120.0f;
@@ -1268,6 +1319,46 @@ namespace FlaxEditor.Modules
             Editor.Options.Apply(options);
         }
 
+        private static XRStatus GetXRStatus()
+        {
+            if (XR.IsActive)
+                return XRStatus.Active;
+            if (XR.IsAvailable)
+                return XRStatus.Ready;
+            if (XR.IsConnected)
+                return XRStatus.HeadsetNotFound;
+            return XR.IsConnecting ? XRStatus.Connecting : XRStatus.Disconnected;
+        }
+
+        private static string GetXRStatusText(XRStatus status)
+        {
+            switch (status)
+            {
+            case XRStatus.Connecting: return "Connecting to XR runtime...";
+            case XRStatus.HeadsetNotFound: return string.Format("{0} {1}: Head-mounted display not found", XR.RuntimeName, XR.RuntimeVersion);
+            case XRStatus.Ready: return string.Format("{0} {1}: Ready", XR.RuntimeName, XR.RuntimeVersion);
+            case XRStatus.Active: return string.Format("{0} {1}: Active", XR.RuntimeName, XR.RuntimeVersion);
+            default: return string.Empty;
+            }
+        }
+
+        private void TogglePlayInVR()
+        {
+            var options = Editor.Options.Options;
+            if (XR.IsConnected)
+            {
+                options.Interface.PlayInVR = !options.Interface.PlayInVR;
+            }
+            else
+            {
+                // Connect to the XR runtime (eg. SteamVR was started after the editor) and play in VR once connected
+                XR.Reconnect();
+                options.Interface.PlayInVR = true;
+            }
+            Editor.Options.Apply(options);
+            UpdateToolstrip();
+        }
+
         private void SetGameWindowMode(InterfaceOptions.GameWindowMode newGameWindowMode)
         {
             var options = Editor.Options.Options;
@@ -1285,6 +1376,7 @@ namespace FlaxEditor.Modules
             StatusBar = null;
             _progressLabel = null;
             _progressBar = null;
+            _xrStatusLabel = null;
             _statusMessages = null;
 
             MenuFile = null;

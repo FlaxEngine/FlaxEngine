@@ -117,6 +117,43 @@ bool GPUTextureDX11::OnInit()
     return false;
 }
 
+bool GPUTextureDX11::OnInitFromNative(void* nativeResource)
+{
+    // Cache formats
+    const PixelFormat format = Format();
+    const DXGI_FORMAT dxgiFormatTypeless = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::MakeTypeless(format));
+    _dxgiFormatDSV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindDepthStencilFormat(format));
+    _dxgiFormatSRV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindShaderResourceFormat(format, _sRGB));
+    _dxgiFormatRTV = _dxgiFormatSRV;
+    _dxgiFormatUAV = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindUnorderedAccessFormat(format));
+
+    // Check if native texture matches the description (views can use a different format only if the texture is typeless)
+    auto texture = (ID3D11Texture2D*)nativeResource;
+    D3D11_TEXTURE2D_DESC textureDesc;
+    texture->GetDesc(&textureDesc);
+    if (textureDesc.Width != Width() || textureDesc.Height != Height() || textureDesc.ArraySize != ArraySize() || textureDesc.MipLevels != MipLevels() || textureDesc.SampleDesc.Count != (UINT)MultiSampleLevel())
+    {
+        LOG(Warning, "Native texture size doesn't match the description");
+        return true;
+    }
+    if (textureDesc.Format != dxgiFormatTypeless && textureDesc.Format != RenderToolsDX::ToDxgiFormat(format))
+    {
+        LOG(Warning, "Native texture format {0} doesn't match the description", (int32)textureDesc.Format);
+        return true;
+    }
+
+    // Use the native resource (owned by the external code)
+    _resource = texture;
+    _resource->AddRef();
+    _isNativeResource = true;
+    _memoryUsage = calculateMemoryUsage();
+
+    // Initialize handles to the resource
+    initHandles();
+
+    return false;
+}
+
 void GPUTextureDX11::OnResidentMipsChanged()
 {
     const int32 firstMipIndex = MipLevels() - ResidentMipLevels();
@@ -159,7 +196,17 @@ void GPUTextureDX11::OnReleaseGPU()
     _handleVolume.Release();
     _handleReadOnlyDepth.Release();
     _handleStencil.Release();
-    DX_SAFE_RELEASE_CHECK(_resource, 0);
+    if (_isNativeResource)
+    {
+        // Native resource is owned by the external code
+        _isNativeResource = false;
+        _resource->Release();
+        _resource = nullptr;
+    }
+    else
+    {
+        DX_SAFE_RELEASE_CHECK(_resource, 0);
+    }
 
     // Base
     GPUTexture::OnReleaseGPU();

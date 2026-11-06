@@ -6,9 +6,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Config/TimeSettings.h"
 #include "Engine/Serialization/Serialization.h"
-#if !USE_EDITOR
 #include "Engine/Engine/Engine.h"
-#endif
 
 namespace
 {
@@ -287,7 +285,9 @@ bool Time::OnBeginUpdate(double time)
     }
 #endif
 
-    if (Update.OnTickBegin(time, GetFps(UpdateFPS), MaxUpdateDeltaTime))
+    // Update every frame when using the custom frame pacing
+    const float updateFps = Engine::FramePacer.IsBinded() ? 0.0f : GetFps(UpdateFPS);
+    if (Update.OnTickBegin(time, updateFps, MaxUpdateDeltaTime))
     {
         Current = &Update;
         return true;
@@ -307,7 +307,9 @@ bool Time::OnBeginPhysics(double time)
 
 bool Time::OnBeginDraw(double time)
 {
-    if (Draw.OnTickBegin(time, GetFps(DrawFPS), 1.0f))
+    // Draw every frame when using the custom frame pacing
+    const float drawFps = Engine::FramePacer.IsBinded() ? 0.0f : GetFps(DrawFPS);
+    if (Draw.OnTickBegin(time, drawFps, 1.0f))
     {
         Current = &Draw;
         return true;

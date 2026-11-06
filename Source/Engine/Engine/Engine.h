@@ -70,6 +70,16 @@ public:
     static Action Draw;
 
     /// <summary>
+    /// Event called after frame rendering and presentation.
+    /// </summary>
+    static Action PostDraw;
+
+    /// <summary>
+    /// The custom frame pacing function called at the beginning of each game loop tick instead of the idle sleep (eg. to wait for the XR runtime frame timing). When set, the update and draw run every tick and the VSync is not used.
+    /// </summary>
+    static Function<void()> FramePacer;
+
+    /// <summary>
     /// Event called during game loop when application gets paused (engine tick will be postponed until unpause). Used on platforms that support only one app on screen.
     /// </summary>
     static Action Pause;
