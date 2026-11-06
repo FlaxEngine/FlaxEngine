@@ -656,20 +656,89 @@ int32 MaterialParams::GetVersionHash() const
     return _versionHash;
 }
 
+volatile int64 MaterialParams::OverrideVersion = 0;
+
+void MaterialParameter::SetIsOverride(bool value)
+{
+    if (_override != value)
+    {
+        _override = value;
+
+        // The parameter doesn't know its collection, so every collection's binding cache rebuilds (MaterialParams::SetOverride doesn't)
+        Platform::InterlockedIncrement(&MaterialParams::OverrideVersion);
+    }
+}
+
+void MaterialParams::SetOverride(MaterialParameter& param, bool value)
+{
+    ASSERT_LOW_LAYER(&param >= Array::Get() && &param < Array::Get() + Count());
+    if (param._override != value)
+    {
+        param._override = value;
+        Platform::InterlockedIncrement(&_layoutVersion);
+    }
+}
+
+void MaterialParams::BuildBindOwners(const MaterialParams* const* levels, int32 levelCount)
+{
+    const int32 count = Count();
+    _bindOwners.Resize(count, false);
+    for (int32 i = 0; i < count; i++)
+    {
+        // Same rule as the per-parameter walk: go down while this level doesn't override it and the next level matches
+        int32 level = 0;
+        while (level + 1 < levelCount && !levels[level]->At(i).IsOverride() && levels[level + 1]->Count() == count)
+            level++;
+        _bindOwners.Get()[i] = (byte)level;
+    }
+    for (int32 i = 0; i < levelCount; i++)
+    {
+        _bindLevels[i] = levels[i];
+        _bindLevelCounts[i] = levels[i]->Count();
+        _bindLevelVersions[i] = Platform::AtomicRead(&levels[i]->_layoutVersion);
+    }
+    _bindLevelCount = levelCount;
+}
+
 void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta& meta)
 {
     ASSERT(link && link->This);
-    const int32 count = link->This->Count();
-    for (int32 i = 0; i < count; i++)
-    {
-        MaterialParamsLink* l = link;
-        while (l->Down && !l->This->At(i).IsOverride() && l->Down->This->Count() == count)
-        {
-            l = l->Down;
-        }
+    MaterialParams* top = link->This;
+    const int32 count = top->Count();
 
-        l->This->At(i).Bind(meta);
+    // Gather the links' collections (instance, its base instances, the material)
+    const MaterialParams* levels[MaxBindLevels];
+    int32 levelCount = 0;
+    MaterialParamsLink* l = link;
+    for (; l && levelCount < MaxBindLevels; l = l->Down)
+        levels[levelCount++] = l->This;
+    if (l)
+    {
+        // Too deep to cache, walk the links per parameter
+        for (int32 i = 0; i < count; i++)
+        {
+            l = link;
+            while (l->Down && !l->This->At(i).IsOverride() && l->Down->This->Count() == count)
+                l = l->Down;
+            l->This->At(i).Bind(meta);
+        }
+        return;
     }
+
+    // Rebuild the owners when overrides, collections or counts changed since they were worked out (no lock: one binding thread only)
+    const int64 overrideVersion = Platform::AtomicRead(&OverrideVersion);
+    bool valid = top->_bindOverrideVersion == overrideVersion && top->_bindLevelCount == levelCount && top->_bindOwners.Count() == count;
+    for (int32 i = 0; valid && i < levelCount; i++)
+        valid = top->_bindLevels[i] == levels[i] && top->_bindLevelCounts[i] == levels[i]->Count() && top->_bindLevelVersions[i] == Platform::AtomicRead(&levels[i]->_layoutVersion);
+    if (!valid)
+    {
+        top->BuildBindOwners(levels, levelCount);
+        top->_bindOverrideVersion = overrideVersion;
+    }
+
+    const byte* owners = top->_bindOwners.Get();
+    for (int32 i = 0; i < count; i++)
+        levels[owners[i]]->At(i).Bind(meta);
 }
 
 void MaterialParams::Clone(MaterialParams& result)
@@ -684,12 +753,14 @@ void MaterialParams::Clone(MaterialParams& result)
     }
 
     result._versionHash = _versionHash;
+    Platform::InterlockedIncrement(&result._layoutVersion);
 }
 
 void MaterialParams::Dispose()
 {
     Resize(0);
     _versionHash = 0;
+    Platform::InterlockedIncrement(&_layoutVersion);
 }
 
 bool MaterialParams::Load(ReadStream* stream)
@@ -944,6 +1015,7 @@ bool MaterialParams::Load(ReadStream* stream)
     }
 
     UpdateHash();
+    Platform::InterlockedIncrement(&_layoutVersion);
 
     return result;
 }

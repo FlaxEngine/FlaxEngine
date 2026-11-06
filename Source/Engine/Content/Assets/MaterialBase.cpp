@@ -35,7 +35,7 @@ void MaterialBase::SetParameterValue(const StringView& name, const Variant& valu
     if (param)
     {
         param->SetValue(value);
-        param->SetIsOverride(true);
+        Params.SetOverride(*param, true);
     }
     else if (warnIfMissing)
     {
