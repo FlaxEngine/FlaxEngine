@@ -427,10 +427,10 @@ namespace Flax.Build.Platforms
                         args.Add("-std=c++14");
                         break;
                     case CppVersion.Cpp17:
-                    case CppVersion.Latest:
                         args.Add("-std=c++17");
                         break;
                     case CppVersion.Cpp20:
+                    case CppVersion.Latest:
                         args.Add("-std=c++20");
                         break;
                     }

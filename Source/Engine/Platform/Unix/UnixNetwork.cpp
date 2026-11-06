@@ -5,7 +5,7 @@
 #include "UnixNetwork.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

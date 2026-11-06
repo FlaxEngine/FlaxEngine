@@ -13,7 +13,7 @@
 #include "Engine/Utilities/StringConverter.h"
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <cerrno>
 #if HAS_DIRS
 #include <dirent.h>

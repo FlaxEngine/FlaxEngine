@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <cerrno>
 #include <string.h>
 #include <stdlib.h>
