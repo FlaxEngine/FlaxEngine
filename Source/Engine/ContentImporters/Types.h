@@ -82,6 +82,7 @@ public:
     /// </summary>
     ~CreateAssetContext()
     {
+        Data.Header.DeleteChunks();
     }
 
 public:
