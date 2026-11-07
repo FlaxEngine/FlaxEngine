@@ -27,7 +27,7 @@ private:
     Array<GPUTask*> _buffers[2];
     int32 _bufferIndex = 0;
 
-    // Ends a task that ended while listed, now that nothing lists it (see GPUTask::_listed).
+    // Drops a task from the list; a task whose deletion came due while listed is deleted now (see GPUTask::_listed).
     static void Unlist(GPUTask* task);
 
 public:

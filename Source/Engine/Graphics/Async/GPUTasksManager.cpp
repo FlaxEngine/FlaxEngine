@@ -49,12 +49,12 @@ void GPUTask::Enqueue()
     GPUDevice::Instance->GetTasksManager()->_tasks.Add(this);
 }
 
-void GPUTask::OnEnd()
+void GPUTask::OnDeleteObject()
 {
-    // While the tasks manager lists the task it ends the task when it drops it (see GPUTasksManager::Unlist)
+    // While the tasks manager lists the task it reads the task, so the manager deletes it when it drops it (see GPUTasksManager::Unlist)
     if (Platform::InterlockedCompareExchange(&_listed, 2, 1) == 1)
         return;
-    Task::OnEnd();
+    Task::OnDeleteObject();
 }
 
 void GPUTask::OnCancel()
@@ -96,11 +96,11 @@ void GPUTasksManager::Dispose()
     // Cancel all performed tasks (that are waiting for sync)
     SAFE_DELETE(_executor);
 
-    // Cleanup (the tasks are no longer listed: canceling them ends them now)
+    // Cleanup (the tasks are no longer listed: a task whose deletion came due is deleted, the others are canceled)
     for (GPUTask* task : _buffers[0])
-        Platform::AtomicStore(&task->_listed, 0);
+        Unlist(task);
     for (GPUTask* task : _buffers[1])
-        Platform::AtomicStore(&task->_listed, 0);
+        Unlist(task);
     Task::CancelAll(_buffers[0]);
     Task::CancelAll(_buffers[1]);
     _bufferIndex = 0;
@@ -110,7 +110,7 @@ void GPUTasksManager::Dispose()
     {
         for (std::size_t i = 0; i != count; i++)
         {
-            Platform::AtomicStore(&tasks[i]->_listed, 0);
+            Unlist(tasks[i]);
             tasks[i]->Cancel();
         }
     }
@@ -118,9 +118,9 @@ void GPUTasksManager::Dispose()
 
 void GPUTasksManager::Unlist(GPUTask* task)
 {
-    // A task that ended while listed is ended (deleted) now that nothing lists it
+    // A task whose deletion came due while listed is deleted now that nothing lists it
     if (Platform::InterlockedExchange(&task->_listed, 0) == 2)
-        task->Task::OnEnd();
+        task->DeleteObject();
 }
 
 void GPUTasksManager::FrameBegin()
