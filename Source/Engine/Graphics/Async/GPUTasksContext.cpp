@@ -33,7 +33,8 @@ GPUTasksContext::~GPUTasksContext()
     for (int32 i = 0; i < tasks.Count(); i++)
     {
         auto task = tasks[i];
-        if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
+        // Only tasks still waiting for a sync: canceled or failed ones can be in the list until the next OnFrameBegin
+        if (task->GetSyncPoint() <= _currentSyncPoint && task->IsSyncing())
         {
             if (!Engine::IsRequestingExit)
                 LOG(Warning, "'{0}' has been canceled before a sync", task->ToString());
@@ -50,14 +51,22 @@ void GPUTasksContext::Run(GPUTask* task)
 {
     ASSERT(task != nullptr);
 
-    task->Execute(this);
-    //if (task->GetSyncStart() != 0)
+    // A task canceled (or taken) after RequestWork picked it is skipped: the canceling thread ends it
+    if (!task->Execute(this))
+        return;
+
+    // Keep only the task that waits for a sync. A task that already ended (finished, failed or canceled) is queued for deletion,
+    // so the list would hold a pointer to the deleted object when the next frame comes after its time to live (eg. after a long
+    // main thread stall).
+    if (task->IsSyncing())
         _tasksSyncing.Add(task);
+    else if (task->GetState() == TaskState::Finished)
+        _totalTasksDoneCount++;
 }
 
 void GPUTasksContext::OnCancelSync(GPUTask* task)
 {
-    _tasksSyncing.Remove(task);
+    // Called from the thread canceling the task, so it doesn't touch _tasksSyncing (owned by the rendering thread): OnFrameBegin drops canceled tasks
     if (!Engine::IsRequestingExit)
         LOG(Warning, "'{0}' has been canceled before a sync", task->ToString());
 }
@@ -81,6 +90,9 @@ void GPUTasksContext::OnFrameBegin()
         if (task->GetSyncPoint() <= _currentSyncPoint && state != TaskState::Finished)
         {
             task->Sync();
+
+            // The sync ends the task and queues it for deletion, so remove it from the list now and not in the next frame
+            state = task->GetState();
         }
         if (state == TaskState::Failed || state == TaskState::Canceled)
         {
