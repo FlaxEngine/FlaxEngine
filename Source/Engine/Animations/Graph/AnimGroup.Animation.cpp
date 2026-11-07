@@ -2872,7 +2872,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const auto mask = node->Assets.Count() > 0 ? node->Assets[0].As<SkeletonMask>() : nullptr;
             if (mask && !mask->WaitForLoaded())
                 blendMask = &mask->GetNodesMask();
-            const float maskScale = node->Values.Count() > 3 ? (float)node->Values[3] : 1.0f;
+            const float maskScale = node->Values.Count() > 3 ? (float)tryGetValue(node->TryGetBox(4), node->Values[3]) : 1.0f;
             Inertialization::Start(previous, bucket.HistoryCount > 1 ? beforePrevious : previous, nodes->Nodes.Get(), nodesCount, bucket.PreviousDeltaTime, requestTime, offsets, blendMask, maskScale);
             bucket.BlendDuration = requestTime;
             bucket.BlendPosition = 0.0f;

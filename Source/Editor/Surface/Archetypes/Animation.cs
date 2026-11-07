@@ -1180,8 +1180,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
                     NodeElementArchetype.Factory.Input(1, "Request", true, typeof(bool), 2, 0),
                     NodeElementArchetype.Factory.Input(2, "Blend Time", true, typeof(float), 3, 1),
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 3, "Mask Time Scale:", tooltip: "The share of the blend time the masked nodes take (eg. 0.5 for half)."),
-                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 3, 3, -1, 0.0f, 1.0f),
+                    NodeElementArchetype.Factory.Input(3, "Mask Time Scale", true, typeof(float), 4, 3),
                     NodeElementArchetype.Factory.Asset(0, Surface.Constants.LayoutOffsetY * 4, 2, typeof(SkeletonMask)),
                 }
             },
