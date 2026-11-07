@@ -572,6 +572,15 @@ public:
         int32 NodeIndex;
     };
 
+    struct LayeredBlendData
+    {
+        // Matches TransformNodeData's (the branch root)
+        int32 NodeIndex;
+        // The node weights read from the node's text (one per skeleton node), or null to use the branch and the mask
+        float* NodeWeights;
+        int32 NodeWeightsCount;
+    };
+
     struct CopyNodeData
     {
         int32 SrcNodeIndex;
@@ -594,6 +603,7 @@ public:
             CurveData Curve;
             AnimationGraphFunctionData AnimationGraphFunction;
             TransformNodeData TransformNode;
+            LayeredBlendData LayeredBlend;
             CopyNodeData CopyNode;
         };
     };

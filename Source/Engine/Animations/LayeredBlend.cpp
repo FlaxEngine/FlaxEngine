@@ -1,6 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "LayeredBlend.h"
+#include "Engine/Platform/StringUtils.h"
+#include "Engine/Core/Types/String.h"
 #include "Config.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
@@ -99,4 +101,47 @@ void LayeredBlend::Blend(const SkeletonNode* nodes, int32 nodesCount, const Tran
         Vector3::Lerp(base.Translation, layer.Translation, w, out.Translation);
         Float3::Lerp(base.Scale, layer.Scale, w, out.Scale);
     }
+}
+
+bool LayeredBlend::ParseNodeWeights(const SkeletonNode* nodes, int32 nodesCount, const StringView& text, float* outWeights)
+{
+    for (int32 i = 0; i < nodesCount; i++)
+        outWeights[i] = 0.0f;
+    bool any = false;
+    const Char* at = text.Get();
+    const Char* end = at + text.Length();
+    auto isPairSeparator = [](Char c) { return c == ',' || c == ';' || c == '\n' || c == '\r'; };
+    auto isSpace = [](Char c) { return c == ' ' || c == '\t' || c == ':' || c == '='; };
+    while (at < end)
+    {
+        // One pair: a name, then a weight
+        while (at < end && (isPairSeparator(*at) || isSpace(*at)))
+            at++;
+        const Char* nameStart = at;
+        while (at < end && !isPairSeparator(*at) && !isSpace(*at))
+            at++;
+        const StringView name(nameStart, (int32)(at - nameStart));
+        while (at < end && isSpace(*at))
+            at++;
+        const Char* valueStart = at;
+        while (at < end && !isPairSeparator(*at) && !isSpace(*at))
+            at++;
+        const StringView value(valueStart, (int32)(at - valueStart));
+        if (name.IsEmpty() || value.IsEmpty())
+            continue;
+        float weight;
+        const String valueText(value);
+        if (StringUtils::Parse(valueText.Get(), &weight))
+            continue;
+        for (int32 i = 0; i < nodesCount; i++)
+        {
+            if (nodes[i].Name == name)
+            {
+                outWeights[i] = Math::Saturate(weight);
+                any = true;
+                break;
+            }
+        }
+    }
+    return any;
 }

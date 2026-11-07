@@ -1167,7 +1167,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Description = "Blends a layer pose over the base pose per bone, from a skeleton branch and/or a skeleton mask",
                 Create = (id, context, arch, groupArch) => new SkeletonMaskSample(id, context, arch, groupArch),
                 Flags = NodeFlags.AnimGraph,
-                Size = new Float2(270, 230),
+                Size = new Float2(270, 290),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Branch root node
@@ -1175,6 +1175,7 @@ namespace FlaxEditor.Surface.Archetypes
                     1.0f, // Alpha
                     0, // Ramp length
                     true, // Mesh space rotation
+                    string.Empty, // Node weights
                 },
                 Elements = new[]
                 {
@@ -1190,6 +1191,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 6, "Mesh Space Rotation:", 140.0f),
                     NodeElementArchetype.Factory.Bool(140, Surface.Constants.LayoutOffsetY * 6, 4),
                     NodeElementArchetype.Factory.Asset(0, Surface.Constants.LayoutOffsetY * 7, 1, typeof(SkeletonMask)),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 12, "Node Weights:", tooltip: "Optional node name and weight pairs (eg. spine_01 0.1, spine_02 0.2), replacing the branch root's ramp; nodes not listed get no weight."),
+                    NodeElementArchetype.Factory.TextBox(100, Surface.Constants.LayoutOffsetY * 12, 160, TextBox.DefaultHeight, 5, false),
                 }
             },
         };

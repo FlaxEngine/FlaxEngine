@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Collections/BitArray.h"
 
 struct SkeletonNode;
@@ -26,6 +27,16 @@ public:
     /// <param name="mask">The optional nodes mask (one bit per node). Can be null.</param>
     /// <param name="outWeights">The output weights (one per node, in range 0-1).</param>
     static void ComputeWeights(const SkeletonNode* nodes, int32 nodesCount, int32 branchRoot, int32 rampLength, const BitArray<>* mask, float* outWeights);
+
+    /// <summary>
+    /// Reads per-node weights from text: node name and weight pairs (eg. "spine_01 0.1, spine_02 0.2" or one pair per line; a name and its weight are split by spaces, a tab, ':' or '='; pairs by ',', ';' or new lines). Nodes not listed get no weight; names the skeleton doesn't have are skipped.
+    /// </summary>
+    /// <param name="nodes">The skeleton nodes.</param>
+    /// <param name="nodesCount">The amount of skeleton nodes.</param>
+    /// <param name="text">The node weights text.</param>
+    /// <param name="outWeights">The output weights (one per node, in range 0-1).</param>
+    /// <returns>True if any node got a weight from the text, otherwise false (outWeights is left all zero).</returns>
+    static bool ParseNodeWeights(const SkeletonNode* nodes, int32 nodesCount, const StringView& text, float* outWeights);
 
     /// <summary>
     /// Blends the layer pose over the base pose using per-node weights scaled by alpha. Translation and scale always blend in the node local space.

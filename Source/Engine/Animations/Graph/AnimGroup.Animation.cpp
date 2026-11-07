@@ -2792,7 +2792,15 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         weights.Resize(nodesCount);
         const int32 rampLength = node->Values.Count() > 3 ? (int32)node->Values[3] : 0;
         const bool meshSpaceRotation = node->Values.Count() > 4 ? (bool)node->Values[4] : true;
-        LayeredBlend::ComputeWeights(skeletonNodes.Get(), nodesCount, node->Data.TransformNode.NodeIndex, rampLength, nodesMask, weights.Get());
+        const auto& layered = node->Data.LayeredBlend;
+        if (layered.NodeWeights && layered.NodeWeightsCount >= nodesCount)
+        {
+            // The node weights from the node's text, within the mask (if any)
+            for (int32 i = 0; i < nodesCount; i++)
+                weights[i] = !nodesMask || nodesMask->Get(i) ? layered.NodeWeights[i] : 0.0f;
+        }
+        else
+            LayeredBlend::ComputeWeights(skeletonNodes.Get(), nodesCount, node->Data.TransformNode.NodeIndex, rampLength, nodesMask, weights.Get());
         LayeredBlend::Blend(skeletonNodes.Get(), nodesCount, nodesA->Nodes.Get(), nodesB->Nodes.Get(), weights.Get(), alpha, meshSpaceRotation, nodes->Nodes.Get());
         for (int32 i = nodesCount; i < nodes->Nodes.Count(); i++)
             nodes->Nodes[i] = nodesA->Nodes[i];

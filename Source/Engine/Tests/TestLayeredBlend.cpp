@@ -117,6 +117,25 @@ TEST_CASE("LayeredBlend")
             CHECK(weights[i] == 1.0f);
     }
 
+    SECTION("Node Weights")
+    {
+        // A blend profile's weights by node name; unlisted nodes get none, unknown names are skipped
+        const Char* names[Count] = { TEXT("root"), TEXT("pelvis"), TEXT("spine"), TEXT("chest"), TEXT("hand"), TEXT("thigh") };
+        for (int32 i = 0; i < Count; i++)
+            nodes[i].Name = names[i];
+        float weights[Count];
+        CHECK(LayeredBlend::ParseNodeWeights(nodes.Get(), Count, TEXT("spine 0.25, chest=0.5; hand:1\nnot_a_node 0.7"), weights));
+        CHECK(Math::NearEqual(weights[Spine], 0.25f));
+        CHECK(Math::NearEqual(weights[Chest], 0.5f));
+        CHECK(Math::NearEqual(weights[Hand], 1.0f));
+        CHECK(Math::NearEqual(weights[Pelvis], 0.0f));
+        CHECK(Math::NearEqual(weights[Thigh], 0.0f));
+        CHECK(!LayeredBlend::ParseNodeWeights(nodes.Get(), Count, TEXT(""), weights));
+        CHECK(!LayeredBlend::ParseNodeWeights(nodes.Get(), Count, TEXT("not_a_node 1"), weights));
+        CHECK(LayeredBlend::ParseNodeWeights(nodes.Get(), Count, TEXT("chest 3"), weights));
+        CHECK(Math::NearEqual(weights[Chest], 1.0f));
+    }
+
     SECTION("Mesh Space Rotation")
     {
         float weights[Count];

@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
+#include "Engine/Animations/LayeredBlend.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Content/Assets/SkeletonMask.h"
@@ -362,6 +363,24 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             {
                 n->Assets.Resize(1);
                 n->Assets[0] = (Asset*)Content::LoadAsync<SkeletonMask>((Guid)n->Values[1]);
+
+                // Per-node weights given as text replace the branch's ramp (eg. a blend profile's node weights)
+                n->Data.LayeredBlend.NodeWeights = nullptr;
+                n->Data.LayeredBlend.NodeWeightsCount = 0;
+                const StringView weightsText = n->Values.Count() > 5 ? (StringView)n->Values[5] : StringView::Empty;
+                if (weightsText.HasChars() && _graph->BaseModel && !_graph->BaseModel->WaitForLoaded())
+                {
+                    const auto& skeletonNodes = _graph->BaseModel->Skeleton.Nodes;
+                    const int32 count = skeletonNodes.Count();
+                    auto weights = (float*)Allocator::Allocate(sizeof(float) * count);
+                    if (LayeredBlend::ParseNodeWeights(skeletonNodes.Get(), count, weightsText, weights))
+                    {
+                        n->Data.LayeredBlend.NodeWeights = weights;
+                        n->Data.LayeredBlend.NodeWeightsCount = count;
+                    }
+                    else
+                        Allocator::Free(weights);
+                }
             }
             break;
         }
