@@ -280,6 +280,36 @@ TEST_CASE("OrientationWarp")
         CHECK(Math::NearEqual(OrientationWarp::GetSpeedWeight(500.0f, 80.0f), 1.0f));
     }
 
+    SECTION("Clamp angle")
+    {
+        CHECK(Math::NearEqual(OrientationWarp::ClampAngle(100.0f, 0.0f), 100.0f));
+        CHECK(Math::NearEqual(OrientationWarp::ClampAngle(100.0f, 90.0f), 90.0f));
+        CHECK(Math::NearEqual(OrientationWarp::ClampAngle(-100.0f, 90.0f), -90.0f));
+        CHECK(Math::NearEqual(OrientationWarp::ClampAngle(45.0f, 180.0f), 45.0f));
+    }
+
+    SECTION("Interp angle")
+    {
+        // No speed: straight to the target
+        CHECK(Math::NearEqual(OrientationWarp::InterpAngle(0.0f, 40.0f, 0.0f, 0.1f), 40.0f));
+        // A tenth of the way at speed 10 over a hundredth of a second
+        CHECK(Math::NearEqual(OrientationWarp::InterpAngle(0.0f, 40.0f, 10.0f, 0.01f), 4.0f));
+        // Never past the target
+        CHECK(Math::NearEqual(OrientationWarp::InterpAngle(0.0f, 40.0f, 10.0f, 1.0f), 40.0f));
+        // The short way round across the back: 170 to -170 is 20 degrees, half of it here
+        CHECK(Math::NearEqual(Math::Abs(OrientationWarp::InterpAngle(170.0f, -170.0f, 10.0f, 0.05f)), 180.0f));
+        float angle = 170.0f;
+        float travelled = 0.0f;
+        for (int32 i = 0; i < 120; i++)
+        {
+            const float next = OrientationWarp::InterpAngle(angle, -170.0f, 10.0f, 1.0f / 60.0f);
+            travelled += Math::Abs(Math::UnwindDegrees(next - angle));
+            angle = next;
+        }
+        CHECK(Math::NearEqual(angle, -170.0f, 0.1f));
+        CHECK(Math::NearEqual(travelled, 20.0f, 0.1f));
+    }
+
     SECTION("Unset nodes leave the pose alone")
     {
         Transform pose[Count];

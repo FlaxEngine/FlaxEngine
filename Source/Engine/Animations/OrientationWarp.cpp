@@ -44,6 +44,22 @@ float OrientationWarp::GetSpeedWeight(float speed, float minSpeed)
     return Math::Saturate((speed - minSpeed) / (minSpeed * 0.25f));
 }
 
+float OrientationWarp::ClampAngle(float angle, float maxDegrees)
+{
+    if (maxDegrees <= 0.0f)
+        return angle;
+    return Math::Clamp(angle, -maxDegrees, maxDegrees);
+}
+
+float OrientationWarp::InterpAngle(float current, float target, float speed, float deltaTime)
+{
+    if (speed <= 0.0f)
+        return Math::UnwindDegrees(target);
+    const float difference = Math::UnwindDegrees(target - current);
+    const float share = Math::Saturate(speed * Math::Max(deltaTime, 0.0f));
+    return Math::UnwindDegrees(current + difference * share);
+}
+
 void OrientationWarp::Warp(const SkeletonNode* nodes, int32 nodesCount, const Settings& settings, float angle, Transform* pose)
 {
     if (nodesCount <= 0 || Math::IsZero(angle))

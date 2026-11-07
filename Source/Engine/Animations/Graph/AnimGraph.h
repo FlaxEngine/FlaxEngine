@@ -314,6 +314,12 @@ public:
         float Data[4];
     };
 
+    struct OrientationWarpBucket
+    {
+        float Angle;
+        uint64 LastUpdateFrame;
+    };
+
     struct SpringBonePhysicsBucket
     {
         uint64 LastUpdateFrame;
@@ -340,6 +346,7 @@ public:
             SlotBucket Slot;
             InstanceDataBucket InstanceData;
             SpringBonePhysicsBucket SpringBonePhysics;
+            OrientationWarpBucket OrientationWarp;
         };
     };
 

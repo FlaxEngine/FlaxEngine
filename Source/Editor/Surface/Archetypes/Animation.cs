@@ -1151,7 +1151,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Orientation Warp",
                 Description = "Turns the lower body toward the movement direction while the upper body keeps its facing",
                 Flags = NodeFlags.AnimGraph | NodeFlags.FixedSize,
-                Size = new Float2(270, 265),
+                Size = new Float2(270, 325),
                 DefaultValues = new object[]
                 {
                     string.Empty, // Body root node
@@ -1164,6 +1164,9 @@ namespace FlaxEditor.Surface.Archetypes
                     0.0f, // Speed
                     0.0f, // Min speed
                     0.75f, // Distribution
+                    0.0f, // Rotation interp speed
+                    0.0f, // Max correction
+                    false, // Use root motion speed
                 },
                 Elements = new[]
                 {
@@ -1186,6 +1189,12 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 9, 150, 4),
                     NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 10, "Distribution:", tooltip: "0: first spine node turns back fully. 1: even spread."),
                     NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 10, 9, -1, 0.0f, 1.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 11, "Interp Speed:", tooltip: "How fast the angle follows its input, the short way round. 0 to follow it at once."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 11, 10, -1, 0.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 12, "Max Correction:", tooltip: "The largest angle either way, in degrees. 0 for no limit."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 12, 11, -1, 0.0f, 180.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 13, "Root Motion Speed:", tooltip: "Use the input pose's own root motion speed instead of the Speed input for the minimum speed."),
+                    NodeElementArchetype.Factory.Bool(110, Surface.Constants.LayoutOffsetY * 13, 12),
                 }
             },
             new NodeArchetype

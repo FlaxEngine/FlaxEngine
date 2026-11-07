@@ -2720,12 +2720,31 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         auto input = tryGetValue(node->GetBox(1), Value::Null);
         const auto& data = node->Data.OrientationWarp;
-        const float angle = (float)tryGetValue(node->GetBox(2), node->Values[5]);
         const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[6]));
-        const float speed = (float)tryGetValue(node->GetBox(4), node->Values[7]);
         const float minSpeed = (float)node->Values[8];
+        const float interpSpeed = node->Values.Count() > 10 ? (float)node->Values[10] : 0.0f;
+        const float maxCorrection = node->Values.Count() > 11 ? (float)node->Values[11] : 0.0f;
+        const bool rootMotionSpeed = node->Values.Count() > 12 && (bool)node->Values[12];
 
-        // Off below the minimum speed (eg. when standing still), fading in above it
+        // The angle, clamped to the largest correction, and eased toward from where it was last update (the short way
+        // round); a node that wasn't updated last frame starts where it's asked to be
+        auto& bucket = context.Data->State[node->BucketIndex].OrientationWarp;
+        const float target = OrientationWarp::ClampAngle(Math::UnwindDegrees((float)tryGetValue(node->GetBox(2), node->Values[5])), maxCorrection);
+        if (bucket.LastUpdateFrame + 1 != context.CurrentFrameIndex && bucket.LastUpdateFrame != context.CurrentFrameIndex)
+            bucket.Angle = target;
+        else if (bucket.LastUpdateFrame != context.CurrentFrameIndex)
+            bucket.Angle = OrientationWarp::InterpAngle(bucket.Angle, target, interpSpeed, context.DeltaTime);
+        bucket.LastUpdateFrame = context.CurrentFrameIndex;
+        const float angle = bucket.Angle;
+
+        // Off below the minimum speed (eg. when standing still), fading in above it: the speed given, or the input pose's
+        // own root motion speed (how fast the clip itself moves)
+        float speed = (float)tryGetValue(node->GetBox(4), node->Values[7]);
+        if (rootMotionSpeed)
+        {
+            const AnimGraphImpulse* inputPose = ANIM_GRAPH_IS_VALID_PTR(input) ? (AnimGraphImpulse*)input.AsPointer : nullptr;
+            speed = inputPose && context.DeltaTime > 0.0f ? (float)inputPose->RootMotion.Translation.Length() / context.DeltaTime : 0.0f;
+        }
         const float warpAngle = angle * alpha * OrientationWarp::GetSpeedWeight(speed, minSpeed);
         if (Math::IsZero(warpAngle) || !_graph.BaseModel)
         {

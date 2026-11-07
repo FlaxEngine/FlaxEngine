@@ -73,6 +73,24 @@ public:
     static float GetSpeedWeight(float speed, float minSpeed);
 
     /// <summary>
+    /// Clamps the warp angle to the given limit either way (in degrees). A limit of 0 or less leaves the angle as it is.
+    /// </summary>
+    /// <param name="angle">The angle (in degrees).</param>
+    /// <param name="maxDegrees">The largest correction allowed either way.</param>
+    /// <returns>The clamped angle.</returns>
+    static float ClampAngle(float angle, float maxDegrees);
+
+    /// <summary>
+    /// Moves the current warp angle toward the target one by the given interpolation speed, the short way round (so going from 170 to -170 turns 20 degrees, not 340). Each update closes the share speed * deltaTime of the remaining difference (all of it once that reaches 1). A speed of 0 or less goes straight to the target.
+    /// </summary>
+    /// <param name="current">The current angle (in degrees).</param>
+    /// <param name="target">The target angle (in degrees).</param>
+    /// <param name="speed">The interpolation speed (per second).</param>
+    /// <param name="deltaTime">The update delta time (in seconds).</param>
+    /// <returns>The new angle (in degrees), wrapped to -180..180.</returns>
+    static float InterpAngle(float current, float target, float speed, float deltaTime);
+
+    /// <summary>
     /// Warps the pose in place.
     /// </summary>
     /// <param name="nodes">The skeleton nodes (sorted so parents come before their children).</param>
