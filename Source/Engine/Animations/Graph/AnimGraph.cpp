@@ -151,6 +151,10 @@ AnimGraphNode::~AnimGraphNode()
         case 34:
             Allocator::Free(Data.State.Transitions);
             break;
+        // Layered Blend
+        case 38:
+            Allocator::Free(Data.LayeredBlend.NodeWeights);
+            break;
         }
         break;
     }
