@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Collections/BitArray.h"
 
 /// <summary>
 /// Inertialization: a blend that switches straight to the new pose and hides the switch by adding the difference between the old and the new pose on top of it, decaying to zero over the blend time.
@@ -67,7 +68,14 @@ public:
     /// <param name="previousDeltaTime">The time between the two output poses (in seconds).</param>
     /// <param name="duration">The blend time (in seconds).</param>
     /// <param name="offsets">The output offsets (one per bone).</param>
-    static void Start(const Transform* previous, const Transform* beforePrevious, const Transform* target, int32 count, float previousDeltaTime, float duration, BoneOffset* offsets);
+    /// <param name="mask">The bones that blend over a share of the blend time (one bit per bone, eg. a skeleton mask's nodes). Can be null, then all bones blend over the whole time.</param>
+    /// <param name="maskScale">The share of the blend time the masked bones blend over (eg. 0.5 to have the feet settle in half the time). Values of 1 or more blend like the rest.</param>
+    static void Start(const Transform* previous, const Transform* beforePrevious, const Transform* target, int32 count, float previousDeltaTime, float duration, BoneOffset* offsets, const BitArray<>* mask = nullptr, float maskScale = 1.0f);
+
+    /// <summary>
+    /// Gets a bone's blend time: the masked bones blend over the scaled time, never less than a small minimum.
+    /// </summary>
+    static float GetBoneDuration(float duration, bool masked, float maskScale);
 
     /// <summary>
     /// Adds the decayed offsets on top of the pose.

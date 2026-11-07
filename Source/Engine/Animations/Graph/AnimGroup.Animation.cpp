@@ -2867,7 +2867,13 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // Note: zero time requests are ignored (they are plain cuts) and root motion isn't blended (it changes at once)
         if (requestTime > ZeroTolerance && bucket.HistoryCount > 0)
         {
-            Inertialization::Start(previous, bucket.HistoryCount > 1 ? beforePrevious : previous, nodes->Nodes.Get(), nodesCount, bucket.PreviousDeltaTime, requestTime, offsets);
+            // The bones in the blend mask (if any) settle over a share of the time (eg. the feet faster than the body)
+            const BitArray<>* blendMask = nullptr;
+            const auto mask = node->Assets.Count() > 0 ? node->Assets[0].As<SkeletonMask>() : nullptr;
+            if (mask && !mask->WaitForLoaded())
+                blendMask = &mask->GetNodesMask();
+            const float maskScale = node->Values.Count() > 3 ? (float)node->Values[3] : 1.0f;
+            Inertialization::Start(previous, bucket.HistoryCount > 1 ? beforePrevious : previous, nodes->Nodes.Get(), nodesCount, bucket.PreviousDeltaTime, requestTime, offsets, blendMask, maskScale);
             bucket.BlendDuration = requestTime;
             bucket.BlendPosition = 0.0f;
         }

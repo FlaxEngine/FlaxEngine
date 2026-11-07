@@ -81,10 +81,20 @@ float Inertialization::Curve::Evaluate(float time) const
     return (((C5 * time + C4) * time + C3) * time * time + C1) * time + C0;
 }
 
-void Inertialization::Start(const Transform* previous, const Transform* beforePrevious, const Transform* target, int32 count, float previousDeltaTime, float duration, BoneOffset* offsets)
+float Inertialization::GetBoneDuration(float duration, bool masked, float maskScale)
 {
+    if (!masked || maskScale >= 1.0f)
+        return duration;
+    return Math::Max(duration * Math::Max(maskScale, 0.0f), 0.001f);
+}
+
+void Inertialization::Start(const Transform* previous, const Transform* beforePrevious, const Transform* target, int32 count, float previousDeltaTime, float blendTime, BoneOffset* offsets, const BitArray<>* mask, float maskScale)
+{
+    if (mask && mask->Count() < count)
+        mask = nullptr;
     for (int32 i = 0; i < count; i++)
     {
+        const float duration = GetBoneDuration(blendTime, mask && mask->Get(i), maskScale);
         const Transform& p = previous[i];
         const Transform& b = beforePrevious[i];
         const Transform& t = target[i];

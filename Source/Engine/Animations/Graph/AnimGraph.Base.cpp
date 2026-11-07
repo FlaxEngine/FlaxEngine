@@ -393,6 +393,9 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         // Inertialization
         case 40:
             ADD_BUCKET(InertializationBucketInit);
+            n->Assets.Resize(1);
+            if (n->Values.Count() > 2)
+                n->Assets[0] = (Asset*)Content::LoadAsync<SkeletonMask>((Guid)n->Values[2]);
             break;
         // Animation Instance Data
         case 33:

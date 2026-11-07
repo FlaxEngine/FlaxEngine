@@ -252,6 +252,42 @@ TEST_CASE("Inertialization")
             CHECK(Math::Abs(Math::Abs(offsets[i].Rotation.C1) - oldTurn) < oldTurn * 0.05f);
     }
 
+    SECTION("Blend Mask")
+    {
+        // The masked bone settles over the scaled time while the others take the whole blend time
+        Transform before[Count], previous[Count], target[Count], result[Count];
+        SetupOldPose(before, 0.0f);
+        SetupOldPose(previous, FrameTime);
+        SetupNewPose(target);
+        BitArray<> mask;
+        mask.Resize(Count);
+        mask.SetAll(false);
+        mask.Set(1, true);
+        Inertialization::BoneOffset offsets[Count];
+        Inertialization::Start(previous, before, target, Count, FrameTime, BlendTime, offsets, &mask, 0.5f);
+        CHECK(Math::NearEqual(offsets[0].Translation.Duration, BlendTime));
+        CHECK(Math::NearEqual(offsets[1].Translation.Duration, BlendTime * 0.5f));
+        CHECK(Math::NearEqual(offsets[1].Rotation.Duration, BlendTime * 0.5f));
+        CHECK(Math::NearEqual(offsets[2].Rotation.Duration, BlendTime));
+
+        // Past the masked time the masked bone is on the new pose, the others still on their way
+        Blend(offsets, target, BlendTime * 0.6f, result);
+        CHECK(Vector3::Distance(result[1].Translation, target[1].Translation) < 0.0001f);
+        CHECK(Quaternion::AngleBetween(result[1].Orientation, target[1].Orientation) < 0.0001f);
+        CHECK(Vector3::Distance(result[0].Translation, target[0].Translation) > 0.01f);
+
+        // A scale of 1 or more, or no mask, is the plain blend
+        Inertialization::BoneOffset plain[Count], scaledUp[Count];
+        Inertialization::Start(previous, before, target, Count, FrameTime, BlendTime, plain);
+        Inertialization::Start(previous, before, target, Count, FrameTime, BlendTime, scaledUp, &mask, 2.0f);
+        for (int32 i = 0; i < Count; i++)
+            CHECK(Math::NearEqual(plain[i].Translation.C0, scaledUp[i].Translation.C0));
+        CHECK(Math::NearEqual(scaledUp[1].Translation.Duration, BlendTime));
+
+        // A zero scale still settles over a small time, not at once
+        CHECK(Inertialization::GetBoneDuration(BlendTime, true, 0.0f) > 0.0f);
+    }
+
     SECTION("Same Pose")
     {
         Transform pose[Count], result[Count];
