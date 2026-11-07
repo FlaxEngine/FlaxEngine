@@ -55,7 +55,10 @@ float OrientationWarp::InterpAngle(float current, float target, float speed, flo
 {
     if (speed <= 0.0f)
         return Math::UnwindDegrees(target);
-    const float difference = Math::UnwindDegrees(target - current);
+    float difference = Math::UnwindDegrees(target - current);
+    // Half way round either way: unwind toward zero, so a swing out and the swing back never add up to a full turn
+    if (Math::Abs(Math::Abs(difference) - 180.0f) < 0.01f)
+        difference = current > 0.0f ? -180.0f : 180.0f;
     const float share = Math::Saturate(speed * Math::Max(deltaTime, 0.0f));
     return Math::UnwindDegrees(current + difference * share);
 }

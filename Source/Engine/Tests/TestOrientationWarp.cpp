@@ -308,6 +308,29 @@ TEST_CASE("OrientationWarp")
         }
         CHECK(Math::NearEqual(angle, -170.0f, 0.1f));
         CHECK(Math::NearEqual(travelled, 20.0f, 0.1f));
+
+        // Half way round, either way is as short: it unwinds toward zero, whatever the rounding
+        CHECK(OrientationWarp::InterpAngle(10.0f, -170.0f, 10.0f, 0.01f) < 10.0f);
+        CHECK(OrientationWarp::InterpAngle(-10.0f, 170.0f, 10.0f, 0.01f) > -10.0f);
+        CHECK(OrientationWarp::InterpAngle(10.0f, -170.0001f, 10.0f, 0.01f) < 10.0f);
+        CHECK(OrientationWarp::InterpAngle(10.0f, -169.9999f, 10.0f, 0.01f) < 10.0f);
+
+        // Out to a half turn and straight back again: it comes back the way it went, never round a full turn
+        angle = 0.0f;
+        float turned = 0.0f;
+        for (int32 i = 0; i < 60; i++)
+        {
+            const float next = OrientationWarp::InterpAngle(angle, 180.0f, 10.0f, 1.0f / 60.0f);
+            turned += Math::UnwindDegrees(next - angle);
+            angle = next;
+        }
+        for (int32 i = 0; i < 120; i++)
+        {
+            const float next = OrientationWarp::InterpAngle(angle, 0.0f, 10.0f, 1.0f / 60.0f);
+            turned += Math::UnwindDegrees(next - angle);
+            angle = next;
+        }
+        CHECK(Math::Abs(turned) < 1.0f);
     }
 
     SECTION("Unset nodes leave the pose alone")
