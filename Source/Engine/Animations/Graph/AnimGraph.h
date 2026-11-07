@@ -317,6 +317,7 @@ public:
     struct OrientationWarpBucket
     {
         float Angle;
+        float Applied;
         uint64 LastUpdateFrame;
     };
 

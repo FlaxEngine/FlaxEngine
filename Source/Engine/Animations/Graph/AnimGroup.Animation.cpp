@@ -2718,6 +2718,13 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     // Orientation Warp
     case 39:
     {
+        // The angle it turned the pose by this update (eased, clamped and faded), eg. for a Stride Warp after it to go along
+        if (box->ID == 5)
+        {
+            eatBox(node, node->GetBox(0));
+            value = context.Data->State[node->BucketIndex].OrientationWarp.Applied;
+            break;
+        }
         auto input = tryGetValue(node->GetBox(1), Value::Null);
         const auto& data = node->Data.OrientationWarp;
         const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[6]));
@@ -2746,6 +2753,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             speed = inputPose && context.DeltaTime > 0.0f ? (float)inputPose->RootMotion.Translation.Length() / context.DeltaTime : 0.0f;
         }
         const float warpAngle = angle * alpha * OrientationWarp::GetSpeedWeight(speed, minSpeed);
+        bucket.Applied = _graph.BaseModel ? warpAngle : 0.0f;
         if (Math::IsZero(warpAngle) || !_graph.BaseModel)
         {
             value = input;

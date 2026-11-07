@@ -1171,6 +1171,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Output(1, "Applied", typeof(float), 5),
                     NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
                     NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 2, 5),
                     NodeElementArchetype.Factory.Input(2, "Alpha", true, typeof(float), 3, 6),
