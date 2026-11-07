@@ -173,6 +173,7 @@ public:
         InterruptionInstant = 16,
         InterruptionSourceState = 32,
         InterruptionDestinationState = 64,
+        Inertialization = 128,
     };
 
 public:
@@ -228,6 +229,7 @@ struct FLAXENGINE_API AnimGraphSlot
     bool Stop = false;
     bool Rewind = false;
     bool ActiveBlend = false;
+    bool Inertialize = false;
 };
 
 /// <summary>
@@ -326,6 +328,19 @@ public:
         Vector3 PreviousPosition;
     };
 
+    struct InertializationBucket
+    {
+        uint64 LastUpdateFrame;
+        // One-based offset of the node's data in DynamicState, 0 when not allocated. Kept when the bucket gets reset, so the data is reused.
+        int32 DynamicStateStart;
+        int32 NodesCount;
+        int32 HistoryCount;
+        float PreviousDeltaTime;
+        float BlendPosition;
+        float BlendDuration;
+        bool LastRequest;
+    };
+
     /// <summary>
     /// The single data storage bucket for the instanced animation graph node. Used to store the node state (playback position, state, transition data).
     /// </summary>
@@ -340,6 +355,7 @@ public:
             SlotBucket Slot;
             InstanceDataBucket InstanceData;
             SpringBonePhysicsBucket SpringBonePhysics;
+            InertializationBucket Inertialization;
         };
     };
 
@@ -835,6 +851,10 @@ struct AnimGraphContext
     ChunkedArray<AnimGraphImpulse, 256> PoseCache;
     int32 PoseCacheSize;
     Dictionary<VisjectExecutor::Box*, Variant> ValueCache;
+    // The amount of Inertialization nodes evaluating their input (blend requests go to the nearest one).
+    int32 InertializationDepth;
+    // The shortest inertial blend time requested from below the evaluated Inertialization node (in seconds), or -1 when none.
+    float InertializationRequest;
 
     AnimGraphTraceEvent& AddTraceEvent(const AnimGraphNode* node);
 };

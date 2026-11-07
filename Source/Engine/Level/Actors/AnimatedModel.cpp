@@ -780,6 +780,11 @@ void AnimatedModel::ClearBlendShapeWeights()
 
 void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount)
 {
+    PlaySlotAnimation(slotName, anim, speed, blendInTime, blendOutTime, loopCount, false);
+}
+
+void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount, bool inertialize)
+{
     PROFILE_MEM(Animations);
     CHECK(anim);
     int32 counts = 0;
@@ -796,6 +801,7 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
                 slot.Rewind = false;
                 slot.BlendInTime = blendInTime;
                 slot.LoopCount = loopCount;
+                slot.Inertialize = inertialize;
                 return;
             }
             counts++;
@@ -834,6 +840,7 @@ void AnimatedModel::PlaySlotAnimation(const StringView& slotName, Animation* ani
     slot.Pause = false;
     slot.Stop = false;
     slot.Rewind = false;
+    slot.Inertialize = inertialize;
 }
 
 void AnimatedModel::StopSlotAnimation()
