@@ -477,7 +477,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
         e->PreRender(context, renderContext);
 
     // Final render view preparations
-    renderContext.View.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
+    renderContext.View.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion | DrawPass::Custom;
     if (setup.UseMotionVectors)
         renderContext.View.Pass |= DrawPass::MotionVectors;
     renderContext.View.Prepare(renderContext);
@@ -534,7 +534,7 @@ static void ProcessDrawCalls(GPUContext* context, RenderContext& renderContext, 
     struct DrawCallsProcessor
     {
         RenderContextBatch& RenderContextBatch;
-        Pair<DrawCallsListType, bool> MainContextSorting[5] =
+        Pair<DrawCallsListType, bool> MainContextSorting[6] =
         {
             // Draw List + Reverse Distance sorting
             ToPair(DrawCallsListType::GBuffer, false),
@@ -542,6 +542,7 @@ static void ProcessDrawCalls(GPUContext* context, RenderContext& renderContext, 
             ToPair(DrawCallsListType::Forward, true),
             ToPair(DrawCallsListType::Distortion, false),
             ToPair(DrawCallsListType::MotionVectors, false),
+            ToPair(DrawCallsListType::Custom, false),
         };
 
         void BuildObjectsBufferJob(int32 index)

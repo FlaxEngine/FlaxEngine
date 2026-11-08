@@ -228,6 +228,11 @@ API_ENUM() enum class DrawCallsListType
     /// </summary>
     MotionVectors,
 
+    /// <summary>
+    /// Custom rendering (DrawPass.Custom). Collected by the main view but never drawn by the renderer itself.
+    /// </summary>
+    Custom,
+
     MAX,
 };
 
