@@ -199,9 +199,9 @@ void HZBOcclusionCulling::Submit(const RenderContext& renderContext)
     }
 
     // Upload object bounds data
-    if (_dirtyBounds || _boundsBuffer.GetBuffer()->GetSize() < sizeof(Float3) * 2 * itemsCount)
+    if (_dirtyBounds || !_boundsBuffer.GetBuffer() || _boundsBuffer.GetBuffer()->GetSize() < sizeof(Float3) * 2 * itemsCount)
         _boundsBuffer.Flush(context);
-    ASSERT(_boundsBuffer.GetBuffer()->GetSize() >= sizeof(Float3) * 2 * itemsCount);
+    ASSERT(_boundsBuffer.GetBuffer() && _boundsBuffer.GetBuffer()->GetSize() >= sizeof(Float3) * 2 * itemsCount);
     ASSERT(_resultsBuffer->GetSize() >= itemsCount * sizeof(ResultValue));
     ASSERT(_readbackBuffers[bufferedFrame]->GetSize() >= itemsCount * sizeof(ResultValue));
 
