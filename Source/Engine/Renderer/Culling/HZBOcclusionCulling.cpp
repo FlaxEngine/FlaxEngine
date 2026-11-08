@@ -171,7 +171,8 @@ void HZBOcclusionCulling::Submit(const RenderContext& renderContext)
     GPUContext* context = GPUDevice::Instance->GetMainContext();
 
     // Update objects to cull
-    auto frustum = renderContext.View.Frustum;
+    BoundingFrustum frustum;
+    renderContext.View.GetLocalFrustum(frustum);
     auto* items = _items.Get();
     int32 frame = _frameCounter, bufferedFrame = _frameCounter % _framesCount, itemsCount = _items.Count(), itemsEnd = 0;
     for (int32 i = 0; i < itemsCount; i++)
