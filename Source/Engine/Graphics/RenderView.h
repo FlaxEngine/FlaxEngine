@@ -369,6 +369,9 @@ public:
 
     // Applies the render origin to the transformation instance matrix.
     void GetWorldMatrix(Double4x4& world) const;
+
+    // Gets the local origin-space frustum that is not relative to world but to the current rendering offset.
+    void GetLocalFrustum(BoundingFrustum& frustum) const;
 };
 
 // Removes TAA jitter from the RenderView when drawing geometry after TAA has been resolved to prevent unwanted jittering.

@@ -191,7 +191,8 @@ void HardwareOcclusionCulling::Submit(const RenderContext& renderContext)
 
     // Issue occlusion queries
     int32 frame = _frameCounter, bufferedFrame = _frameCounter % _framesCount, itemsCount = _items.Count(), itemsUsed = 0;
-    auto frustum = renderContext.View.Frustum;
+    BoundingFrustum frustum;
+    renderContext.View.GetLocalFrustum(frustum);
     auto* items = _items.Get();
     for (int32 i = 0; i < itemsCount; i++)
     {
