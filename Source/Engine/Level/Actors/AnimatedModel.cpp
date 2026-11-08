@@ -1019,12 +1019,13 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
             Float3 normal = normalStream.GetFloat3(vertexIndex);
             MeshAccessor::UnpackNormal(normal);
             normal.Normalize();
-            MeshAccessor::PackNormal(normal);
-            normalStream.SetFloat3(vertexIndex, normal);
+            Float3 normalPacked = normal;
+            MeshAccessor::PackNormal(normalPacked);
+            normalStream.SetFloat3(vertexIndex, normalPacked);
 
             if (tangentStream.IsValid())
             {
-                Float4 tangentRaw = normalStream.GetFloat4(vertexIndex);
+                Float4 tangentRaw = tangentStream.GetFloat4(vertexIndex);
                 Float3 tangent = Float3(tangentRaw);
                 MeshAccessor::UnpackNormal(tangent);
                 tangent = tangent - ((tangent | normal) * normal);
