@@ -17,12 +17,12 @@ namespace AnimGraphTime
     /// so a node played by its start position alone (a speed of 0 and the time given each update) samples the time it's
     /// given next however far past its end it was given before.
     /// </summary>
-    FLAXENGINE_API float GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, float length);
+    float GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, float length);
 
     /// <summary>
     /// The frame of an animation <paramref name="animLength"/> seconds long (at <paramref name="framesPerSecond"/>)
     /// shown at <paramref name="pos"/> seconds into a node <paramref name="length"/> seconds long (a whole number of the
     /// animation's cycles fitted to it). At or past the node's end it's the animation's last frame.
     /// </summary>
-    FLAXENGINE_API float GetAnimSamplePos(float length, float animLength, float framesPerSecond, float pos);
+    float GetAnimSamplePos(float length, float animLength, float framesPerSecond, float pos);
 }
