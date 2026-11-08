@@ -856,8 +856,8 @@ void NetworkManagerService::Update()
             }
 
             // Process network message
-            uint8 id = *event.Message.Buffer;
-            if (id < (uint8)NetworkMessageIDs::MAX)
+            uint8 id = event.Message.Buffer ? *event.Message.Buffer : 0;
+            if (id != 0 && id < (uint8)NetworkMessageIDs::MAX)
             {
                 MessageHandlers[id](event, client, peer);
                 if (EnumHasAnyFlags(event.Message.Flags, NetworkMessageFlags::HasError))
