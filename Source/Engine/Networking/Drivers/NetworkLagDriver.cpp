@@ -62,6 +62,7 @@ void NetworkLagDriver::Dispose()
     _driver->Dispose();
     _messages.Clear();
     _events.Clear();
+    _usedEventsData.Clear();
 }
 
 bool NetworkLagDriver::Listen()
@@ -105,6 +106,7 @@ bool NetworkLagDriver::PopEvent(NetworkEvent& eventPtr)
             continue;
 
         eventPtr = e.Event;
+        _usedEventsData.Add(MoveTemp(e.Data));
         _events.RemoveAtKeepOrder(i);
         return true;
     }
@@ -118,7 +120,15 @@ bool NetworkLagDriver::PopEvent(NetworkEvent& eventPtr)
         auto& e = _events.AddOne();
         e.Lag = (double)Lag;
         e.Event = eventPtr;
+
+        // Copy event data to preserve it
+        e.Data.Set(e.Event.Message.Buffer, e.Event.Message.BufferSize);
+        e.Event.Message.Buffer = e.Data.Get();
     }
+
+    // Drain used events data to free memory
+    _usedEventsData.Clear();
+
     return false;
 }
 
@@ -203,7 +213,7 @@ void NetworkLagDriver::OnUpdate()
         // Use this helper message as a container to send the stored data and length to the ENet driver
         NetworkMessage message;
         message.Buffer = msg.MessageData.Get();
-        message.BufferSize = msg.MessageLength;
+        message.BufferSize = message.Position = msg.MessageLength;
 
         switch (msg.Type)
         {
