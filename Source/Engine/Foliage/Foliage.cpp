@@ -492,7 +492,7 @@ void Foliage::DrawFoliageJob(int32 i)
 #else
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
-    draw.DrawModes = (DrawPass)(DrawPass::All & renderContext.View.Pass);
+    draw.DrawModes = (DrawPass)((DrawPass::All | DrawPass::Custom) & renderContext.View.Pass);
     DrawType(renderContext, type, draw);
 #endif
 }
@@ -1351,7 +1351,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
 #if FOLIAGE_USE_SINGLE_QUAD_TREE || !FOLIAGE_USE_DRAW_CALLS_BATCHING
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
-    draw.DrawModes = (DrawPass)(DrawPass::All & view.Pass);
+    draw.DrawModes = (DrawPass)((DrawPass::All | DrawPass::Custom) & view.Pass);
 #endif
 #if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)
