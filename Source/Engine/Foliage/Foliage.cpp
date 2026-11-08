@@ -1332,7 +1332,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
     // Run async job for each foliage type
-    if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
+    if (!(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
         _renderContextBatch = &renderContextBatch;
         Function<void(int32)> func;
