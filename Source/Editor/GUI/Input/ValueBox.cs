@@ -193,6 +193,7 @@ namespace FlaxEditor.GUI.Input
             SlidingEnd?.Invoke();
             Defocus();
             Parent?.Focus();
+            UpdateText();
         }
 
         /// <inheritdoc />
