@@ -560,6 +560,8 @@ static void ProcessDrawCalls(GPUContext* context, RenderContext& renderContext, 
                 auto sorting = MainContextSorting[index];
                 if (sorting.First == DrawCallsListType::MotionVectors && !setup.UseMotionVectors)
                     return;
+                if (renderContext.List->DrawCallsLists[(int32)sorting.First].Indices.Count() == 0)
+                    return; // Nothing to sort (eg. an unused custom list)
                 renderContext.List->SortDrawCalls(renderContext, sorting.Second, sorting.First);
             }
             else
