@@ -856,7 +856,7 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     GlobalSurfaceAtlas = 1 << 6,
 
     /// <summary>
-    /// The custom rendering pass. Draw calls are collected by the main view (with the same culling as other passes) into a separate list (DrawCallsListType.Custom) that the renderer never draws itself. Use it to draw a subset of the scene into own targets (eg. from PostProcessEffect via RenderList.ExecuteDrawCalls with the view's Pass set to Custom). Supported by models and foliage with forward (transparent) materials. Not included in Default, objects have to opt in.
+    /// The custom rendering pass. Draw calls are collected by the main view (with the same culling as other passes) into a separate list (DrawCallsListType.Custom) that the renderer never draws itself. Use it to draw a subset of the scene into own targets (eg. from PostProcessEffect via RenderList.ExecuteDrawCalls with the view's Pass set to Custom). Supported only by models and foliage with forward (transparent domain) materials. The list is batched by material and not sorted back to front, so it suits order-independent blending (eg. multiply or additive). Not included in Default, objects have to opt in.
     /// </summary>
     Custom = 1 << 7,
 
