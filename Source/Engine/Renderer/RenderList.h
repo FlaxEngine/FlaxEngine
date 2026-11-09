@@ -398,6 +398,13 @@ public:
     /// </summary>
     DrawCallsList ShadowDepthDrawCallsList;
 
+#if ENABLE_ASSERTION_LOW_LAYERS
+    /// <summary>
+    /// The amount of async draw jobs still adding draw calls to this list (eg. foliage). Used to catch lists sorted or drawn before RenderContextBatch.FlushWaitLabels.
+    /// </summary>
+    int64 PendingAsyncDraws = 0;
+#endif
+
     /// <summary>
     /// Light pass members - directional lights
     /// </summary>

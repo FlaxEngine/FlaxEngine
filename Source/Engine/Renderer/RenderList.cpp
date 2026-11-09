@@ -798,6 +798,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
 
 void RenderList::BuildObjectsBuffer()
 {
+    ASSERT_LOW_LAYER(Platform::AtomicRead(&PendingAsyncDraws) == 0); // Async draws not waited for (RenderContextBatch.FlushWaitLabels)
     int32 count = DrawCalls.Count();
     for (const auto& e : BatchedDrawCalls)
         count += e.Instances.Count();
@@ -828,6 +829,7 @@ void RenderList::BuildObjectsBuffer()
 
 void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawCallsListType listType, DrawPass pass)
 {
+    ASSERT_LOW_LAYER(Platform::AtomicRead(&PendingAsyncDraws) == 0); // Async draws not waited for (RenderContextBatch.FlushWaitLabels)
     PROFILE_CPU();
     PROFILE_MEM(GraphicsCommands);
     const auto* drawCallsData = drawCalls.Get();
@@ -971,6 +973,7 @@ FORCE_INLINE Span<GPUBuffer*> GetVB(GPUBuffer* const* ptr, int32 maxSize)
 
 void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, RenderList* drawCallsList, GPUTextureView* input)
 {
+    ASSERT_LOW_LAYER(Platform::AtomicRead(&drawCallsList->PendingAsyncDraws) == 0); // Async draws not waited for (RenderContextBatch.FlushWaitLabels)
     if (list.IsEmpty())
         return;
     PROFILE_GPU_CPU("Drawing");
