@@ -1744,6 +1744,8 @@ void Render2D::Draw9SlicingTexture(TextureBase* t, const Rectangle& rect, const 
     drawCall.AsTexture.Ptr = t ? t->GetTexture() : nullptr;
     DrawCalls.Add(drawCall);
     Write9SlicingRect(rect, color, border, borderUVs);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
@@ -1758,6 +1760,8 @@ void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, c
     drawCall.AsTexture.Ptr = t ? t->GetTexture() : nullptr;
     DrawCalls.Add(drawCall);
     Write9SlicingRect(rect, color, border, borderUVs);
+
+    RENDER2D_REMOVE_GAMMA_END();
 }
 
 void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
