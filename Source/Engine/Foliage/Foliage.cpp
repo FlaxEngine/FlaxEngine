@@ -30,7 +30,7 @@
 #include "Engine/Utilities/Encryption.h"
 #include <ThirdParty/LZ4/lz4.h>
 
-// The least instances a foliage has to have to be drawn on async jobs in views other than the main (GBuffer) one, which always draws it async. Below it, drawing inline is faster: in a forward-only view of a forest, foliage of 128-255 instances drew in 17.5us inline and 17.9us on jobs, and of 256-511 instances in 35us inline and 23us on jobs
+// The least instances a foliage has to have to be drawn on async jobs in views other than the main (GBuffer) one, which always draws it async. Counted over the whole foliage (all its types), which is tracked for free, though the jobs are per drawn type. Below it, drawing inline is faster: in a forward-only view of a forest, foliage of 128-255 instances drew in 17.5us inline and 17.9us on jobs, and of 256-511 instances in 35us inline and 23us on jobs
 #define FOLIAGE_ASYNC_MIN_INSTANCES 256
 
 #define FOLIAGE_GET_DRAW_MODES(renderContext, type) (type._drawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))

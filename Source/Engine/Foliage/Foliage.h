@@ -216,7 +216,7 @@ private:
     void DrawClusterGlobalSA(class GlobalSurfaceAtlasPass* globalSA, const Vector4& cullingPosDistance, FoliageCluster* cluster, const FoliageType& type, const BoundingBox& localBounds);
     void DrawFoliageJob(int32 i);
     RenderContextBatch* _renderContextBatch;
-    Array<int32> _drawTypes; // Indices of the foliage types drawn by the async jobs
+    Array<int32> _drawTypes; // Indices of the foliage types drawn by the async jobs. Like _renderContextBatch, valid for one batch at a time (until its wait labels are flushed)
 #endif
 
     void InitType(RenderContextBatch& renderContextBatch, const RenderView& mainView, int32 typeIndex);
