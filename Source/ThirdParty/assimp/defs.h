@@ -298,7 +298,7 @@ typedef unsigned int ai_uint;
 #define AI_RAD_TO_DEG(x) ((x) * (ai_real) 57.2957795)
 
 /* Numerical limits */
-#ifdef __cplusplus
+#if defined(__cplusplus) && __cplusplus >= 201703L
 inline constexpr ai_real ai_epsilon = (ai_real) 1e-6;
 #else
 #  define ai_epsilon ((ai_real)1e-6)
