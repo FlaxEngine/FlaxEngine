@@ -433,6 +433,8 @@ static void Setup(GPUContext* context, RenderContext& renderContext)
         auto aaMode = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::AntiAliasing) ? renderContext.List->Settings.AntiAliasing.Mode : AntialiasingMode::None;
         if (aaMode == AntialiasingMode::TemporalAntialiasing && renderContext.View.IsOrthographicProjection())
             aaMode = AntialiasingMode::None; // TODO: support TAA in ortho projection (see RenderView::Prepare to jitter projection matrix better)
+        if (aaMode == AntialiasingMode::TemporalAntialiasing && PLATFORM_WEB)
+            aaMode = AntialiasingMode::None; // TODO: support TAA in Web (jittering issues)
         renderContext.List->Settings.AntiAliasing.Mode = aaMode;
     }
 
