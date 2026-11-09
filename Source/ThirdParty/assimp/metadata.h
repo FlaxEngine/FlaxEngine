@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2024, assimp team
+Copyright (c) 2006-2026, assimp team
 
 All rights reserved.
 
@@ -113,19 +113,19 @@ struct aiMetadata;
   */
 // -------------------------------------------------------------------------------
 
-inline aiMetadataType GetAiType(bool) {
+inline aiMetadataType GetAiType(const bool &) {
     return AI_BOOL;
 }
 inline aiMetadataType GetAiType(int32_t) {
     return AI_INT32;
 }
-inline aiMetadataType GetAiType(uint64_t) {
+inline aiMetadataType GetAiType(const uint64_t &) {
     return AI_UINT64;
 }
-inline aiMetadataType GetAiType(float) {
+inline aiMetadataType GetAiType(const float &) {
     return AI_FLOAT;
 }
-inline aiMetadataType GetAiType(double) {
+inline aiMetadataType GetAiType(const double &) {
     return AI_DOUBLE;
 }
 inline aiMetadataType GetAiType(const aiString &) {
@@ -137,10 +137,10 @@ inline aiMetadataType GetAiType(const aiVector3D &) {
 inline aiMetadataType GetAiType(const aiMetadata &) {
     return AI_AIMETADATA;
 }
-inline aiMetadataType GetAiType(int64_t) {
+inline aiMetadataType GetAiType(const int64_t &) {
     return AI_INT64;
 }
-inline aiMetadataType GetAiType(uint32_t) {
+inline aiMetadataType GetAiType(const uint32_t &) {
     return AI_UINT32;
 }
 
@@ -441,10 +441,10 @@ struct aiMetadata {
     }
 
     /// Return metadata entry for analyzing it by user.
-    /// \param [in] pIndex - index of the entry.
-    /// \param [out] pKey - pointer to the key value.
-    /// \param [out] pEntry - pointer to the entry: type and value.
-    /// \return false - if pIndex is out of range, else - true.
+    /// \param [in] index - index of the entry.
+    /// \param [out] key - pointer to the key value.
+    /// \param [out] entry - pointer to the entry: type and value.
+    /// \return false - if index is out of range, else - true.
     inline bool Get(size_t index, const aiString *&key, const aiMetadataEntry *&entry) const {
         if (index >= mNumProperties) {
             return false;
@@ -457,7 +457,7 @@ struct aiMetadata {
     }
 
     /// Check whether there is a metadata entry for the given key.
-    /// \param [in] Key - the key value value to check for.
+    /// \param [in] key - the key value value to check for.
     inline bool HasKey(const char *key) const {
         if (nullptr == key) {
             return false;

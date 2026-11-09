@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2024, assimp team
+Copyright (c) 2006-2026, assimp team
 
 All rights reserved.
 
@@ -54,6 +54,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
+#include <assimp/MathFunctions.h>
 #include <cstdint>
 #include <set>
 #include <vector>
@@ -64,7 +65,7 @@ class BlobIOSystem;
 // --------------------------------------------------------------------------------------------
 /** Redirect IOStream to a blob */
 // --------------------------------------------------------------------------------------------
-class BlobIOStream : public IOStream {
+class BlobIOStream final : public IOStream {
 public:
     /// @brief The class constructor with all needed parameters
     /// @param creator  Pointer to the creator instance
@@ -84,7 +85,6 @@ public:
     ///	@brief  The class destructor.
     ~BlobIOStream() override;
 
-public:
     // -------------------------------------------------------------------
     aiExportDataBlob *GetBlob() {
         aiExportDataBlob *blob = new aiExportDataBlob();
@@ -103,13 +103,25 @@ public:
 
     // -------------------------------------------------------------------
     size_t Write(const void *pvBuffer, size_t pSize, size_t pCount) override {
-        pSize *= pCount;
-        if (cursor + pSize > cur_size) {
-            Grow(cursor + pSize);
+        // Safely compute total size, checking for integer overflow
+        size_t total_size = Assimp::Math::SafeMultiplySizeCount(pSize, pCount);
+        if (total_size == 0 && (pSize != 0 && pCount != 0)) {
+            // Overflow detected
+            return 0;
         }
 
-        memcpy(buffer + cursor, pvBuffer, pSize);
-        cursor += pSize;
+        // Guard cursor + total_size against overflow before growing
+        if (total_size > SIZE_MAX - cursor) {
+            return 0;
+        }
+
+        const size_t newEnd = cursor + total_size;
+        if (newEnd > cur_size) {
+            Grow(newEnd);
+        }
+
+        memcpy(buffer + cursor, pvBuffer, total_size);
+        cursor += total_size;
 
         file_size = std::max(file_size, cursor);
         return pCount;
@@ -193,11 +205,10 @@ private:
 // --------------------------------------------------------------------------------------------
 /** Redirect IOSystem to a blob */
 // --------------------------------------------------------------------------------------------
-class BlobIOSystem : public IOSystem {
+class BlobIOSystem final : public IOSystem {
 
     friend class BlobIOStream;
-    typedef std::pair<std::string, aiExportDataBlob *> BlobEntry;
-
+    using BlobEntry = std::pair<std::string, aiExportDataBlob *>;
 
 public:
     /// @brief The default class constructor.
@@ -230,7 +241,7 @@ public:
         const bool hasBaseName = baseName != AI_BLOBIO_MAGIC;
 
         // one must be the master
-        aiExportDataBlob *master = nullptr, *cur;
+        aiExportDataBlob *master = nullptr;
 
         for (const BlobEntry &blobby : blobs) {
             if (blobby.first == magicName) {
@@ -245,7 +256,7 @@ public:
             return nullptr;
         }
 
-        cur = master;
+        aiExportDataBlob *cur = master;
 
         for (const BlobEntry &blobby : blobs) {
             if (blobby.second == master) {

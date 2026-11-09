@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2024, assimp team
-
+Copyright (c) 2006-2026, assimp team
 
 All rights reserved.
 
@@ -57,7 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct aiMesh;
 
-namespace Assimp    {
+namespace Assimp {
 
 // ---------------------------------------------------------------------------
 /** \brief Helper class to generate vertex buffers for standard geometric
@@ -178,7 +177,7 @@ public:
      *  @param radius1 First radius
      *  @param radius2 Second radius
      *  @param tess Number of triangles.
-     *  @param bOpened true for an open cone/cylinder. An open shape has
+     *  @param bOpen true for an open cone/cylinder. An open shape has
      *    no 'end caps'
      *  @param positions Receives output triangles
      */
