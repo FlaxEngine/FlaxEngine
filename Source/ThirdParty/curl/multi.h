@@ -24,20 +24,20 @@
  *
  ***************************************************************************/
 /*
-  This is an "external" header file. Do not give away any internals here!
-
-  GOALS
-
-  o Enable a "pull" interface. The application that uses libcurl decides where
-    and when to ask libcurl to get/send data.
-
-  o Enable multiple simultaneous transfers in the same thread without making it
-    complicated for the application.
-
-  o Enable the application to select() on its own file descriptors and curl's
-    file descriptors simultaneous easily.
-
-*/
+ * This is an "external" header file. Do not give away any internals here!
+ *
+ * GOALS
+ *
+ * o Enable a "pull" interface. The application that uses libcurl decides where
+ *   and when to ask libcurl to get/send data.
+ *
+ * o Enable multiple simultaneous transfers in the same thread without making
+ *   it complicated for the application.
+ *
+ * o Enable the application to select() on its own file descriptors and curl's
+ *   file descriptors simultaneous easily.
+ *
+ */
 
 /*
  * This header file should not really need to include "curl.h" since curl.h
@@ -538,6 +538,7 @@ CURL_EXTERN CURLMcode curl_multi_waitfds(CURLM *m,
  */
 #define CURLMNOTIFY_INFO_READ    0
 #define CURLMNOTIFY_EASY_DONE    1
+#define CURLMNOTIFY_LAST         2 /* last, not used */
 
 /*
  * Callback to install via CURLMOPT_NOTIFYFUNCTION.
