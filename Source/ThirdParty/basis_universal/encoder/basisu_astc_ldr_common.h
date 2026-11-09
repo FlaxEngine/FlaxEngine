@@ -32,6 +32,7 @@ namespace astc_ldr
 		uint32_t m_max_ls_passes, m_total_weight_refine_passes;
 		bool m_worst_weight_nudging_flag;
 		bool m_endpoint_refinement_flag;
+		bool m_use_exhaustive_weight_eval;
 				
 		cem_encode_params() 
 		{
@@ -54,6 +55,7 @@ namespace astc_ldr
 			m_total_weight_refine_passes = 0;
 			m_worst_weight_nudging_flag = false;
 			m_endpoint_refinement_flag = false;
+			m_use_exhaustive_weight_eval = false;
 		}
 
 		float get_total_comp_weights() const
@@ -113,22 +115,9 @@ namespace astc_ldr
 
 	uint64_t eval_solution(
 		const pixel_stats_t& pixel_stats,
-		uint32_t total_weights, const color_rgba* pWeight_colors,
-		uint8_t* pWeight_vals, uint32_t weight_ise_index,
-		const cem_encode_params& params);
-
-	uint64_t eval_solution(
-		const pixel_stats_t& pixel_stats,
 		uint32_t cem_index,
 		const uint8_t* pEndpoint_vals, uint32_t endpoint_ise_index,
 		uint8_t* pWeight_vals, uint32_t weight_ise_index,
-		const cem_encode_params& params);
-
-	uint64_t eval_solution_dp(
-		uint32_t ccs_index,
-		const pixel_stats_t& pixel_stats,
-		uint32_t total_weights, const color_rgba* pWeight_colors,
-		uint8_t* pWeight_vals0, uint8_t* pWeight_vals1, uint32_t weight_ise_index,
 		const cem_encode_params& params);
 
 	uint64_t eval_solution_dp(
@@ -147,7 +136,7 @@ namespace astc_ldr
 		const pixel_stats_t& pixel_stats, const cem_encode_params& enc_params,
 		uint32_t endpoint_ise_range, uint32_t weight_ise_range,
 		uint8_t* pEndpoint_vals, uint8_t* pWeight_vals0, uint8_t* pWeight_vals1, uint64_t cur_blk_error,
-		bool use_blue_contraction, bool* pBase_ofs_clamped_flag);
+		bool use_blue_contraction, bool* pTry_direct_encoding_flag);
 
 	// TODO: Rename, confusing vs. std::vector or basisu::vector or vec4F etc.
 	struct partition_pattern_vec
@@ -169,19 +158,21 @@ namespace astc_ldr
 
 		partition_pattern_vec& operator= (const partition_pattern_vec& rhs);
 
-		uint32_t get_width() const { return m_width; }
-		uint32_t get_height() const { return m_height; }
-		uint32_t get_total() const { return m_width * m_height; }
+		inline uint32_t get_width() const { return m_width; }
+		inline uint32_t get_height() const { return m_height; }
+		inline uint32_t get_total() const { return m_width * m_height; }
 
-		uint8_t operator[] (uint32_t i) const { assert(i < get_total()); return m_parts[i]; }
-		uint8_t& operator[] (uint32_t i) { assert(i < get_total()); return m_parts[i]; }
+		inline uint8_t operator[] (uint32_t i) const { assert(i < get_total()); return m_parts[i]; }
+		inline uint8_t& operator[] (uint32_t i) { assert(i < get_total()); return m_parts[i]; }
 
-		uint8_t operator() (uint32_t x, uint32_t y) const { assert((x < m_width) && (y < m_height)); return m_parts[x + y * m_width]; }
-		uint8_t& operator() (uint32_t x, uint32_t y) { assert((x < m_width) && (y < m_height)); return m_parts[x + y * m_width]; }
+		inline uint8_t operator() (uint32_t x, uint32_t y) const { assert((x < m_width) && (y < m_height)); return m_parts[x + y * m_width]; }
+		inline uint8_t& operator() (uint32_t x, uint32_t y) { assert((x < m_width) && (y < m_height)); return m_parts[x + y * m_width]; }
 
 		int get_squared_distance(const partition_pattern_vec& other) const;
+		int get_squared_distance_2subsets(const partition_pattern_vec& other) const;
+		int get_squared_distance(const partition_pattern_vec& other, uint32_t num_subsets, uint32_t other_perm_index) const;
 		
-		float get_distance(const partition_pattern_vec& other) const
+		inline float get_distance(const partition_pattern_vec& other) const
 		{
 			return sqrtf((float)get_squared_distance(other));
 		}
@@ -381,6 +372,32 @@ namespace astc_ldr
 		void clear() { clear_obj(m_hist); }
 	};
 
+	class partition_lsh_map
+	{
+	public:
+		partition_lsh_map()
+		{
+		}
+
+		bool is_valid() const { return m_num_subsets != 0; }
+
+		void init(uint32_t num_subsets, uint32_t n, const partition_pattern_vec* pUnique_pats);
+
+		uint32_t find(const partition_pattern_vec& desired_pat, uint32_t *pResults, uint32_t max_results, bool filter_flag) const;
+				
+	private:
+		uint32_t m_num_subsets = 0;
+		
+		uint32_t m_num_samples = 0;
+		uint32_t m_num_hash_tabs = 0;
+
+		enum { cMaxSamples = 10, cMaxHashTabs = 16 };
+
+		uint8_t m_sample_indices[cMaxHashTabs][cMaxSamples];
+				
+		basisu::vector<uint_vec> m_hash_tabs[cMaxHashTabs];
+	};
+
 	struct partitions_data
 	{
 		uint32_t m_width, m_height, m_num_partitions;
@@ -397,8 +414,10 @@ namespace astc_ldr
 		
 		// VP tree used to rapidly find nearby/similar patterns.
 		vp_tree m_part_vp_tree;
+
+		partition_lsh_map m_part_lhs_map;
 		
-		void init(uint32_t num_partitions, uint32_t block_width, uint32_t block_height, bool init_vp_tree = true);
+		void init(uint32_t num_partitions, uint32_t block_width, uint32_t block_height, bool init_vp_tree = true, bool init_lsh = true);
 	};
 
 	float surrogate_quant_endpoint_val(float e, uint32_t num_endpoint_levels, uint32_t flags);
@@ -418,27 +437,6 @@ namespace astc_ldr
 		const pixel_stats_t& pixel_stats, const cem_encode_params& enc_params,
 		uint32_t endpoint_ise_range, uint32_t weight_ise_range,
 		vec4F& low_endpoint, vec4F& high_endpoint, float& s, float* pWeights0, float* pWeights1, uint32_t flags = 0);
-
-#if 0
-	bool requantize_ise_endpoints(uint32_t cem,
-		uint32_t src_ise_endpoint_range, const uint8_t* pSrc_endpoints,
-		uint32_t dst_ise_endpoint_range, uint8_t* pDst_endpoints);
-
-	uint32_t get_base_cem_without_alpha(uint32_t cem);
-
-	bool pack_base_offset(
-		uint32_t cem_index, uint32_t dst_ise_endpoint_range, uint8_t* pPacked_endpoints,
-		const color_rgba& l, const color_rgba& h,
-		bool use_blue_contraction, bool auto_disable_blue_contraction_if_clamped,
-		bool& blue_contraction_clamped_flag, bool& base_ofs_clamped_flag, bool& endpoints_swapped);
-
-	bool convert_endpoints_across_cems(
-		uint32_t prev_cem, uint32_t prev_endpoint_ise_range, const uint8_t* pPrev_endpoints,
-		uint32_t dst_cem, uint32_t dst_endpoint_ise_range, uint8_t* pDst_endpoints,
-		bool always_repack,
-		bool use_blue_contraction, bool auto_disable_blue_contraction_if_clamped,
-		bool& blue_contraction_clamped_flag, bool& base_ofs_clamped_flag);
-#endif
 
 } //  namespace astc_ldr
 
