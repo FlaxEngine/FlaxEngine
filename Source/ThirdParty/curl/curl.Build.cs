@@ -33,6 +33,8 @@ public class curl : EngineDepsModule
             options.OutputFiles.Add("ws2_32.lib");
             options.OutputFiles.Add("wldap32.lib");
             options.OutputFiles.Add("crypt32.lib");
+            options.OutputFiles.Add("Bcrypt.lib");
+            options.OutputFiles.Add("Secur32.lib");
             break;
         case TargetPlatform.Linux:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libcurl.a"));

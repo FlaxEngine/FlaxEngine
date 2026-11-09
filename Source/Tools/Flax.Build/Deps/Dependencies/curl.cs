@@ -1,10 +1,11 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using Flax.Build;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using Flax.Build;
 
 namespace Flax.Deps.Dependencies
 {
@@ -88,7 +89,7 @@ namespace Flax.Deps.Dependencies
 
             // Get the source
             if (!File.Exists(packagePath))
-                Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-7.88.1.zip", packagePath);
+                Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-8.23.0.zip", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
                 var newRoot = Path.Combine(root, archive.Entries.First().FullName);
@@ -107,10 +108,34 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.Windows:
                     {
                         // Build for Windows
+                        var settings = new[]
+                        {
+                            "-DBUILD_CURL_EXE=OFF",
+                            "-DBUILD_SHARED_LIBS=OFF",
+                            "-DCURL_STATIC_CRT=OFF",
+                            "-DCURL_USE_LIBPSL=OFF",
+                            "-DCURL_USE_SCHANNEL=ON", // Schannel as TLS backend
+                            "-DCURL_DISABLE_LDAP=ON",
+                            "-DCURL_DISABLE_FTP=ON",
+                            "-DCURL_DISABLE_FILE=ON",
+                            "-DCURL_DISABLE_DICT=ON",
+                            "-DCURL_DISABLE_TELNET=ON",
+                            "-DCURL_DISABLE_TFTP=ON",
+                            "-DCURL_DISABLE_RTSP=ON",
+                            "-DCURL_DISABLE_POP3=ON",
+                            "-DCURL_DISABLE_IMAP=ON",
+                            "-DCURL_DISABLE_SMTP=ON",
+                            "-DCURL_DISABLE_GOPHER=ON",
+                            "-DCURL_DISABLE_MQTT=ON",
+                            "-DCURL_DISABLE_NETRC=ON",
+                            "-DENABLE_CURL_MANUAL=OFF",
+                            "-DBUILD_LIBCURL_DOCS=OFF",
+                            "-DBUILD_MISC_DOCS=OFF",
+                        };
                         var buildDir = Path.Combine(root, "build-" + architecture);
                         var solutionPath = Path.Combine(buildDir, "CURL.sln");
-
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DCURL_STATIC_CRT=OFF");
+                        var switches = $"-B\"{buildDir}\" " + string.Join(" ", settings);
+                        RunCmake(root, platform, architecture, switches);
                         Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopyWin)

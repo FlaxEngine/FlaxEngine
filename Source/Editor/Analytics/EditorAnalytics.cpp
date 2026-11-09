@@ -146,7 +146,12 @@ void EditorAnalytics::StartSession()
 
     // Initialize HTTP
     Url = StringAnsi::Format("{0}?measurement_id={1}&api_secret={2}", GA_URL, GA_MEASUREMENT_ID, GA_API_SECRET);
-    curl_global_init(CURL_GLOBAL_ALL);
+    CURLcode res = curl_global_init(CURL_GLOBAL_ALL);
+    if (res != CURLE_OK)
+    {
+        LOG(Warning, "Curl initialization failed with error: 0x{0:x}", (uint32)res);
+        return;
+    }
     CurlHttpHeadersList = curl_slist_append(nullptr, "Content-Type: application/json");
     ::IsSessionActive = true;
 
@@ -240,6 +245,8 @@ void EditorAnalytics::SendEvent(const char* name, Span<Pair<const char*, const c
 
     // Send HTTP request
     CURL* curl = curl_easy_init();
+    if (!curl)
+        return;
     curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_URL, Url.Get());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, CurlHttpHeadersList);
@@ -271,7 +278,11 @@ bool EditorAnalyticsService::Init()
         return false;
     }
 
-    LOG(Info, "Editor analytics service is enabled. Curl version: {0}", TEXT(LIBCURL_VERSION));
+    curl_version_info_data* data = curl_version_info(CURLVERSION_NOW);
+    String protocols;
+    for (const char* const* proto = data->protocols; *proto; proto++)
+        protocols += String::Format(TEXT(", {0}"), String(*proto));
+    LOG(Info, "Editor analytics service is enabled. Curl {} ({}){}", StringAsUTF16<>(data->version).Get(), StringAsUTF16<>(data->ssl_version).Get(), protocols);
     Task::StartNew(EditorAnalytics::StartSession);
 
     return false;
