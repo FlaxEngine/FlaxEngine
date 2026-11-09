@@ -2562,6 +2562,24 @@ void PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(void* actor, const F
     actorPhysX->setCMassLocalPose(pose);
 }
 
+void PhysicsBackend::KeepRigidDynamicActorPose(void* actor, const Vector3& position, const Quaternion& orientation)
+{
+    // Changing the center of mass (setCMassLocalPose, also used by the mass updates in PxRigidBodyExt) keeps the actor's pose by
+    // composing it again from the body pose (getGlobalPose() * body2Actor) without normalizing it. Each change adds rounding to
+    // the pose and lets its rotation grow out of unit length, which nothing clears on a body that doesn't move (kinematic or
+    // asleep). After many changes (one per collider added, say) the actor has drifted from its place, while scene queries keep
+    // its shapes where they were, so the simulation and character controllers find them elsewhere. Put the pose back.
+    auto actorPhysX = (PxRigidDynamic*)actor;
+    PxTransform target;
+    if (actorPhysX->getKinematicTarget(target))
+        return; // Moving to a target, which sets the pose on the next step
+    PxScene* scene = actorPhysX->getScene();
+    if (!scene)
+        return; // Not placed yet
+    const Vector3 sceneOrigin = SceneOrigins[scene];
+    actorPhysX->setGlobalPose(PxTransform(C2P(position - sceneOrigin), C2P(orientation)), false);
+}
+
 bool PhysicsBackend::GetRigidDynamicActorIsSleeping(void* actor)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
