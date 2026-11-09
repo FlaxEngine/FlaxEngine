@@ -1927,7 +1927,7 @@ namespace basist
 					return (int)std::round(d / (float)L);
 				}
 
-				// L = quant step, alpha in [0,1.2] (typical 0.7–0.85)
+				// L = quant step, alpha in [0,1.2] (typical 0.7â€“0.85)
 				if (L <= 0) 
 					return 0;
 
@@ -3689,7 +3689,11 @@ namespace basist
 				l.e[i] = uint32_t(2 * isqrt_floor(uint64_t(2 * i + 1) << 54));
 			return l;
 		}
-		inline constexpr sqrt_lut_t SQRT_LUT = make_sqrt_lut();
+#if __cplusplus >= 201703L
+        inline constexpr sqrt_lut_t SQRT_LUT = make_sqrt_lut();
+#else
+        constexpr sqrt_lut_t SQRT_LUT = make_sqrt_lut();
+#endif
 	}
 
 	// C++17 fixed-point number, Q(31-FRAC_BITS).FRAC_BITS signed format.
