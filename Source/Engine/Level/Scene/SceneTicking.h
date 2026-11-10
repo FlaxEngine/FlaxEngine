@@ -58,6 +58,7 @@ public:
 #endif
 
         TickData(int32 capacity);
+        virtual ~TickData() = default;
 
         virtual void TickScripts(const Array<Script*>& scripts) = 0;
 

@@ -14,6 +14,8 @@ class TextureBase;
 class FLAXENGINE_API IBuildCache
 {
 public:
+    virtual ~IBuildCache() = default;
+
     /// <summary>
     /// Removes all cached entries for assets that contain a given asset type. This forces rebuild for them.
     /// </summary>

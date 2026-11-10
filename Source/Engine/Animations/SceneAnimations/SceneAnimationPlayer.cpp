@@ -740,7 +740,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             if (!clip || !clip->IsLoaded())
                 break;
             const auto runtimeData = track.GetRuntimeData<SceneAnimation::AudioTrack::Runtime>();
-            float mediaTime = -1, mediaDuration, playTime;
+            float mediaTime = -1, mediaDuration = 0.0f, playTime = 0.0f;
             for (int32 k = 0; k < runtimeData->Count; k++)
             {
                 const auto& media = runtimeData->Media[k];

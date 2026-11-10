@@ -21,8 +21,7 @@ void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& write
     {
         auto& param = parameters[i];
         const Char* format = nullptr;
-        int32 size;
-        int32 alignment;
+        int32 size = 0, alignment = 4;
         bool zeroRegister = true;
         switch (param.Type)
         {

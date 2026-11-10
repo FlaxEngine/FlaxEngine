@@ -178,7 +178,7 @@ public:
     /// <summary>
     /// Finalizes an instance of the <see cref="VisjectExecutor"/> class.
     /// </summary>
-    ~VisjectExecutor();
+    virtual ~VisjectExecutor();
 
 public:
     ErrorHandler Error;

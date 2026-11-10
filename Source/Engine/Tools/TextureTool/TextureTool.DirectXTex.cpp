@@ -433,8 +433,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, Span<byte> bytes, Text
 HRESULT CustomGenerateMipMap(DirectX::ScratchImage& mipChain, size_t item, size_t mip)
 {
     const DirectX::TexMetadata& metadata = mipChain.GetMetadata();
-
-    if (mip <= 0 || item < 0 || item > metadata.arraySize)
+    if (mip <= 0 || item > metadata.arraySize)
         return E_INVALIDARG;
 
     const DirectX::Image* srcImg = mipChain.GetImage(mip - 1, item, 0);

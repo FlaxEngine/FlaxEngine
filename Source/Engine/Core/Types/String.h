@@ -146,7 +146,7 @@ public:
     /// <returns>The string handle.</returns>
     FORCE_INLINE const T* GetText() const
     {
-        return _data ? _data : (const T*)TEXT("");
+        return _data ? _data : (const T*)(void*)TEXT("");
     }
 
 public:

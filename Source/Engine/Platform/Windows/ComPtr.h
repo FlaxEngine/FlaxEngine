@@ -14,10 +14,7 @@ template<typename T>
 class RemoveIUnknownBase : public T
 {
 public:
-
-    ~RemoveIUnknownBase()
-    {
-    }
+    virtual ~RemoveIUnknownBase() = default;
 
     // STDMETHOD macro implies virtual.
     // ComPtr can be used with any class that implements the 3 methods of IUnknown.

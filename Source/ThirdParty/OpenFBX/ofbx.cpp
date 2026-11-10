@@ -2071,10 +2071,10 @@ struct Scene : IScene
 };
 
 Object::Object(const Scene& scene, const IElement& element)
-	: scene(scene)
-	, element(element)
-	, is_node(false)
+	: element(element)
 	, node_attribute(nullptr)
+	, is_node(false)
+	, scene(scene)
 {
 	Element& e = (Element&)element;
 	if (scene.version < 6200 && e.first_property && isString(e.first_property)) {
@@ -2846,7 +2846,7 @@ template <typename T> static bool parseMemoryLinked(const Property& property, T*
 	int count = 0;
 	int max_count = max_size_bytes / sizeof(T);
 	while (p) {
-		T tmp;
+		T tmp = T();
 		if (count == max_count) return false;
 		for (u32 i = 0; i < sizeof(T) / elem_size; ++i) {
 			if (!p) return false;

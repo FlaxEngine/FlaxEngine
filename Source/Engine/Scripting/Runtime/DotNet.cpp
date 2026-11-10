@@ -1288,10 +1288,10 @@ void MDomain::Dispatch() const
 
 MEvent::MEvent(MClass* parentClass, void* handle, const char* name)
     : _handle(handle)
+    , _name(parentClass->GetAssembly()->AllocString(name))
     , _addMethod(nullptr)
     , _removeMethod(nullptr)
     , _parentClass(parentClass)
-    , _name(parentClass->GetAssembly()->AllocString(name))
     , _hasCachedAttributes(false)
     , _hasAddMonoMethod(true)
     , _hasRemoveMonoMethod(true)
@@ -1367,8 +1367,8 @@ MField::MField(MClass* parentClass, void* handle, const char* name, void* type, 
     : _handle(handle)
     , _type(type)
     , _fieldOffset(fieldOffset)
-    , _parentClass(parentClass)
     , _name(parentClass->GetAssembly()->AllocString(name))
+    , _parentClass(parentClass)
     , _hasCachedAttributes(false)
     , _attributes(&parentClass->GetAssembly()->Memory)
 {
@@ -1463,9 +1463,9 @@ const Array<MObject*, ArenaAllocation>& MField::GetAttributes() const
 
 MMethod::MMethod(MClass* parentClass, StringAnsiView name, void* handle, int32 paramsCount, MMethodAttributes attributes)
     : _handle(handle)
+    , _name(name)
     , _paramsCount(paramsCount)
     , _parentClass(parentClass)
-    , _name(name)
     , _hasCachedAttributes(false)
     , _hasCachedSignature(false)
     , _attributes(&parentClass->GetAssembly()->Memory)
@@ -1640,9 +1640,9 @@ FORCE_INLINE StringAnsiView GetPropertyMethodName(MProperty* property, StringAns
 }
 
 MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
-    : _parentClass(parentClass)
+    : _handle(handle)
     , _name(parentClass->GetAssembly()->AllocString(name))
-    , _handle(handle)
+    , _parentClass(parentClass)
     , _hasCachedAttributes(false)
     , _attributes(&parentClass->GetAssembly()->Memory)
 {

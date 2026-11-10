@@ -60,7 +60,7 @@ public:
     /// <returns>A pointer to the adjacency list.</returns>
     uint32* GetAdjacentTriangles(uint32 vertexIndex) const
     {
-        ASSERT(vertexIndex >= 0 && vertexIndex < NumVertices);
+        ASSERT(vertexIndex < NumVertices);
         return &AdjacencyTable[OffsetTable[vertexIndex]];
     }
 
@@ -71,7 +71,7 @@ public:
     /// <returns>The number of referenced triangles</returns>
     uint32& GetNumTrianglesPtr(uint32 vertexIndex) const
     {
-        ASSERT(vertexIndex >= 0 && vertexIndex < NumVertices);
+        ASSERT(vertexIndex < NumVertices);
         ASSERT(nullptr != LiveTriangles);
         return LiveTriangles[vertexIndex];
     }

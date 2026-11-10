@@ -46,7 +46,7 @@ class FLAXENGINE_API ISceneRenderingListener
 private:
     Array<SceneRendering*, InlinedAllocation<8>> _scenes;
 public:
-    ~ISceneRenderingListener();
+    virtual ~ISceneRenderingListener();
 
     // Actor properties that were modified.
     enum UpdateFlags

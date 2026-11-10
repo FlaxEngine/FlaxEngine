@@ -27,7 +27,7 @@ GPU_CB_STRUCT(Data {
 
 static int32 GetPermutationIndex()
 {
-    int qualityLevel;
+    int32 qualityLevel = 0;
     switch (Graphics::AAQuality)
     {
     case Quality::Low:

@@ -11,7 +11,6 @@
 class IGuiData
 {
 public:
-
     /// <summary>
     /// The GUI data types.
     /// </summary>
@@ -23,6 +22,7 @@ public:
     };
 
 public:
+    virtual ~IGuiData() = default;
 
     /// <summary>
     /// Gets the data type.

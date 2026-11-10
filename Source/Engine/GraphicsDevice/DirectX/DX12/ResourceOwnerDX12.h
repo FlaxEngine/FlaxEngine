@@ -65,6 +65,8 @@ protected:
     uint32 _subresourcesCount = 0;
 
 public:
+    virtual ~ResourceOwnerDX12() = default;
+
     /// <summary>
     /// The resource state tracking helper. Used for resource barriers.
     /// </summary>

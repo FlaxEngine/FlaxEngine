@@ -105,6 +105,12 @@ namespace Flax.Build.Platforms
         {
             base.SetupCompileCppFilesArgs(graph, options, args);
 
+#if false // More verbose errors-catching options
+            args.Add("/permissive-");
+            args.Add("/Zc:externC-");
+            args.Add("/we4701 /we4703 /we5038 /we4265 /we4296 /we4310 /we4905");
+#endif
+
             switch (options.CompileEnv.CpuArchitecture)
             {
             case CpuArchitecture.AVX: args.Add("/arch:AVX"); break;

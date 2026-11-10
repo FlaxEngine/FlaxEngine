@@ -1191,10 +1191,10 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 monitorInfo.cbSize = sizeof(MONITORINFO);
                 if (::GetMonitorInfoW(monitor, &monitorInfo))
                 {
-                    minMax->ptMaxPosition.x = Math::Abs(monitorInfo.rcWork.left - monitorInfo.rcMonitor.left);
-                    minMax->ptMaxPosition.y = Math::Abs(monitorInfo.rcWork.top - monitorInfo.rcMonitor.top);
-                    minMax->ptMaxSize.x = Math::Abs(monitorInfo.rcWork.right - monitorInfo.rcWork.left);
-                    minMax->ptMaxSize.y = Math::Abs(monitorInfo.rcWork.bottom - monitorInfo.rcWork.top);
+                    minMax->ptMaxPosition.x = Math::Abs((int32)(monitorInfo.rcWork.left - monitorInfo.rcMonitor.left));
+                    minMax->ptMaxPosition.y = Math::Abs((int32)(monitorInfo.rcWork.top - monitorInfo.rcMonitor.top));
+                    minMax->ptMaxSize.x = Math::Abs((int32)(monitorInfo.rcWork.right - monitorInfo.rcWork.left));
+                    minMax->ptMaxSize.y = Math::Abs((int32)(monitorInfo.rcWork.bottom - monitorInfo.rcWork.top));
                 }
             }
         }

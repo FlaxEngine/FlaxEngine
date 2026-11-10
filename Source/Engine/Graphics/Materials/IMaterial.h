@@ -23,6 +23,8 @@ struct DrawCall;
 class FLAXENGINE_API IMaterial
 {
 public:
+    virtual ~IMaterial() = default;
+
     /// <summary>
     /// Gets the material info, structure which describes material surface.
     /// </summary>

@@ -50,11 +50,11 @@ void BackBufferDX12::Release()
 
 GPUSwapChainDX12::GPUSwapChainDX12(GPUDeviceDX12* device, Window* window)
     : GPUResourceDX12(device, StringView::Empty)
+    , _allowTearing(false)
+    , _isFullscreen(false)
     , _windowHandle(static_cast<HWND>(window->GetNativePtr()))
     , _swapChain(nullptr)
     , _currentFrameIndex(0)
-    , _allowTearing(false)
-    , _isFullscreen(false)
 {
     ASSERT(_windowHandle);
     _window = window;

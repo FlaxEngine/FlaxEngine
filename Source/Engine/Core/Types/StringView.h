@@ -123,7 +123,7 @@ public:
     /// </summary>
     DEPRECATED("Use GetText instead") const T* GetNonTerminatedText() const
     {
-        return _data ? _data : (const T*)TEXT("");
+        return _data ? _data : (const T*)(void*)TEXT("");
     }
 
     /// <summary>
@@ -132,7 +132,7 @@ public:
     /// <returns>The string handle.</returns>
     FORCE_INLINE const T* GetText() const
     {
-        return _data ? _data : (const T*)TEXT("");
+        return _data ? _data : (const T*)(void*)TEXT("");
     }
 
 public:
