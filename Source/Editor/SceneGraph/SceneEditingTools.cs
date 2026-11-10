@@ -26,7 +26,11 @@ namespace FlaxEditor
             }
 
             // Create actor
-            return (Actor)FlaxEngine.Object.New(type.TypeName);
+            {
+                var actor = (Actor)FlaxEngine.Object.New(type.TypeName);
+                actor.Name = type.Name;
+                return actor;
+            }
         }
 
         public static void AddActorContextMenu(ContextMenu contextMenu, Action<ContextMenuButton> spawn, bool isConvert = false)

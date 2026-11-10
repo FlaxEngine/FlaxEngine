@@ -171,7 +171,8 @@ void HZBOcclusionCulling::Submit(const RenderContext& renderContext)
     GPUContext* context = GPUDevice::Instance->GetMainContext();
 
     // Update objects to cull
-    auto frustum = renderContext.View.Frustum;
+    BoundingFrustum frustum;
+    renderContext.View.GetLocalFrustum(frustum);
     auto* items = _items.Get();
     int32 frame = _frameCounter, bufferedFrame = _frameCounter % _framesCount, itemsCount = _items.Count(), itemsEnd = 0;
     for (int32 i = 0; i < itemsCount; i++)
@@ -199,9 +200,9 @@ void HZBOcclusionCulling::Submit(const RenderContext& renderContext)
     }
 
     // Upload object bounds data
-    if (_dirtyBounds || _boundsBuffer.GetBuffer()->GetSize() < sizeof(Float3) * 2 * itemsCount)
+    if (_dirtyBounds || !_boundsBuffer.GetBuffer() || _boundsBuffer.GetBuffer()->GetSize() < sizeof(Float3) * 2 * itemsCount)
         _boundsBuffer.Flush(context);
-    ASSERT(_boundsBuffer.GetBuffer()->GetSize() >= sizeof(Float3) * 2 * itemsCount);
+    ASSERT(_boundsBuffer.GetBuffer() && _boundsBuffer.GetBuffer()->GetSize() >= sizeof(Float3) * 2 * itemsCount);
     ASSERT(_resultsBuffer->GetSize() >= itemsCount * sizeof(ResultValue));
     ASSERT(_readbackBuffers[bufferedFrame]->GetSize() >= itemsCount * sizeof(ResultValue));
 

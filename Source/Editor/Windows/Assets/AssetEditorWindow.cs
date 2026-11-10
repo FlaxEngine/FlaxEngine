@@ -118,7 +118,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     // Ask user for further action
                     var result = MessageBox.Show(
-                        string.Format("Asset \'{0}\' has been edited. Save before closing?", _item.Path),
+                        string.Format("Asset \'{0}\' has been edited.\nSave before closing?", _item.Path),
                         "Save before closing?",
                         MessageBoxButtons.YesNoCancel
                     );

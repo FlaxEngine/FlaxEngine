@@ -69,7 +69,7 @@ public:
             }
         }
 
-        // Check if need to create/resize the global buffer
+        // Safely resize if required size exceeds current chunk limits
         if (CurrentOffset + size > CurrentSize)
         {
             DataLocker.WriteLock(); // Ensure none if writing to this buffer during resize
@@ -78,9 +78,11 @@ public:
             if (ReallocateSize == 0)
                 ReallocateSize = CurrentSize;
 
-            // Grow buffer
+            // Ensure we grow enough to fit the requested size completely to avoid OoB
             CurrentSize = CurrentSize == 0 ? 16 * 1024 : CurrentSize * 2;
-            ASSERT(CurrentOffset + size <= CurrentSize);
+            while (CurrentOffset + size > CurrentSize)
+                CurrentSize *= 2;
+        
             Data.Resize(CurrentSize, true);
 
             DataLocker.WriteUnlock();
@@ -1019,12 +1021,13 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
             Float3 normal = normalStream.GetFloat3(vertexIndex);
             MeshAccessor::UnpackNormal(normal);
             normal.Normalize();
-            MeshAccessor::PackNormal(normal);
-            normalStream.SetFloat3(vertexIndex, normal);
+            Float3 normalPacked = normal;
+            MeshAccessor::PackNormal(normalPacked);
+            normalStream.SetFloat3(vertexIndex, normalPacked);
 
             if (tangentStream.IsValid())
             {
-                Float4 tangentRaw = normalStream.GetFloat4(vertexIndex);
+                Float4 tangentRaw = tangentStream.GetFloat4(vertexIndex);
                 Float3 tangent = Float3(tangentRaw);
                 MeshAccessor::UnpackNormal(tangent);
                 tangent = tangent - ((tangent | normal) * normal);

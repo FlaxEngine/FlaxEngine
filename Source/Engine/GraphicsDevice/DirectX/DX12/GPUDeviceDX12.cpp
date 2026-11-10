@@ -861,10 +861,15 @@ bool GPUDeviceDX12::Init()
             D3D12_FEATURE_DATA_FORMAT_SUPPORT formatInfo = { dxgiFormat };
             if (FAILED(_device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatInfo, sizeof(formatInfo))))
                 formatInfo.Support1 = D3D12_FORMAT_SUPPORT1_NONE;
-            const MSAALevel maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
             FormatSupport support = (FormatSupport)formatInfo.Support1;
             if (EnumHasAllFlags(support, FormatSupport::ShaderLoad))
                 support |= FormatSupport::UnorderedAccess;
+
+            // Query MSAA quality levels only for the formats that can be used as a multisampled render target.
+            MSAALevel maximumMultisampleCount = MSAALevel::None;
+            if (EnumHasAnyFlags(support, FormatSupport::MultisampleRenderTarget))
+                maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
+
             FeaturesPerFormat[i] = FormatFeatures(maximumMultisampleCount, support);
         }
     }
@@ -1152,11 +1157,15 @@ void GPUDeviceDX12::Dispose()
     if (_state == DeviceState::Disposed)
         return;
 
+    // No GPU work to sync with if device failed to initialize
+    const bool isInitialized = _state == DeviceState::Ready;
+
     // Set current state
     _state = DeviceState::Disposing;
 
     // Wait for rendering end
-    WaitForGPU();
+    if (isInitialized)
+        WaitForGPU();
 
 #if DX12_USE_PIPELINE_LIBRARY
     if (PipelineLibrary)

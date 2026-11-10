@@ -74,22 +74,22 @@ public:
     FORCE_INLINE static int32 AtomicRead(int32 const volatile* dst)
     {
         int32 result;
-        __atomic_load(dst, &result, __ATOMIC_RELAXED);
+        __atomic_load(dst, &result, __ATOMIC_SEQ_CST);
         return result;
     }
     FORCE_INLINE static int64 AtomicRead(int64 const volatile* dst)
     {
         int64 result;
-        __atomic_load(dst, &result, __ATOMIC_RELAXED);
+        __atomic_load(dst, &result, __ATOMIC_SEQ_CST);
         return result;
     }
     FORCE_INLINE static void AtomicStore(int32 volatile* dst, int32 value)
     {
-        __atomic_store(dst, &value, __ATOMIC_RELAXED);
+        __atomic_store(dst, &value, __ATOMIC_SEQ_CST);
     }
     FORCE_INLINE static void AtomicStore(int64 volatile* dst, int64 value)
     {
-        __atomic_store(dst, &value, __ATOMIC_RELAXED);
+        __atomic_store(dst, &value, __ATOMIC_SEQ_CST);
     }
     static bool Is64BitPlatform();
     static String GetSystemName();

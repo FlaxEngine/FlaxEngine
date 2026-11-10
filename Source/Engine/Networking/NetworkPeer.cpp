@@ -192,7 +192,8 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
     CHECK_RETURN(message.IsValid(), true);
     CHECK_RETURN(EnumHasNoneFlags(message.Flags, NetworkMessageFlags::HasError), true);
 
-    NetworkDriver->SendMessage(channelType, message, targets);
+    if (targets.HasItems())
+        NetworkDriver->SendMessage(channelType, message, targets);
 
     RecycleMessage(message);
     return false;

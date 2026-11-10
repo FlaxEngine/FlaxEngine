@@ -11,7 +11,7 @@ class GPUDeviceVulkan;
 class UploadBufferPageVulkan;
 
 // Upload buffer page size
-#define VULKAN_DEFAULT_UPLOAD_PAGE_SIZE (4 * 1014 * 1024) // 4 MB
+#define VULKAN_DEFAULT_UPLOAD_PAGE_SIZE (4 * 1024 * 1024) // 4 MB
 
 // Upload buffer generations timeout to dispose
 #define VULKAN_UPLOAD_PAGE_GEN_TIMEOUT 3

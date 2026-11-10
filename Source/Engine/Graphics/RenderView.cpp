@@ -125,7 +125,7 @@ void RenderView::SetUp(const Matrix& view, const Matrix& projection)
     CullingFrustum = Frustum;
 }
 
-void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& position)
+void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& position, float fov)
 {
     // Copy data
     Near = nearPlane;
@@ -133,7 +133,7 @@ void RenderView::SetUpCube(float nearPlane, float farPlane, const Float3& positi
     Position = position;
 
     // Create projection matrix
-    Matrix::PerspectiveFov(PI_OVER_2, 1.0f, nearPlane, farPlane, Projection);
+    Matrix::PerspectiveFov(fov, 1.0f, nearPlane, farPlane, Projection);
     NonJitteredProjection = Projection;
     Matrix::Invert(Projection, IP);
 }
@@ -226,6 +226,18 @@ void RenderView::GetWorldMatrix(Double4x4& world) const
     world.M41 -= Origin.X;
     world.M42 -= Origin.Y;
     world.M43 -= Origin.Z;
+}
+
+void RenderView::GetLocalFrustum(BoundingFrustum& frustum) const
+{
+    frustum = Frustum;
+    if (!Origin.IsZero())
+    {
+        // Translate frustum to the origin
+        Matrix m = frustum.GetMatrix();
+        m.SetTranslation(Origin - m.GetTranslation());
+        frustum.SetMatrix(m);
+    }
 }
 
 TaaJitterRemoveContext::TaaJitterRemoveContext(const RenderView& view)

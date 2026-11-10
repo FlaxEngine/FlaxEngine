@@ -56,9 +56,9 @@ MultiBlendInputs::MultiBlendInputs(AnimGraphNode* node)
     Loop = (bool)node->Values[2];
     StartTime = (float)node->Values[3];
     SyncLength = false;
-    if (node->Values.Count() > 4 && node->Values[4].Type.Type == VariantType::Int)
+    if (node->Values.Count() > 4 && node->Values[4].Type.IsScalar())
     {
-        Sources = (MultiBlendAnimationSources)node->Values[4].AsInt;
+        Sources = (MultiBlendAnimationSources)(int32)node->Values[4];
         AnimationsStartIndex = 5;
     }
 }
@@ -70,9 +70,9 @@ MultiBlendInputs::MultiBlendInputs(AnimGraphExecutor* executor, AnimGraphNode* n
     Loop = (bool)executor->tryGetValue(node->GetBox(2), node->Values[2]);
     StartTime = (float)executor->tryGetValue(node->GetBox(3), node->Values[3]);
     SyncLength = false; // TODO: make it configurable via node settings? (change node->Values[2] to contain flags)
-    if (node->Values.Count() > 4 && node->Values[4].Type.Type == VariantType::Int)
+    if (node->Values.Count() > 4 && node->Values[4].Type.IsScalar())
     {
-        Sources = (MultiBlendAnimationSources)node->Values[4].AsInt;
+        Sources = (MultiBlendAnimationSources)(int32)node->Values[4];
         AnimationsStartIndex = 5;
     }
 }

@@ -279,7 +279,7 @@ void AudioService::Update()
 
     // Update the master volume
     float masterVolume = MasterVolume;
-    if (MuteOnFocusLoss && !Engine::HasFocus)
+    if (MuteOnFocusLoss && Engine::IsPlayMode() && !Engine::HasFocus)
     {
         // Mute audio if app has no user focus
         masterVolume = 0.0f;

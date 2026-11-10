@@ -11,7 +11,7 @@ class GPUDeviceDX12;
 class UploadBufferPageDX12;
 
 // Upload buffer page size
-#define DX12_DEFAULT_UPLOAD_PAGE_SIZE (4 * 1014 * 1024) // 4 MB
+#define DX12_DEFAULT_UPLOAD_PAGE_SIZE (4 * 1024 * 1024) // 4 MB
 
 // Upload buffer generations timeout to dispose
 #define DX12_UPLOAD_PAGE_GEN_TIMEOUT DX12_BACK_BUFFER_COUNT
