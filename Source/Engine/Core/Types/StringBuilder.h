@@ -240,9 +240,9 @@ namespace fmt
         }
 
         template<typename FormatContext>
-        auto format(const String& v, FormatContext& ctx) -> decltype(ctx.out())
+        auto format(const String& v, FormatContext& ctx) const -> decltype(ctx.out())
         {
-            return fmt::detail::copy_str<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
+            return fmt::detail::copy<Char>(v.Get(), v.Get() + v.Length(), ctx.out());
         }
     };
 }

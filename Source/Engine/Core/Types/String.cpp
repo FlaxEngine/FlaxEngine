@@ -6,6 +6,12 @@
 
 const String String::Empty;
 
+namespace fmt_flax
+{
+    template void fmt_flax::format<Char, String>(fmt::basic_memory_buffer<Char, fmt::inline_buffer_size, std_flax::allocator<Char>>&, const Char*, const String&);
+    template void fmt_flax::format<char, StringAnsi>(fmt::basic_memory_buffer<char, fmt::inline_buffer_size, std_flax::allocator<char>>&, const char*, const StringAnsi&);
+}
+
 String::String(const StringAnsi& str)
 {
     Set(str.Get(), str.Length());
