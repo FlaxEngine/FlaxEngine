@@ -137,9 +137,7 @@ namespace Flax.Deps.Dependencies
                         libName = "msdfgen-core.lib";
                         break;
                     case TargetPlatform.Linux:
-                        envVars["CC"] = "clang-" + LinuxConfiguration.ClangMinVer;
-                        envVars["CC_FOR_BUILD"] = "clang-" + LinuxConfiguration.ClangMinVer;
-                        envVars["CXX"] = "clang++-" + LinuxConfiguration.ClangMinVer;
+                        SetupLinuxEnvVars(envVars);
                         cmakeArgs += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
                         break;
                     }

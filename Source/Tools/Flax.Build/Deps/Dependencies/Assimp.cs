@@ -151,15 +151,8 @@ namespace Flax.Deps.Dependencies
                     }
                     case TargetPlatform.Linux:
                     {
-                        var envVars = new Dictionary<string, string>
-                        {
-                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CXX", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                        };
-
                         // Build for Linux
+                        SetupLinuxEnvVars(out var envVars);
                         File.Delete(Path.Combine(root, "CMakeCache.txt"));
                         RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
                         Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool, envVars);

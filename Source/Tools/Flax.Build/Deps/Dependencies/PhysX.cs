@@ -220,9 +220,7 @@ namespace Flax.Deps.Dependencies
                 break;
             }
             case TargetPlatform.Linux:
-                envVars.Add("CC", "clang-" + LinuxConfiguration.ClangMinVer);
-                envVars.Add("CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer);
-                envVars.Add("CXX", "clang++-" + LinuxConfiguration.ClangMinVer);
+                SetupLinuxEnvVars(envVars);
                 break;
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);

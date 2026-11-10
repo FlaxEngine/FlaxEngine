@@ -2,7 +2,6 @@
 
 using Flax.Build;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -157,12 +156,7 @@ namespace Flax.Deps.Dependencies
                             "--enable-static",
                             "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
                         };
-                        var envVars = new Dictionary<string, string>
-                        {
-                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                        };
+                        SetupLinuxEnvVars(out var envVars);
                         var buildDir = Path.Combine(root, "build");
                         SetupDirectory(buildDir, true);
                         Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.DefaultTool);

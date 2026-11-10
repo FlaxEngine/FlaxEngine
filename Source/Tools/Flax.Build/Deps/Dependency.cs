@@ -729,5 +729,18 @@ namespace Flax.Deps
             msBuildPath = VCEnvironment.MSBuildPath;
             return false;
         }
+
+        internal static void SetupLinuxEnvVars(out Dictionary<string, string> envVars)
+        {
+            envVars = new Dictionary<string, string>();
+            SetupLinuxEnvVars(envVars);
+        }
+
+        internal static void SetupLinuxEnvVars(Dictionary<string, string> envVars)
+        {
+            envVars["CC"] = envVars["CC_FOR_BUILD"] = "clang-" + LinuxConfiguration.ClangMinVer;
+            envVars["CXX"] = "clang++-" + LinuxConfiguration.ClangMinVer;
+            envVars["CMAKE_BUILD_PARALLEL_LEVEL"] = CmakeBuildParallel;
+        }
     }
 }

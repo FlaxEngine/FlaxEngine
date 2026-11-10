@@ -79,12 +79,7 @@ namespace Flax.Deps.Dependencies
                     }
                     case TargetPlatform.Linux:
                     {
-                        var envVars = new Dictionary<string, string>
-                        {
-                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                        };
+                        SetupLinuxEnvVars(out var envVars);
 
                         // Fix scripts
                         Utilities.Run("dos2unix", "autogen.sh", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);

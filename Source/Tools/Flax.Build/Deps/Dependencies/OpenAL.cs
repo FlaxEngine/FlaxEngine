@@ -158,13 +158,7 @@ namespace Flax.Deps.Dependencies
                         {
                             "libopenal.a",
                         };
-                        var envVars = new Dictionary<string, string>
-                        {
-                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CXX", "clang++-" + LinuxConfiguration.ClangMinVer },
-                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                        };
+                        SetupLinuxEnvVars(out var envVars);
                         var config = $"-DALSOFT_REQUIRE_ALSA=ON " +
                                      $"-DALSOFT_REQUIRE_OSS=ON " +
                                      $"-DALSOFT_REQUIRE_PORTAUDIO=ON " +

@@ -248,13 +248,7 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Linux:
                 oggConfig += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
                 vorbisConfig += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
-                envVars = new Dictionary<string, string>
-                {
-                    { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
-                    { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
-                    { "CXX", "clang++-" + LinuxConfiguration.ClangMinVer },
-                    { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                };
+                SetupLinuxEnvVars(envVars);
                 ext = ".a";
                 break;
             case TargetPlatform.Mac:

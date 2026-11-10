@@ -154,12 +154,10 @@ namespace Flax.Deps.Dependencies
                     {
                         var envVars = new Dictionary<string, string>
                         {
-                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CXX", "clang++-" + LinuxConfiguration.ClangMinVer },
                             { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                         };
-
+                        if (platform == TargetPlatform.Linux)
+                            SetupLinuxEnvVars(envVars);
                         cmakeArgs = ".. " + cmakeArgs;
                         RunCmake(buildDir, platform, architecture, cmakeArgs, envVars);
                         BuildCmake(buildDir, configuration, options:Utilities.RunOptions.ConsoleLogOutput, envVars: envVars);
