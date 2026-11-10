@@ -163,6 +163,10 @@ struct Material
 #endif
 };
 
+// Values of the RenderLocation constant (keep in sync with RenderLocations enum in RenderTask.h)
+#define RENDER_LOCATION_SCENE 0
+#define RENDER_LOCATION_ASSET_PREVIEW 1
+
 // Secondary constant buffer (with per-view constants at slot 1)
 #if USE_PER_VIEW_CONSTANTS
 cbuffer ViewData : register(b1)
@@ -185,6 +189,8 @@ cbuffer ViewData : register(b1)
     float ViewPadding0;
     float TestValue;
     float ScaledTimeParam;
+    uint RenderLocation; // One of RENDER_LOCATION_* values (matches RenderLocations enum in RenderTask.h)
+    uint3 ViewPadding1;
 };
 #endif
 
