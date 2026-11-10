@@ -320,10 +320,9 @@ WindowHitCodes SDLWindow::OnWindowHit(const Float2 point)
         OnHitTest(screenPosition, hit, handled);
         if (!handled)
         {
-            int margin = _settings.HasBorder ? 0 : 0;
+            // Handle native window decoration hit tests here
+            int margin = _settings.HasBorder ? 0 : 0; // Some platforms may also extend the margin outside the window edges
             auto size = GetClientSize();
-            //if (point.Y < 0)
-            //    hit = WindowHitCodes::Caption;
             if (point.Y < margin && point.X < margin)
                 hit = WindowHitCodes::TopLeft;
             else if (point.Y < margin && point.X > size.X - margin)

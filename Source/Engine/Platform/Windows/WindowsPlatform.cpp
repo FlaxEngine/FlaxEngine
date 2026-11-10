@@ -839,7 +839,6 @@ void WindowsPlatform::Tick()
 {
 #if !PLATFORM_SDL
     WindowsInput::Update();
-#endif
 
     // Check to see if any messages are waiting in the queue
     MSG msg;
@@ -849,6 +848,7 @@ void WindowsPlatform::Tick()
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+#endif
 }
 
 void WindowsPlatform::BeforeExit()
