@@ -749,7 +749,7 @@ template <typename T> struct allocator : private std::decay<void> {
     return static_cast<T*>(detail::allocate(n * sizeof(T)));
   }
 
-  void deallocate(T* p, size_t) { free(p); }
+  void deallocate(T* p, size_t) { Platform::Free(p); }
 
   constexpr friend auto operator==(allocator, allocator) noexcept -> bool {
     return true;  // All instances of this allocator are equivalent.

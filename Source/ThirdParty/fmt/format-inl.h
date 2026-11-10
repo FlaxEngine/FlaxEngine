@@ -90,7 +90,7 @@ template <typename Locale> auto locale_ref::get() const -> Locale {
 namespace detail {
 
 FMT_FUNC auto allocate(size_t size) -> void* {
-  void* p = malloc(size);
+  void* p = Platform::Allocate(size, 16);
 #if FMT_EXCEPTIONS
   if (!p) FMT_THROW(std::bad_alloc());
 #else

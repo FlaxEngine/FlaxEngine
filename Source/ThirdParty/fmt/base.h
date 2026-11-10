@@ -37,9 +37,10 @@ Customizations done to fmt lib:
 #define FMT_USE_ITERATOR 0
 #define FMT_USE_LOCALE_GROUPING 0
 #define FMT_USE_EXCEPTIONS 0 
-#define FMT_USE_LOCALE 0
+#define FMT_USE_LOCALE 1
 #define FMT_USE_FILE 0
 #define FMT_CUSTOM_ASSERT_FAIL 1
+#define FMT_UNICODE 0
 #if ENABLE_ASSERTION
 #define FMT_ASSERT(condition, message) if (!(condition)) { Platform::Assert(message, __FILE__, __LINE__); }
 #else
