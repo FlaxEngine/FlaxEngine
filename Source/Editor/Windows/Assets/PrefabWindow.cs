@@ -301,6 +301,7 @@ namespace FlaxEditor.Windows.Assets
             var query = _searchBox.Text;
             var root = Graph.Root;
             root.TreeNode.UpdateFilter(query);
+            root.TreeNode.Expand(true);
 
             _tree.UnlockChildrenRecursive();
             PerformLayout();

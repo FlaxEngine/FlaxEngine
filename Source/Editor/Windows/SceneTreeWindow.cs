@@ -182,6 +182,12 @@ namespace FlaxEditor.Windows
             var query = _searchBox.Text;
             var root = Editor.Scene.Root;
             root.TreeNode.UpdateFilter(query);
+            root.TreeNode.Expand(true);
+            foreach (var child in root.TreeNode.Children)
+            {
+                if (child is TreeNode node)
+                    node.ExpandAll(true);
+            }
 
             _tree.UnlockChildrenRecursive();
 
