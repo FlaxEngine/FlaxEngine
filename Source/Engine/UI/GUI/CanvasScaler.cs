@@ -458,9 +458,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override Float2 PointToParent(ref Float2 location)
         {
-            var result = base.PointToParent(ref location);
-            result *= _scale;
-            result += Location * (1 - _scale); // Cancel-out scaling of the location in parent space
+            var result = location * _scale;
+            result = base.PointToParent(ref result);
             return result;
         }
 
@@ -468,9 +467,9 @@ namespace FlaxEngine.GUI
         public override Float2 PointFromParent(ref Float2 location)
         {
             // Reverse PointToParent
-            var result = location - Location * (1 - _scale);
+            var result =  base.PointFromParent(ref location);
             result /= _scale;
-            return base.PointFromParent(ref result);
+            return result;
         }
 
         #endregion
