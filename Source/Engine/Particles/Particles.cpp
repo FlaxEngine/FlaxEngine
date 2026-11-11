@@ -685,12 +685,19 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
     PROFILE_GPU_CPU_NAMED("DrawEmittersGPU");
     ScopeReadLock systemScope(Particles::SystemLocker);
 
+    // Sort particles for the proxy view if used (eg. both eyes in XR use the same order so particles are sorted once)
+    const RenderContext& mainContext = renderContextBatch.GetMainContext();
+    const RenderView* proxyView = mainContext.Task ? mainContext.Task->ProxyView : nullptr;
+    const RenderView& sortView = proxyView ? *proxyView : mainContext.View;
+
     // Count draws and sorting passes needed for resources allocation
     uint32 indirectArgsSize = 0;
     bool sorting = false;
-    for (const GPUEmitterDraw& draw : GPUEmitterDraws)
+    for (GPUEmitterDraw& draw : GPUEmitterDraws)
     {
         indirectArgsSize += draw.IndirectArgsSize;
+        if (draw.Sorting && proxyView && draw.Buffer->GPU.SortedView == proxyView && draw.Buffer->GPU.SortedFrame == Engine::FrameCount)
+            draw.Sorting = false; // Already sorted in this frame
         sorting |= draw.Sorting;
     }
 
@@ -896,7 +903,7 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
                     {
                         permutationIndex = 0;
                         data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
-                        const Matrix viewProjection = renderContextBatch.GetMainContext().View.ViewProjection();
+                        const Matrix viewProjection = sortView.ViewProjection();
                         if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
                             Matrix::Transpose(draw.DrawCall.World * viewProjection, data.PositionTransform);
                         else
@@ -907,7 +914,7 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
                     {
                         permutationIndex = 1;
                         data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
-                        data.ViewPosition = renderContextBatch.GetMainContext().View.Position;
+                        data.ViewPosition = sortView.Position;
                         if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
                             Matrix::Transpose(draw.DrawCall.World, data.PositionTransform);
                         else
@@ -932,6 +939,8 @@ void DrawEmittersGPU(GPUContext* context, RenderContextBatch& renderContextBatch
                     const int32 threadGroupSize = 1024;
                     context->Dispatch(GPUParticlesSortingCS[permutationIndex], Math::DivideAndRoundUp(draw.Buffer->GPU.ParticlesCountMax, threadGroupSize), 1, 1);
                 }
+                draw.Buffer->GPU.SortedFrame = Engine::FrameCount;
+                draw.Buffer->GPU.SortedView = proxyView;
             }
             context->ResetUA();
         }

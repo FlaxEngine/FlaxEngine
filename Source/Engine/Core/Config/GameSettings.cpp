@@ -22,6 +22,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Streaming/StreamingSettings.h"
+#include "Engine/XR/XRSettings.h"
 #include "Engine/Serialization/Serialization.h"
 #if FLAX_TESTS || USE_EDITOR
 #include "Engine/Platform/FileSystem.h"
@@ -91,6 +92,7 @@ IMPLEMENT_ENGINE_SETTINGS_GETTER(AudioSettings, Audio);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(PhysicsSettings, Physics);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(InputSettings, Input);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(StreamingSettings, Streaming);
+IMPLEMENT_ENGINE_SETTINGS_GETTER(XRSettings, XR);
 
 #if !USE_EDITOR
 #if PLATFORM_WINDOWS
@@ -212,6 +214,7 @@ bool GameSettings::Load()
     PRELOAD_SETTINGS(Localization);
     PRELOAD_SETTINGS(GameCooking);
     PRELOAD_SETTINGS(Streaming);
+    PRELOAD_SETTINGS(XR);
 #undef PRELOAD_SETTINGS
 
     // Apply the game settings to the engine
@@ -289,6 +292,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(Localization);
     DESERIALIZE(GameCooking);
     DESERIALIZE(Streaming);
+    DESERIALIZE(XR);
 
     // Per-platform settings containers
     DESERIALIZE(WindowsPlatform);

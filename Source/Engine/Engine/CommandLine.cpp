@@ -55,6 +55,8 @@ bool InitCommandLine(const Char* cmdLine)
     PARSE_BOOL_SWITCH("intel", Intel);
     PARSE_BOOL_SWITCH("mute", Mute);
     PARSE_BOOL_SWITCH("lowdpi", LowDPI);
+    PARSE_BOOL_SWITCH("xr", XR);
+    PARSE_BOOL_SWITCH("noxr", NoXR);
 #if PLATFORM_LINUX && PLATFORM_SDL
     PARSE_BOOL_SWITCH("wayland", Wayland);
     PARSE_BOOL_SWITCH("x11", X11);

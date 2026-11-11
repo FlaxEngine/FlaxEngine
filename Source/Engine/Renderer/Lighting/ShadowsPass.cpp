@@ -190,6 +190,7 @@ struct ShadowAtlasLight
     uint64 LastFrameUsed;
     int32 ContextIndex;
     int32 ContextCount;
+    uint32 ShadowsBufferAddress;
     uint16 Resolution;
     uint16 StaticResolution;
     uint8 TilesNeeded;
@@ -450,6 +451,12 @@ public:
     {
     }
 };
+
+const ShadowsCustomBuffer* GetLinkedShadows(const RenderBuffers* renderBuffers)
+{
+    const ShadowsCustomBuffer* linkedShadows = renderBuffers->LinkedShadows ? renderBuffers->LinkedShadows->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false) : nullptr;
+    return linkedShadows && linkedShadows->LastFrameUsed == Engine::FrameCount ? linkedShadows : nullptr;
+}
 
 void ShadowsAtlasRectTile::OnInsert(ShadowsCustomBuffer* buffer, bool isStatic)
 {
@@ -720,8 +727,8 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
 {
     const auto& view = renderContext.View;
 
-    // Use the current render view to sync model LODs with the shadow maps rendering stage
-    shadowContext.LodProxyView = &renderContext.View;
+    // Use the current render view (or its LOD proxy) to sync model LODs with the shadow maps rendering stage
+    shadowContext.LodProxyView = renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View;
 
     // Prepare properties
     auto& shadowView = shadowContext.View;
@@ -991,6 +998,10 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 #if COMPILE_WITH_PROFILER
     atlasLight.Type = ShadowAtlasLight::Directional;
 #endif
+
+    // Fit cascades to the proxy view if used (eg. to share the shadow maps between both eyes in XR)
+    const RenderView& view = renderContext.Task && renderContext.Task->ProxyView ? *renderContext.Task->ProxyView : renderContext.View;
+
     const int32 csmCount = atlasLight.TilesCount;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
     atlasLight.BlendCSM = Graphics::AllowCSMBlending;
@@ -1004,9 +1015,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 #endif
 
     // Calculate cascade splits
-    const float minDistance = renderContext.View.Near;
-    const float maxDistance = renderContext.View.Near + atlasLight.Distance;
-    const float viewRange = renderContext.View.Far - renderContext.View.Near;
+    const float minDistance = view.Near;
+    const float maxDistance = view.Near + atlasLight.Distance;
+    const float viewRange = view.Far - view.Near;
     float cascadeSplits[MAX_CSM_CASCADES];
     {
         PartitionMode partitionMode = light.PartitionMode;
@@ -1060,13 +1071,13 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
 
         // Convert distance splits to ratios cascade in the range [0, 1]
         for (int32 i = 0; i < MAX_CSM_CASCADES; i++)
-            cascadeSplits[i] = (cascadeSplits[i] - renderContext.View.Near) / viewRange;
+            cascadeSplits[i] = (cascadeSplits[i] - view.Near) / viewRange;
     }
-    atlasLight.CascadeSplits = renderContext.View.Near + Float4(cascadeSplits) * viewRange;
+    atlasLight.CascadeSplits = view.Near + Float4(cascadeSplits) * viewRange;
     atlasLight.CascadeBlendSize = Math::Saturate(light.CascadeBlendSize);
 
     // Update cached state (invalidate it if the light changed)
-    atlasLight.ValidateCache(renderContext.View, light);
+    atlasLight.ValidateCache(view, light);
 
     // Update cascades to check which should be updated this frame
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
@@ -1100,7 +1111,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     if (atlasLight.ContextCount == 0)
         return;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
-    atlasLight.Cache.Set(renderContext.View, light, atlasLight.CascadeSplits);
+    atlasLight.Cache.Set(view, light, atlasLight.CascadeSplits);
 
     // Get the 8 points of the view frustum in view-space (unproject from clip-space)
     Float3 frustumCornersVs[8];
@@ -1117,14 +1128,14 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
             Float3(-1.0f, -1.0f, GPU_DEPTH_RANGE_MAX),
         };
         Matrix invProjectionMatrix;
-        Matrix::Invert(renderContext.View.NonJitteredProjection, invProjectionMatrix);
+        Matrix::Invert(view.NonJitteredProjection, invProjectionMatrix);
         for (int32 i = 0; i < 8; i++)
             Float3::TransformCoordinate(frustumCornersCs[i], invProjectionMatrix, frustumCornersVs[i]);
     }
 
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;
-    float splitMaxRatio = (minDistance - renderContext.View.Near) / viewRange;
+    float splitMaxRatio = (minDistance - view.Near) / viewRange;
     int32 contextIndex = 0;
     for (int32 cascadeIndex = 0; cascadeIndex < csmCount; cascadeIndex++)
     {
@@ -1150,7 +1161,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         // Transform the frustum from camera view space to world-space
         Float3 cascadeCornersWs[8];
         for (int32 i = 0; i < 8; i++)
-            Float3::Transform(cascadeCornersVs[i], renderContext.View.IV, cascadeCornersWs[i]);
+            Float3::Transform(cascadeCornersVs[i], view.IV, cascadeCornersWs[i]);
 
         // Calculate the centroid of the view frustum slice
         Float3 frustumCenter = Float3::Zero;
@@ -1210,7 +1221,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         // Setup context for cascade
         auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
         SetupRenderContext(renderContext, shadowContext);
-        shadowContext.View.Position = light.Direction * -atlasLight.Distance + renderContext.View.Position;
+        shadowContext.View.Position = light.Direction * -atlasLight.Distance + view.Position;
         shadowContext.View.Direction = light.Direction;
         shadowContext.View.SetUp(shadowView, shadowProjection);
         shadowContext.View.CullingFrustum.SetMatrix(cullingVP);
@@ -1383,6 +1394,23 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
 #if COMPILE_WITH_PROFILER
         UpdateDumpShadows();
 #endif
+        return;
+    }
+
+    // Use shadow maps from the linked view if it was rendered in this frame (eg. right eye view using the left eye view in XR)
+    const ShadowsCustomBuffer* linkedShadows = GetLinkedShadows(renderContext.Buffers);
+    if (linkedShadows && linkedShadows->ViewOrigin == renderContext.View.Origin)
+    {
+        for (RenderLightData* light : shadowedLights)
+        {
+            const ShadowAtlasLight* linkedAtlasLight = linkedShadows->Lights.TryGet(light->ID);
+            light->ShadowsBufferAddress = linkedAtlasLight ? linkedAtlasLight->ShadowsBufferAddress : 0;
+            light->HasShadow = light->ShadowsBufferAddress != 0;
+        }
+
+        // Invalidate any existing custom buffer (shadow maps are not rendered by this view)
+        if (auto* old = (ShadowsCustomBuffer*)renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false))
+            old->LastFrameUsed = 0;
         return;
     }
 
@@ -1630,11 +1658,10 @@ RETRY_ATLAS_SETUP:
                     tile.LinkedRectTile = nullptr;
                     auto& linkedTile = linkedAtlasLight->Tiles[tileIndex];
 
-                    // Link tile and use its projection
-                    if (linkedTile.RectTile)
+                    // Link tile only if it uses the same projection (eg. directional light cascades depend on the view frustum), the tile objects are drawn on top of the linked shadow
+                    if (linkedTile.RectTile && linkedTile.WorldToShadow == tile.WorldToShadow)
                     {
                         tile.LinkedRectTile = linkedTile.RectTile;
-                        tile.WorldToShadow = linkedTile.WorldToShadow;
                     }
                 }
             }
@@ -1664,11 +1691,13 @@ RETRY_ATLAS_SETUP:
         if (atlasLight.Tiles[0].RectTile == nullptr)
         {
             light->ShadowsBufferAddress = 0; // Clear to indicate no shadow
+            atlasLight.ShadowsBufferAddress = 0;
             continue;
         }
 
         // Cache start of the shadow data for this light
         light->ShadowsBufferAddress = shadows.ShadowsBuffer.Data.Count() / sizeof(Float4);
+        atlasLight.ShadowsBufferAddress = light->HasShadow ? light->ShadowsBufferAddress : 0; // Used by views that share the shadow maps
 
         // Write shadow data (this must match HLSL)
         {
@@ -1861,7 +1890,10 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     PROFILE_GPU_CPU("Shadow");
     GPUContext* context = GPUDevice::Instance->GetMainContext();
     RenderContext& renderContext = renderContextBatch.GetMainContext();
-    const ShadowsCustomBuffer& shadows = *renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
+    const ShadowsCustomBuffer* shadowsPtr = renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
+    if (shadowsPtr == nullptr || shadowsPtr->LastFrameUsed != Engine::FrameCount)
+        shadowsPtr = GetLinkedShadows(renderContext.Buffers);
+    const ShadowsCustomBuffer& shadows = *shadowsPtr;
     ASSERT(shadows.LastFrameUsed == Engine::FrameCount);
     auto& view = renderContext.View;
     auto shader = _shader->GPU;
@@ -1946,6 +1978,8 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
 void ShadowsPass::GetShadowAtlas(const RenderBuffers* renderBuffers, GPUTexture*& shadowMapAtlas, GPUBufferView*& shadowsBuffer)
 {
     const ShadowsCustomBuffer* shadowsPtr = renderBuffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
+    if (shadowsPtr == nullptr || shadowsPtr->LastFrameUsed != Engine::FrameCount)
+        shadowsPtr = GetLinkedShadows(renderBuffers);
     if (shadowsPtr && shadowsPtr->ShadowMapAtlas && shadowsPtr->LastFrameUsed == Engine::FrameCount)
     {
         shadowMapAtlas = shadowsPtr->ShadowMapAtlas;

@@ -565,8 +565,8 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "	{{\n"
                 "		// Position (depth)\n"
                 "		float linearDepth = ({4} * ViewFar) - {3};\n"
-                "		float2 uv = {1} * float2(2.0, -2.0) + float2(-1.0, 1.0);\n"
-                "		float3 viewPos = float3(uv * ViewInfo.xy * linearDepth, linearDepth);\n"
+                "		float3 viewDir = mul(float4(ReprojectPosition({1}, 1.0f), 1), ViewMatrix).xyz;\n" // Supports off-center projection (eg. XR views)
+                "		float3 viewPos = viewDir / viewDir.z * linearDepth;\n"
                 "		{0} = mul(float4(viewPos, 1), InvViewMatrix).xyz;\n"
                 "		{0} = mul(float4({0}, 1), InvWorldMatrix).xyz;\n" // TODO: don't transform by InvWorldMatrix if particle system uses World Space simulation
                 "		if ({4} < {2}.x || {4} > {2}.y)\n"

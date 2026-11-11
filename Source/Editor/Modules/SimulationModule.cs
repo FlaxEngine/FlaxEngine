@@ -267,6 +267,19 @@ namespace FlaxEditor.Modules
         }
 
         /// <inheritdoc />
+        public override void OnInit()
+        {
+            Editor.Options.OptionsChanged += OnOptionsChanged;
+        }
+
+        private void OnOptionsChanged(Options.EditorOptions options)
+        {
+            // Start or end rendering to the head-mounted display if Play In VR gets changed in play mode
+            if (Editor.StateMachine.IsPlayMode)
+                XR.SessionEnabled = options.Interface.PlayInVR;
+        }
+
+        /// <inheritdoc />
         public override void OnPlayBeginning()
         {
             Editor.Windows.FlashMainWindow();
@@ -301,6 +314,19 @@ namespace FlaxEditor.Modules
             }
 
             Editor.Log("[PlayMode] Enter");
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayBegin()
+        {
+            // Render game to the head-mounted display (if XR is used)
+            XR.SessionEnabled = Editor.Options.Options.Interface.PlayInVR;
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayEnding()
+        {
+            XR.SessionEnabled = false;
         }
 
         /// <inheritdoc />

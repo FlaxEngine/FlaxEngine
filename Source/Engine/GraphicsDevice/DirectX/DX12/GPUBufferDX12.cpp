@@ -131,7 +131,7 @@ bool GPUBufferDX12::OnInit()
         allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
     }
     ID3D12Resource* resource;
-    D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
+    D3D12_RESOURCE_STATES initialState = allocationDesc.HeapType == D3D12_HEAP_TYPE_READBACK ? D3D12_RESOURCE_STATE_COPY_DEST : D3D12_RESOURCE_STATE_COMMON;
     HRESULT result = _device->Allocator->CreateResource(&allocationDesc, &resourceDesc, initialState, nullptr, &_allocation, IID_PPV_ARGS(&resource));
     if (FAILED(result))
     {

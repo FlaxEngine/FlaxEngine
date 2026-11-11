@@ -62,6 +62,17 @@ API_STRUCT(NoDefault) struct GPUMemoryStats
 };
 
 /// <summary>
+/// The hints used when creating the graphics device (eg. to match the adapter required by the XR runtime).
+/// </summary>
+struct FLAXENGINE_API GPUDeviceCreationHints
+{
+    /// <summary>
+    /// The locally unique identifier (LUID) of the adapter to use. Zero if not specified.
+    /// </summary>
+    uint64 RequiredAdapterLuid = 0;
+};
+
+/// <summary>
 /// Graphics device object for rendering on GPU.
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUDevice : public ScriptingObject
@@ -157,6 +168,11 @@ public:
     /// The singleton instance of the graphics device.
     /// </summary>
     API_FIELD(ReadOnly) static GPUDevice* Instance;
+
+    /// <summary>
+    /// The hints used when creating the graphics device. Must be set before the graphics service initialization.
+    /// </summary>
+    static GPUDeviceCreationHints CreationHints;
 
 protected:
     // State

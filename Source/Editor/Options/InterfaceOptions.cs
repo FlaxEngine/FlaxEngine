@@ -544,6 +544,13 @@ namespace FlaxEditor.Options
         public GameWindowMode DefaultGameWindowMode { get; set; } = GameWindowMode.Docked;
 
         /// <summary>
+        /// Gets or sets a value indicating whether the game should be rendered to the head-mounted display in play mode.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Play In-Editor", "Play In VR"), EditorOrder(530), Tooltip("Renders the game to the head-mounted display (eg. SteamVR) in play mode. Requires XR to be enabled in the XR Settings (or the -xr command line option) when the editor starts.")]
+        public bool PlayInVR { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a value indicating the number of game clients to launch when building and/or running cooked game.
         /// </summary>
         [DefaultValue(1), Range(1, 4)]
