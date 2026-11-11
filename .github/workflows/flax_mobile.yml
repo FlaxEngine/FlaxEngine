@@ -47,22 +47,17 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
     - name: Install Android SDK components
       run: |
-        yes | sdkmanager --licenses > /dev/null || true
-        sdkmanager --install "cmdline-tools;latest" > /dev/null
-        sdkmanager --install "platform-tools" > /dev/null
-        sdkmanager --install "platforms;android-33" > /dev/null
-        sdkmanager --install "build-tools;33.0.2" > /dev/null
-        sdkmanager --install "ndk;27.0.12077973" > /dev/null
+        SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+        yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+        "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" > /dev/null
     - name: Set Android env vars
       run: |
-        SDK_ROOT="$ANDROID_HOME"
+        SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
         echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
-        echo "ANDROID_NDK=$SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+        echo "ANDROID_NDK=$SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
         echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
     - name: Patch global.json (latestMajor -> minor)
       run: |
@@ -113,22 +108,17 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
     - name: Install Android SDK components
       run: |
-        yes | sdkmanager --licenses > /dev/null || true
-        sdkmanager --install "cmdline-tools;latest" > /dev/null
-        sdkmanager --install "platform-tools" > /dev/null
-        sdkmanager --install "platforms;android-33" > /dev/null
-        sdkmanager --install "build-tools;33.0.2" > /dev/null
-        sdkmanager --install "ndk;27.0.12077973" > /dev/null
+        SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+        yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+        "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" > /dev/null
     - name: Set Android env vars
       run: |
-        SDK_ROOT="$ANDROID_HOME"
+        SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
         echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
         echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
-        echo "ANDROID_NDK=$SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+        echo "ANDROID_NDK=$SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
         echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
     - name: Install editor dependencies
       run: |
