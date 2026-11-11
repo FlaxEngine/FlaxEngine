@@ -41,6 +41,6 @@ public class Game : Script
             Position = Float3.Zero,
         };
         cube.AddScript<DemoCube>();
-        Actor.AddChild(cube);
+        cube.Parent = Actor;
     }
 }

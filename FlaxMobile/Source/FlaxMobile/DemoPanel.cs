@@ -27,7 +27,6 @@ public class DemoPanel : ContainerControl
             AnchorPreset = AnchorPresets.TopCenter,
             Offsets = new Margin(-220, 440, 40, 60),
             TextColor = Color.White,
-            FontSize = 34,
             HorizontalAlignment = TextAlignment.Center,
         };
         AddChild(_titleLabel);
@@ -39,7 +38,6 @@ public class DemoPanel : ContainerControl
             AnchorPreset = AnchorPresets.TopLeft,
             Offsets = new Margin(16, 380, 20, 34),
             TextColor = new Color(0.85f, 0.9f, 1.0f),
-            FontSize = 16,
         };
         AddChild(_statsLabel);
 
@@ -50,7 +48,6 @@ public class DemoPanel : ContainerControl
             AnchorPreset = AnchorPresets.BottomCenter,
             Offsets = new Margin(-260, 520, -70, 44),
             TextColor = new Color(0.9f, 0.9f, 0.9f, 0.9f),
-            FontSize = 16,
             HorizontalAlignment = TextAlignment.Center,
         };
         AddChild(_hintLabel);
@@ -62,8 +59,7 @@ public class DemoPanel : ContainerControl
             AnchorPreset = AnchorPresets.BottomRight,
             Offsets = new Margin(-130, 110, -80, 54),
         };
-        _quitButton.FontSize = 22;
-        _quitButton.Clicked += Engine.RequestExit;
+        _quitButton.Clicked += () => Engine.RequestExit();
         AddChild(_quitButton);
     }
 
