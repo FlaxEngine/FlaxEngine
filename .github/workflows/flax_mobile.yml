@@ -198,6 +198,8 @@ jobs:
     runs-on: ubuntu-24.04
     needs: cook-apk
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
     steps:
     - name: Checkout repo
       uses: actions/checkout@v6
