@@ -149,7 +149,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             base.Update(deltaTime);
 
             // Disable red tint on missing member
-            TitleTintColor = Color.White;
+            TextColor = FlaxEngine.GUI.Style.Current.Foreground;
         }
     }
 }

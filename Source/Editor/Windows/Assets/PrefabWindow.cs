@@ -25,7 +25,7 @@ namespace FlaxEditor.Windows.Assets
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
-        private readonly TextBox _searchBox;
+        private readonly SearchBox _searchBox;
         private readonly Panel _treePanel;
         private readonly PrefabTree _tree;
         private readonly PrefabWindowViewport _viewport;
@@ -154,31 +154,10 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Prefab structure tree searching query input box
-            var headerPanel = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                BackgroundColor = Style.Current.Background,
-                IsScrollable = false,
-                Offsets = new Margin(0, 0, 0, 18 + 6),
-            };
-            _searchBox = new SearchBox
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = headerPanel,
-                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
-                TooltipText = "Search the prefab.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
-            };
+            SceneEditingTools.BuildTreePanel(sceneTreePanel, out _searchBox, out _treePanel);
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
             // Prefab structure tree
-            _treePanel = new Panel
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0.0f, 0.0f, headerPanel.Bottom, 0.0f),
-                ScrollBars = ScrollBars.Both,
-                IsScrollable = true,
-                Parent = sceneTreePanel,
-            };
             Graph = new LocalSceneGraph(new CustomRootNode(this));
             Graph.Root.TreeNode.Expand(true);
             _tree = new PrefabTree
@@ -190,7 +169,6 @@ namespace FlaxEditor.Windows.Assets
             _tree.SelectedChanged += OnTreeSelectedChanged;
             _tree.RightClick += OnTreeRightClick;
             _tree.Parent = _treePanel;
-            headerPanel.Parent = sceneTreePanel;
 
             // Prefab viewport
             _viewport = new PrefabWindowViewport(this)

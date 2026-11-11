@@ -281,11 +281,11 @@ namespace FlaxEditor.GUI
             Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
             BackgroundColor = style.BackgroundNormal;
-            BackgroundColorHighlighted = BackgroundColor;
-            BackgroundColorSelected = BackgroundColor;
+            BackgroundColorHighlighted = style.BackgroundHighlighted;
+            BackgroundColorSelected = style.BackgroundSelected;
             BorderColor = style.BorderNormal;
-            BorderColorHighlighted = style.BorderSelected;
-            BorderColorSelected = BorderColorHighlighted;
+            BorderColorHighlighted = style.BorderHighlighted;
+            BorderColorSelected = style.BorderSelected;
             ArrowImage = new SpriteBrush(style.ArrowDown);
             ArrowColor = style.Foreground * 0.6f;
             ArrowColorSelected = style.BackgroundSelected;
@@ -432,7 +432,7 @@ namespace FlaxEditor.GUI
 
                 // Show dropdown list
                 _popupMenu.MinimumWidth = Width;
-                _popupMenu.Show(this, new Float2(1, Height));
+                _popupMenu.Show(this, new Float2(0, Height));
 
                 // Adjust menu position if it is not the down direction
                 if (_popupMenu.Direction == ContextMenuDirection.RightUp)

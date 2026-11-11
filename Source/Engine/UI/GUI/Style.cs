@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -75,15 +77,28 @@ namespace FlaxEngine.GUI
         public Color Background;
 
         /// <summary>
+        /// The background secondary tone color for list/tree/table/grid bi-coloring.
+        /// </summary>
+        [EditorOrder(61)]
+        public Color BackgroundTone;
+
+        /// <summary>
         /// The light background color.
         /// </summary>
         [EditorOrder(70)]
         public Color LightBackground;
 
         /// <summary>
-        /// The drag window color.
+        /// The dark background color.
         /// </summary>
         [EditorOrder(80)]
+        public Color DarkBackground;
+
+        /// <summary>
+        /// The drag window color.
+        /// [Deprecated in v1.14]
+        /// </summary>
+        [HideInEditor, Obsolete("Not used anymore. Deprecated in v1.14.")]
         public Color DragWindow;
 
         /// <summary>
@@ -165,16 +180,28 @@ namespace FlaxEngine.GUI
         public Color CollectionBackgroundColor;
 
         /// <summary>
-        /// The progress normal color.
+        /// The progress bar normal color.
         /// </summary>
         [EditorOrder(200)]
         public Color ProgressNormal;
 
         /// <summary>
-        /// The progress error color.
+        /// The progress bar warning color.
+        /// </summary>
+        [EditorOrder(201)]
+        public Color ProgressWarning;
+
+        /// <summary>
+        /// The progress bar error color.
         /// </summary>
         [EditorOrder(201)]
         public Color ProgressError;
+
+        /// <summary>
+        /// The background color for text selection.
+        /// </summary>
+        [EditorOrder(202)]
+        public Color SearchHighlight;
 
         /// <summary>
         /// The selection and drag drop highlights colors.

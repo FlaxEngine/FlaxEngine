@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// Drop Panel arranges control vertically and provides feature to collapse contents.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class DropPanel : ContainerControl
     {
         /// <summary>
@@ -444,7 +444,7 @@ namespace FlaxEngine.GUI
                 var font = HeaderTextFont.GetFont();
                 if (font != null)
                 {
-                    var highlightColor = Style.Current.ProgressNormal * 0.6f;
+                    var highlightColor = Style.Current.SearchHighlight;
                     var textSize = font.MeasureText(HeaderText);
                     var textY = (HeaderHeight - textSize.Y) * 0.5f;
                     var start = font.GetCharPosition(HeaderText, _highlightIndex);
@@ -457,8 +457,8 @@ namespace FlaxEngine.GUI
 
             if (!_isClosed && EnableContainmentLines)
             {
-                Color lineColor = Style.Current.ForegroundGrey - new Color(0, 0, 0, 100);
-                float lineThickness = 0.05f;
+                Color lineColor = HeaderColor;
+                float lineThickness = 0.1f;
                 Render2D.DrawLine(new Float2(1, HeaderHeight), new Float2(1, Height), lineColor, lineThickness);
                 Render2D.DrawLine(new Float2(1, Height), new Float2(Width, Height), lineColor, lineThickness);
                 Render2D.DrawLine(new Float2(Width, HeaderHeight), new Float2(Width, Height), lineColor, lineThickness);

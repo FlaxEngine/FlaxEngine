@@ -55,8 +55,7 @@ namespace FlaxEditor.Windows
                 // Draw all highlights
                 if (_highlights != null)
                 {
-                    var style = Style.Current;
-                    var color = style.ProgressNormal * 0.6f;
+                    var color = Style.Current.SearchHighlight;
                     for (int i = 0; i < _highlights.Count; i++)
                         Render2D.FillRectangle(_highlights[i], color);
                 }
@@ -129,6 +128,7 @@ namespace FlaxEditor.Windows
         public SpawnTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
+            TooltipText = "Quick object spawning tool via drag&drop.";
             Editor = editor;
             Selected += tab => Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<TransformGizmoMode>();
             ScriptsBuilder.ScriptsReload += OnScriptsReload;
@@ -144,21 +144,24 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
 
-            _groupSearch = CreateGroupWithList(_actorGroups, "Search", 26);
+            _groupSearch = CreateGroupWithList(_actorGroups, "Search", "Search for any actor or object type to spawn.", 26);
 
-            _viewDropdown = new Button(2, 2, 45.0f, TextBoxBase.DefaultHeight)
+            var margin = Constants.UIMargin;
+            var parent = _groupSearch.Parent.Parent;
+            _viewDropdown = new Button(margin, margin, 45.0f, TextBoxBase.DefaultHeight)
             {
                 TooltipText = "Change search filter options.",
                 Text = "Filters",
-                Parent = _groupSearch.Parent.Parent,
+                Parent = parent,
             };
             _viewDropdown.Clicked += OnViewButtonClicked;
 
+            var x = _viewDropdown.Right + margin;
             _searchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                Parent = _groupSearch.Parent.Parent,
-                Bounds = new Rectangle(_viewDropdown.Right + 2, 2, _actorGroups.Width - 4, TextBoxBase.DefaultHeight),
+                Parent = parent,
+                Bounds = new Rectangle(x, margin, parent.Width - x - margin, TextBoxBase.DefaultHeight),
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
@@ -244,7 +247,7 @@ namespace FlaxEditor.Windows
             }
 
             // Add primitives to primtives and search tab
-            groupPrimitives = CreateGroupWithList(_actorGroups, "Primitives");
+            groupPrimitives = CreateGroupWithList(_actorGroups, "Primitives", "In-built primitive object types to place on a scene.");
 
             groupPrimitives.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
             _groupSearch.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
@@ -260,11 +263,11 @@ namespace FlaxEditor.Windows
             _groupSearch.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
 
             // Created first to order specific tabs
-            CreateGroupWithList(_actorGroups, "Lights");
-            CreateGroupWithList(_actorGroups, "Visuals");
-            CreateGroupWithList(_actorGroups, "Physics");
-            CreateGroupWithList(_actorGroups, "GUI");
-            CreateGroupWithList(_actorGroups, "Other");
+            CreateGroupWithList(_actorGroups, "Lights", "Different light types to add on a scene.");
+            CreateGroupWithList(_actorGroups, "Visuals", "Common visual objects to add on a scene.");
+            CreateGroupWithList(_actorGroups, "Physics", "Physics colliders and actors.");
+            CreateGroupWithList(_actorGroups, "UI", "User-Interface controls.");
+            CreateGroupWithList(_actorGroups, "Other", "Other commonly used objects to spawn.");
 
             // Add control types to tabs
             foreach (var controlType in Editor.Instance.CodeEditing.Controls.Get())
@@ -394,7 +397,7 @@ namespace FlaxEditor.Windows
                         continue;
 
                     var item = CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType);
-                    SearchFilterHighlights(item, text, ranges);
+                    SearchFilterHighlights(filterText, item, text, ranges);
                 }
             }
 
@@ -418,7 +421,7 @@ namespace FlaxEditor.Windows
                             continue;
 
                         var item = CreateEditorAssetItem(text, path);
-                        SearchFilterHighlights(item, text, ranges);
+                        SearchFilterHighlights(filterText, item, text, ranges);
                     }
                 }
             }
@@ -450,7 +453,7 @@ namespace FlaxEditor.Windows
                         continue;
 
                     var item = CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType);
-                    SearchFilterHighlights(item, text, ranges);
+                    SearchFilterHighlights(filterText, item, text, ranges);
                 }
             }
 
@@ -479,8 +482,14 @@ namespace FlaxEditor.Windows
             }
         }
 
-        private void SearchFilterHighlights(Item item, string text, QueryFilterHelper.Range[] ranges)
+        private void SearchFilterHighlights(string filterText, Item item, string text, QueryFilterHelper.Range[] ranges)
         {
+            if (item.Text.Contains(' ') && QueryFilterHelper.Match(filterText, item.Text, out QueryFilterHelper.Range[] fixedRanges))
+            {
+                // GetPropertyNameUI makes some searches look different so fix it
+                text = item.Text;
+                ranges = fixedRanges;
+            }
             _groupSearch.AddChild(item);
             var highlights = new List<Rectangle>(ranges.Length);
             var font = Style.Current.FontSmall;
@@ -512,9 +521,10 @@ namespace FlaxEditor.Windows
             return new ScriptTypeItem(name, type, GUI.Drag.DragControlType.GetDragData(type));
         }
 
-        private ContainerControl CreateGroupWithList(Tabs parentTabs, string title, float topOffset = 0)
+        private ContainerControl CreateGroupWithList(Tabs parentTabs, string title, string tooltip = null, float topOffset = 0)
         {
             var tab = parentTabs.AddTab(new Tab(title));
+            tab.TooltipText = tooltip;
             var panel = new Panel(ScrollBars.Both)
             {
                 AnchorPreset = AnchorPresets.StretchAll,

@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// Panel UI control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ScrollableControl" />
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class Panel : ScrollableControl
     {
         private bool _layoutChanged;

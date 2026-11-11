@@ -722,7 +722,7 @@ namespace FlaxEditor.Content
                     }
 
                     // Draw accent bar
-                    const float accentHeight = 4;
+                    const float accentHeight = 3;
                     Render2D.FillRectangle(new Rectangle(0, thumbnailRect.Height - 2, Width, accentHeight), _accentColor);
                 }
                 break;

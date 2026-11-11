@@ -293,6 +293,8 @@ namespace FlaxEditor.GUI.Tree
             }
         }
 
+        internal bool SelectionFill = true;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TreeNode"/> class.
         /// </summary>
@@ -707,10 +709,12 @@ namespace FlaxEditor.GUI.Tree
             _margin.ShrinkRectangle(ref textRect);
 
             // Draw background
-            if (isSelected || _mouseOverHeader)
-            {
+            if (SelectionFill && (isSelected || _mouseOverHeader))
                 Render2D.FillRectangle(_headerRect, (isSelected && isFocused) ? BackgroundColorSelected : (_mouseOverHeader ? BackgroundColorHighlighted : BackgroundColorSelectedUnfocused));
-            }
+            else if (!SelectionFill && _mouseOverHeader)
+                Render2D.FillRectangle(_headerRect, BackgroundColorHighlighted);
+            if (isSelected && (!SelectionFill || !isFocused))
+                Render2D.FillRectangle(new Rectangle(_headerRect.Location, Utilities.Constants.UIAccent, _headerRect.Height), BackgroundColorSelected);
 
             // Draw arrow
             if (HasAnyVisibleChild)
@@ -769,27 +773,24 @@ namespace FlaxEditor.GUI.Tree
                 {
                     float bottomOffset = 0;
                     float topOffset = 0;
-
                     if (parent == parentNode && this == parent.Children[0])
                         topOffset = 2;
-
                     if (thisNodeIsLast && parentNode.Children.Count == 1)
                         bottomOffset = topOffset != 0 ? 4 : 2;
-
                     if (parent == parentNode && this == parent.Children[^1] && !_opened)
                     {
                         thisNodeIsLast = true;
                         bottomOffset = topOffset != 0 ? 4 : 2;
                     }
-
                     float leftOffset = 9;
+
                     // Adjust offset for icon image
                     if (_iconCollaped.IsValid)
                         leftOffset += 18;
                     var lineRect1 = new Rectangle(parentNode.TextRect.Left - leftOffset, parentNode.HeaderRect.Top + topOffset, 1, parentNode.HeaderRect.Height - bottomOffset);
                     if (HasAnyVisibleChild && CustomArrowRect.HasValue && CustomArrowRect.Value.Intersects(lineRect1))
                         lineRect1 = Rectangle.Empty; // Skip drawing line if it's overlapping the arrow rectangle
-                    Render2D.FillRectangle(lineRect1, isSelected ? style.ForegroundGrey : style.LightBackground);
+                    Render2D.FillRectangle(lineRect1, isSelected ? (isFocused && SelectionFill ? style.ForegroundGrey : style.BackgroundHighlighted) : style.LightBackground);
                     parentNode = parentNode.Parent as TreeNode;
                 }
             }

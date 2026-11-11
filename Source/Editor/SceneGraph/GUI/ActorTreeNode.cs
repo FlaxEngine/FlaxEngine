@@ -396,7 +396,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     if (actor.HasPrefabLink)
                     {
                         // Prefab
-                        color = Style.Current.ProgressNormal;
+                        color = Color.FromRGB(Utilities.Constants.ColorPrefab);
                     }
 
                     if (!actor.IsActiveInHierarchy)
@@ -493,8 +493,7 @@ namespace FlaxEditor.SceneGraph.GUI
             // Draw all highlights
             if (_highlights != null)
             {
-                var style = Style.Current;
-                var color = style.ProgressNormal * 0.6f;
+                var color = Style.Current.SearchHighlight;
                 var textRect = TextRect;
                 for (int i = 0; i < _highlights.Count; i++)
                 {

@@ -285,7 +285,7 @@ namespace FlaxEditor.Windows.Assets
                         var property = layout.AddPropertyItem(propertyLabel, tooltip);
                         if (value == null)
                         {
-                            property.Label("null").Label.TextColor = Color.Red;
+                            property.Label("null").Label.TextColor = FlaxEngine.GUI.Style.Current.ProgressError;
                             continue;
                         }
                         var valueContainer = new VariableValueContainer(_proxy, name, value, false);
@@ -309,7 +309,7 @@ namespace FlaxEditor.Windows.Assets
                         var property = layout.AddPropertyItem(propertyLabel, tooltip);
                         if (value == null)
                         {
-                            property.Label("null").Label.TextColor = Color.Red;
+                            property.Label("null").Label.TextColor = FlaxEngine.GUI.Style.Current.ProgressError;
                             continue;
                         }
                         var valueContainer = new VariableValueContainer(_proxy, name, value, true);

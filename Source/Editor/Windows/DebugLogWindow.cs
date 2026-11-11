@@ -146,14 +146,15 @@ namespace FlaxEditor.Windows
                 if (_window._selected == this)
                 {
                     Render2D.FillRectangle(clientRect, style.LightBackground);
+
                     // Small rectangle to signal that entry is selected
-                    Rectangle selectionHighlightRect = clientRect with { Width = 5 };
+                    Rectangle selectionHighlightRect = clientRect with { Width = 4 };
                     Render2D.FillRectangle(selectionHighlightRect, style.BackgroundSelected);
                 }
                 else if (IsMouseOver)
                     Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
                 else if (index % 2 == 0)
-                    Render2D.FillRectangle(clientRect, style.Background * 0.9f);
+                    Render2D.FillRectangle(clientRect, style.BackgroundTone);
 
                 // Icon
                 Render2D.DrawSprite(Icon, new Rectangle(8, 0, 32, 32), color);

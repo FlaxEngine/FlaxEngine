@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -80,7 +81,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
             var obj = Object;
             var hasObject = obj != null;
-            TitleTintColor = hasObject ? (Flags.HasFlag(TrackFlags.PrefabObject) ? Style.Current.ProgressNormal : Color.White) : Color.Red;
+            var style = Style.Current;
+            TextColor = hasObject ? (Flags.HasFlag(TrackFlags.PrefabObject) ? Color.FromRGB(Utilities.Constants.ColorPrefab) : style.Foreground) : style.ProgressError;
             if (hasObject != _hasObject)
                 OnObjectExistenceChanged(obj);
             _hasObject = hasObject;

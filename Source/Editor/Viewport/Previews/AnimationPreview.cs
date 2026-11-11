@@ -97,7 +97,7 @@ namespace FlaxEditor.Viewport.Previews
             var baseModelMissing = false;
             if (skinnedModel == null)
             {
-                Render2D.DrawText(style.FontLarge, "Missing Base Model", new Rectangle(Float2.Zero, Size), Color.Red, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
+                Render2D.DrawText(style.FontLarge, "Missing Base Model", new Rectangle(Float2.Zero, Size), style.ProgressError, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
                 baseModelMissing = true;
             }
             else if (!skinnedModel.IsLoaded)

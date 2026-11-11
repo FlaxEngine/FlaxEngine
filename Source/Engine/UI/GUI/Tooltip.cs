@@ -98,6 +98,10 @@ namespace FlaxEngine.GUI
             desc.StartPosition = WindowStartPosition.Manual;
             desc.Position = locationSS;
             desc.Size = dpiSize;
+#if PLATFORM_WINDOWS
+            if (dpiScale > 1)
+                desc.Size += dpiScale * 2; // Fix odd backround size bug
+#endif
             desc.Fullscreen = false;
             desc.HasBorder = false;
             desc.SupportsTransparency = false;
@@ -257,10 +261,12 @@ namespace FlaxEngine.GUI
         public override void Draw()
         {
             var style = Style.Current;
+            var size = Size;
 
             // Background
-            Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Lerp(style.BackgroundSelected, style.Background, 0.6f));
-            Render2D.FillRectangle(new Rectangle(1.1f, 1.1f, Width - 2, Height - 2), style.Background);
+            var bounds = new Rectangle(Float2.Zero, size);
+            Render2D.FillRectangle(bounds, style.Background);
+            Render2D.DrawRectangle(bounds, style.BackgroundSelected);
 
             // Padding for text
             var textRect = GetClientArea();

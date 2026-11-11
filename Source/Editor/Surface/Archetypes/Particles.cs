@@ -145,7 +145,7 @@ namespace FlaxEditor.Surface.Archetypes
                     mousePosition = PointFromParent(ref mousePosition);
 
                     // Background
-                    Render2D.FillRectangle(backgroundRect, style.BackgroundNormal);
+                    Render2D.FillRectangle(backgroundRect, style.Background);
 
                     // Header
                     var idx = (int)ModuleType;
@@ -187,7 +187,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var backgroundRect = new Rectangle(Float2.Zero, Size);
 
                 // Background
-                Render2D.FillRectangle(backgroundRect, style.BackgroundNormal);
+                Render2D.FillRectangle(backgroundRect, style.Background);
 
                 // Header
                 var headerColor = style.BackgroundHighlighted;

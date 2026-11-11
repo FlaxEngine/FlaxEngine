@@ -29,7 +29,7 @@ namespace FlaxEngine.GUI
     /// The basic GUI label control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class Label : ContainerControl
     {
         /// <summary>

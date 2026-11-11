@@ -32,7 +32,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 Width = 16.0f,
                 Text = "...",
-                TooltipText = "Edit...",
+                TooltipText = "Edit locale...",
                 Parent = _label,
             };
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);

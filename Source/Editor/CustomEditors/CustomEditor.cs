@@ -429,9 +429,9 @@ namespace FlaxEditor.CustomEditors
             {
                 var color = Color.Transparent;
                 if (Values.HasReferenceValue && CanRevertReferenceValue)
-                    color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
+                    color = Color.FromRGB(Utilities.Constants.ColorModifiedValuePrefab);
                 else if (Values.HasDefaultValue && CanRevertDefaultValue)
-                    color = Color.Yellow * 0.8f;
+                    color = Color.FromRGB(Utilities.Constants.ColorModifiedValue);
                 LinkedLabel.HighlightStripColor = color;
 
                 // Grey out deprecated members

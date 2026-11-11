@@ -615,16 +615,17 @@ namespace FlaxEditor.Windows.Assets
 
             private void DrawMeshUVs(int meshIndex, ref MeshDataCache.MeshData meshData, ref Rectangle bounds)
             {
+                var style = Style.Current;
                 if (meshData.IndexBuffer == null || meshData.VertexAccessor == null)
                 {
-                    Render2D.DrawText(Style.Current.FontMedium, "Missing mesh data", bounds, Color.Red, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(Style.Current.FontMedium, "Missing mesh data", bounds, style.ProgressError, TextAlignment.Center, TextAlignment.Center);
                     return;
                 }
-                var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
+                var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? style.BackgroundSelected : style.Foreground;
                 var texCoordStream = meshData.VertexAccessor.TexCoord(_channel);
                 if (!texCoordStream.IsValid)
                 {
-                    Render2D.DrawText(Style.Current.FontMedium, "Missing texcoords channel", bounds, Color.Yellow, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(Style.Current.FontMedium, "Missing texcoords channel", bounds, style.ProgressWarning, TextAlignment.Center, TextAlignment.Center);
                     return;
                 }
                 var uvScale = bounds.Size;
@@ -785,7 +786,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Float2(60, 20),
+                TabsSize = new Float2(60, Tabs.MinSize),
                 TabsTextHorizontalAlignment = TextAlignment.Center,
                 UseScroll = true,
                 Parent = _split.Panel2

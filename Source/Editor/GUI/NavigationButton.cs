@@ -37,10 +37,8 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void Draw()
         {
-            // Cache data
             var style = Style.Current;
             var clientRect = new Rectangle(Float2.Zero, Size);
-            var textRect = new Rectangle(4, 0, clientRect.Width - 4, clientRect.Height);
 
             // Draw background
             if (IsDragOver && _validDragOver)
@@ -58,14 +56,13 @@ namespace FlaxEditor.GUI
             }
 
             // Draw text
-            Render2D.DrawText(style.FontMedium, Text, textRect, EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontMedium, Text, clientRect, EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />
         public override void PerformLayout(bool force = false)
         {
             var style = Style.Current;
-
             if (style.FontMedium)
             {
                 Width = style.FontMedium.MeasureText(Text).X + 2 * DefaultMargin;

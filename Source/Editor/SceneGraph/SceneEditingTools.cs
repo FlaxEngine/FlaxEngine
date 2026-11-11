@@ -1,8 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
+using FlaxEngine.GUI;
 using System;
 
 namespace FlaxEditor
@@ -110,5 +112,34 @@ namespace FlaxEditor
                 }
             }
         }
+
+        public static void BuildTreePanel(ContainerControl parent, out SearchBox searchBox, out Panel treePanel)
+        {
+            var margin = Utilities.Constants.UIMargin;
+            var headerPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
+                Offsets = new Margin(0, 0, 0, TextBoxBase.DefaultHeight + margin * 2),
+                Parent = parent,
+            };
+            searchBox = new SearchBox
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
+                Parent = headerPanel,
+                Bounds = new Rectangle(margin, margin, headerPanel.Width - margin * 2, TextBoxBase.DefaultHeight),
+                TooltipText = "Search actors hierarchy.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
+            };
+            treePanel = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                IsScrollable = true,
+                ScrollBars = ScrollBars.Both,
+                Parent = parent,
+            };
+        }
+
     }
 }

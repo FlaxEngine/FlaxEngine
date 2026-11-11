@@ -64,7 +64,7 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <summary>
         /// The items margin.
         /// </summary>
-        protected Margin _itemsMargin = new Margin(16, 0, 2, 0);
+        protected Margin _itemsMargin = new Margin(20, 0, 2, 0);
 
         /// <summary>
         /// The items panel.

@@ -100,7 +100,6 @@ namespace FlaxEditor.GUI
                 /*
                 -Background
                 -LightBackground
-                -DragWindow
                 -Foreground
                 -ForegroundDisabled
                 -BackgroundHighlighted
@@ -120,8 +119,6 @@ namespace FlaxEditor.GUI
                 Render2D.FillRectangle(new Rectangle(x, 2, size), Value.Foreground);
                 x += size.X;
                 Render2D.FillRectangle(new Rectangle(x, 2, size), Value.ForegroundDisabled);
-                x += size.X;
-                Render2D.FillRectangle(new Rectangle(x, 2, size), Value.DragWindow);
                 x += size.X;
                 Render2D.FillRectangle(new Rectangle(x, 2, size), Value.BorderNormal);
                 x += size.X;

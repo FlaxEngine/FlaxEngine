@@ -886,9 +886,9 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 var color = Color.Transparent;
                 if (Values.HasReferenceValue && Values.ReferenceValue is IList referenceValue && referenceValue.Count != Count)
-                    color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
+                    color = Color.FromRGB(Utilities.Constants.ColorModifiedValuePrefab);
                 else if (Values.HasDefaultValue && Values.DefaultValue is IList defaultValue && defaultValue.Count != Count)
-                    color = Color.Yellow * 0.8f;
+                    color = Color.FromRGB(Utilities.Constants.ColorModifiedValue);
                 _sizeBox.BorderColor = color;
             }
 

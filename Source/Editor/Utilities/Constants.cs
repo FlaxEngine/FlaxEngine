@@ -21,6 +21,10 @@ namespace FlaxEditor.Utilities
         public const string ShowInExplorer = "Show in explorer";
 #endif
 
-        public const float UIMargin = 3.0f;
+        public const float UIMargin = 4.0f;
+        public const float UIAccent = 4.0f;
+        public const uint ColorModifiedValue = 0xA9A906;
+        public const uint ColorModifiedValuePrefab = 0x007ACC;
+        public const uint ColorPrefab = 0x3ECB4C;
     }
 }

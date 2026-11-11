@@ -220,6 +220,12 @@ namespace FlaxEditor.GUI.Input
             if (HighlightColor != Color.Transparent)
             {
                 var highlightRect = new Rectangle(-3.0f, 0.0f, 3.0f, Height);
+                if (IsEditing)
+                {
+                    // Align with border to be more pixle-perfect
+                    highlightRect.Y -= 0.6f;
+                    highlightRect.Height += 1.2f;
+                }
                 Render2D.FillRectangle(highlightRect, HighlightColor);
             }
         }

@@ -50,8 +50,8 @@ namespace FlaxEditor.Windows
         private NavigationBar _navigationBar;
         private Panel _viewDropdownPanel;
         private Tree _tree;
-        private TextBox _foldersSearchBox;
-        private TextBox _itemsSearchBox;
+        private SearchBox _foldersSearchBox;
+        private SearchBox _itemsSearchBox;
         private ViewDropdown _viewDropdown;
         private SortType _sortType;
         private bool _showEngineFiles = true, _showPluginsFiles = true, _showAllFiles = true, _showGeneratedFiles = false;
@@ -205,20 +205,20 @@ namespace FlaxEditor.Windows
             };
 
             // Content structure tree searching query input box
+            var margin = Utilities.Constants.UIMargin;
             _treeHeaderPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 BackgroundColor = style.Background,
                 IsScrollable = false,
-                Offsets = new Margin(0, 0, 0, 18 + 6),
+                Offsets = new Margin(0, 0, 0, SearchBox.DefaultHeight + margin * 2),
                 Parent = _treePanelRoot,
             };
-
             _foldersSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = _treeHeaderPanel,
-                Bounds = new Rectangle(4, 4, _treeHeaderPanel.Width - 8, 18),
+                Bounds = new Rectangle(margin, margin, _treeHeaderPanel.Width - margin * 2, SearchBox.DefaultHeight),
             };
             _foldersSearchBox.TextChanged += OnFoldersSearchBoxTextChanged;
 
@@ -246,15 +246,14 @@ namespace FlaxEditor.Windows
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 IsScrollable = true,
-                Offsets = new Margin(0, 0, 0, 18 + 8),
+                Offsets = new Margin(0, 0, 0, SearchBox.DefaultHeight + margin * 2),
                 Parent = _split.Panel2,
             };
-
             _itemsSearchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = _contentItemsSearchPanel,
-                Bounds = new Rectangle(4, 4, _contentItemsSearchPanel.Width - 8, 18),
+                Bounds = new Rectangle(margin, margin, _contentItemsSearchPanel.Width - margin * 2, SearchBox.DefaultHeight),
             };
             _itemsSearchBox.TextChanged += UpdateItemsSearch;
 
@@ -265,14 +264,13 @@ namespace FlaxEditor.Windows
                 AnchorPreset = AnchorPresets.TopLeft,
                 BackgroundColor = Color.Transparent,
             };
-
             _viewDropdown = new ViewDropdown
             {
                 SupportMultiSelect = true,
                 TooltipText = "Change content view and filter options",
                 Offsets = Margin.Zero,
                 Width = 46.0f,
-                Height = 18.0f,
+                Height = SearchBox.DefaultHeight,
                 Parent = _viewDropdownPanel,
             };
             _viewDropdown.LocalX += 2.0f;

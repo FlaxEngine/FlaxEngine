@@ -22,6 +22,7 @@ namespace FlaxEngine.GUI
         private Orientation _orientation;
         private float _splitterValue;
         private Rectangle _splitterRect;
+        private Margin _splitterMargin;
         private bool _splitterClicked, _mouseOverSplitter;
         private bool _cursorChanged;
 
@@ -38,9 +39,6 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the panel orientation.
         /// </summary>
-        /// <value>
-        /// The orientation.
-        /// </value>
         public Orientation Orientation
         {
             get => _orientation;
@@ -58,9 +56,6 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the splitter value (always in range [0; 1]).
         /// </summary>
-        /// <value>
-        /// The splitter value (always in range [0; 1]).
-        /// </value>
         public float SplitterValue
         {
             get => _splitterValue;
@@ -78,6 +73,24 @@ namespace FlaxEngine.GUI
                 }
             }
         }
+
+        /// <summary>
+        /// Margins for splitter UI, used to adjust it's area.
+        /// </summary>
+        public Margin SplitterMargin
+        {
+            get => _splitterMargin;
+            set
+            {
+                _splitterMargin = value;
+                UpdateSplitRect();
+            }
+        }
+
+        /// <summary>
+        /// Gets the area of the splitter bounds.
+        /// </summary>
+        public Rectangle SplitterRectangle => _splitterRect;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SplitPanel"/> class.
@@ -113,6 +126,7 @@ namespace FlaxEngine.GUI
                 var split = Mathf.RoundToInt(_splitterValue * Height);
                 _splitterRect = new Rectangle(0, Mathf.Clamp(split - SplitterSizeHalf, 0.0f, Height), Width, SplitterSize);
             }
+            SplitterMargin.ShrinkRectangle(ref _splitterRect);
         }
 
         private void StartTracking()
@@ -144,7 +158,8 @@ namespace FlaxEngine.GUI
 
             // Draw splitter
             var style = Style.Current;
-            Render2D.FillRectangle(_splitterRect, _splitterClicked ? style.BackgroundSelected : _mouseOverSplitter ? style.BackgroundHighlighted : style.LightBackground);
+            var color = _splitterClicked ? style.BackgroundSelected : _mouseOverSplitter ? style.BackgroundHighlighted : style.LightBackground;
+            Render2D.FillRectangle(_splitterRect, color);
         }
 
         /// <inheritdoc />

@@ -66,6 +66,32 @@ namespace FlaxEditor.GUI.Docking
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class DockPanel : ContainerControl
     {
+        private sealed class DockSplitPanel : SplitPanel
+        {
+            public DockSplitPanel(Orientation orientation)
+            : base(orientation, ScrollBars.None, ScrollBars.None)
+            {
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                var margin = SplitterMargin;
+                if (margin.Top > 0)
+                {
+                    // Draw top margin of the splitter
+                    var rect = SplitterRectangle;
+                    rect.Y -= margin.Top;
+                    rect.Height = margin.Top;
+                    Render2D.FillRectangle(rect, Style.Current.DarkBackground);
+                    rect.Width += 1; // Draw again to fix 1px artifacts on top due to overdrawing background of different color
+                    rect.Height = 6;
+                    Render2D.FillRectangle(rect, Style.Current.DarkBackground);
+                }
+            }
+        }
+
         /// <summary>
         /// The default dock tabs header height.
         /// </summary>
@@ -433,12 +459,17 @@ namespace FlaxEditor.GUI.Docking
 
             // Create splitter and link controls
             var parent = _tabsProxy.Parent;
-            var splitter = new SplitPanel(o, ScrollBars.None, ScrollBars.None)
+            var splitter = new DockSplitPanel(o)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 SplitterValue = splitterValue,
             };
+            if (state == DockState.DockLeft || state == DockState.DockRight)
+            {
+                // Skip top of the splitter from overlapping near dock panel tabs area for cleaner UI
+                splitter.SplitterMargin = new Margin(0, 0, DockPanelProxy.DefaultHeight, 0);
+            }
             splitter.Panel1.AddChild(c1);
             splitter.Panel2.AddChild(c2);
             parent.AddChild(splitter);

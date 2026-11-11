@@ -104,28 +104,8 @@ namespace FlaxEditor.Windows.Assets
             _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
 
             // Header panel for search
-            var headerPanel = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                BackgroundColor = Style.Current.Background,
-                IsScrollable = false,
-                Offsets = new Margin(0, 0, _toolstrip.Bottom, 18 + 6),
-                Parent = this,
-            };
-            _searchBox = new SearchBox
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = headerPanel,
-                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
-            };
+            CustomEditorsUtil.BuildSearchBar(this, out _searchBox, out _scrollingPanel, _toolstrip.Bottom);
             _searchBox.TextChanged += ApplySearchFilter;
-
-            _scrollingPanel = new Panel(ScrollBars.Vertical)
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
-                Parent = this,
-            };
 
             // Properties
             _presenter = new CustomEditorPresenter(_undo, "Loading...");

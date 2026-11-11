@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Rich text box control which can gather text input from the user and present text in highly formatted and stylized way.
     /// </summary>
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public partial class RichTextBox : RichTextBoxBase
     {
         private TextBlockStyle _textStyle;

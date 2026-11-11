@@ -184,7 +184,7 @@ namespace FlaxEditor.GUI
             if (columnIndex < _columns.Length - 1)
             {
                 var splitRect = new Rectangle(rect.Right - 2, 2, 4, rect.Height - 4);
-                Render2D.FillRectangle(splitRect, _movingSplit == columnIndex || splitRect.Contains(_mousePos) ? style.BorderNormal : style.Background * 0.9f);
+                Render2D.FillRectangle(splitRect, _movingSplit == columnIndex || splitRect.Contains(_mousePos) ? style.BorderNormal : style.BackgroundTone);
             }
         }
 

@@ -376,6 +376,7 @@ namespace FlaxEditor.Viewport
             translateSnapping.Parent = translateSnappingWidget;
             translateSnappingWidget.Parent = viewport;
 
+#if false // Those buttons duplicate functionality on toolbar
             // Gizmo mode widget
             var gizmoMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
             var gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate32, null, true)
@@ -408,6 +409,7 @@ namespace FlaxEditor.Viewport
                 gizmoModeRotate.Checked = mode == TransformGizmoBase.Mode.Rotate;
                 gizmoModeScale.Checked = mode == TransformGizmoBase.Mode.Scale;
             };
+#endif
 
             // Setup input actions
             viewport.InputActions.Add(options => options.TranslateMode, () =>

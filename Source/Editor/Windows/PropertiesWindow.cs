@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using FlaxEditor.CustomEditors;
-using FlaxEditor.CustomEditors.Elements;
-using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
@@ -77,28 +75,9 @@ namespace FlaxEditor.Windows
             Icon = editor.Icons.Build64;
             AutoFocus = true;
 
-            var headerPanel = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                BackgroundColor = Style.Current.Background,
-                IsScrollable = false,
-                Offsets = new Margin(0, 0, 0, 18 + 6),
-                Parent = this,
-            };
-            _searchBox = new SearchBox
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = headerPanel,
-                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
-            };
+            // Properties searching query input box
+            CustomEditorsUtil.BuildSearchBar(this, out _searchBox, out _scrollingPanel);
             _searchBox.TextChanged += ApplySearchFilter;
-
-            _scrollingPanel = new Panel(ScrollBars.Vertical)
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
-                Parent = this,
-            };
 
             Presenter = new CustomEditorPresenter(editor.Undo, null, this);
             Presenter.Panel.Parent = _scrollingPanel;

@@ -58,6 +58,7 @@ namespace FlaxEditor.Tools.Terrain
         public CarveTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
+            TooltipText = "Terrain sculpting and painting tool.";
             Level.SceneLoaded += OnSceneLoaded;
             Editor = editor;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;

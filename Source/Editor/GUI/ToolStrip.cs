@@ -88,7 +88,7 @@ namespace FlaxEditor.GUI
         {
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
-            BackgroundColor = Style.Current.LightBackground;
+            BackgroundColor = Style.Current.Background;
             Offsets = new Margin(0, 0, y, height * Editor.Instance.Options.Options.Interface.IconsScale);
             _itemsMargin = new Margin(2, 2, 1, 1);
         }

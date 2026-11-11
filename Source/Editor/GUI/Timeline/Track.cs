@@ -145,7 +145,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <summary>
         /// The track title color.
         /// </summary>
-        public Color TitleTintColor = Color.White;
+        public Color TextColor = Color.White;
 
         /// <summary>
         /// The track icon.
@@ -271,6 +271,7 @@ namespace FlaxEditor.GUI.Timeline
             Name = options.Archetype.Name;
             Icon = options.Archetype.Icon;
             _flags = options.Flags;
+            TextColor = Style.Current.Foreground;
 
             // Mute checkbox
             const float buttonSize = 14;
@@ -955,7 +956,6 @@ namespace FlaxEditor.GUI.Timeline
             var bounds = new Rectangle(Float2.Zero, Size);
             var textRect = new Rectangle(left, 0, bounds.Width - left, height);
             _margin.ShrinkRectangle(ref textRect);
-            var textColor = style.Foreground * TitleTintColor;
             var backgroundColorSelected = style.BackgroundSelected;
             var backgroundColorHighlighted = style.BackgroundHighlighted;
             var backgroundColorSelectedUnfocused = style.LightBackground;
@@ -982,7 +982,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             // Draw text
-            Render2D.DrawText(style.FontSmall, Title ?? Name, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, Title ?? Name, textRect, TextColor, TextAlignment.Near, TextAlignment.Center);
 
             // Disabled overlay
             DrawDisabled = Mute || (ParentTrack != null && ParentTrack.DrawDisabled);

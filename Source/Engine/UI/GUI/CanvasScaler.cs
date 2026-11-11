@@ -7,7 +7,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// UI canvas scaling component for user interface that targets multiple different game resolutions (eg. mobile screens).
     /// </summary>
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class CanvasScaler : ContainerControl
     {
         /// <summary>
