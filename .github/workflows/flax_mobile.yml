@@ -161,8 +161,8 @@ jobs:
         export JAVA_HOME=${JAVA_HOME:-$(dirname $(dirname $(readlink -f $(which java))))}
         ./Binaries/Editor/Linux/Development/FlaxEditor \
           -std -headless -mute -null \
-          -project "$GITHUB_WORKSPACE/FlaxMobile" \
-          -build "Android.Android"
+          -project="$GITHUB_WORKSPACE/FlaxMobile" \
+          -build="Android.Android"
       timeout-minutes: 90
     - name: Locate built APK
       run: |
