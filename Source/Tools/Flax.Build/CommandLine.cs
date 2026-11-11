@@ -417,12 +417,16 @@ namespace Flax.Build
             Configure(GetMembers(obj), obj, configuration);
         }
 
-        internal static void ConfigureChild(Type type, Dictionary<string, string> configuration, string name = null)
+        internal static void ConfigureChild(Type type, Dictionary<string, string> configuration, string name = null, bool withCommandLine = true)
         {
-            if (configuration.TryGetValue(name ?? type.Name, out var subConfig) && subConfig?.Length != 0)
+            if (configuration != null && configuration.TryGetValue(name ?? type.Name, out var subConfig) && subConfig?.Length != 0)
             {
                 var child = JsonSerializer.Deserialize<Dictionary<string, string>>(subConfig.AsSpan(), ProjectInfo.JsonOptions);
                 Configure(type, child);
+            }
+            if (withCommandLine)
+            {
+                Configure(type);
             }
         }
 
