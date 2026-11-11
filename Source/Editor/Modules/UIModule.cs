@@ -180,6 +180,8 @@ namespace FlaxEditor.Modules
         private ToolStripButton _toolStripPlay;
         private ToolStripButton _toolStripPause;
         private ToolStripButton _toolStripStep;
+        private ContextMenuSingleSelectGroup<InterfaceOptions.PlayAction> _toolStripPlayAction;
+        private ContextMenuSingleSelectGroup<InterfaceOptions.GameWindowMode> _toolStripPlayWindowMode;
 
         /// <summary>
         /// The main menu control.
@@ -653,8 +655,6 @@ namespace FlaxEditor.Modules
                 options.Interface.NumberOfGameClientsToLaunch = value;
                 Editor.Options.Apply(options);
             };
-
-            Editor.Options.OptionsChanged += options => { _numberOfClientsGroup.Selected = options.Interface.NumberOfGameClientsToLaunch; };
         }
 
         private void InitMainMenu(RootControl mainWindow)
@@ -885,6 +885,10 @@ namespace FlaxEditor.Modules
 
             MainMenuShortcutKeysUpdated?.Invoke();
 
+            _numberOfClientsGroup.Selected = options.Interface.NumberOfGameClientsToLaunch;
+            _toolStripPlayAction.Selected = options.Interface.PlayButtonAction;
+            _toolStripPlayWindowMode.Selected = options.Interface.DefaultGameWindowMode;
+
             UpdateToolstrip();
         }
 
@@ -899,6 +903,7 @@ namespace FlaxEditor.Modules
 
             ToolStrip = new ToolStrip(34.0f, MainMenu.Bottom)
             {
+                BackgroundColor = Style.Current.DarkBackground,
                 Parent = mainWindow,
             };
 
@@ -912,33 +917,6 @@ namespace FlaxEditor.Modules
             _toolStripScale = ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale", ref inputOptions.ScaleMode);
             ToolStrip.AddSeparator();
 
-            // Play
-            _toolStripPlay = ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip("Play In Editor", ref inputOptions.Play);
-            _toolStripPlay.ContextMenu = new ContextMenu();
-            var playSubMenu = _toolStripPlay.ContextMenu.AddChildMenu("Play button action");
-            var playActionGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.PlayAction>();
-            playActionGroup.AddItem("Play Game", InterfaceOptions.PlayAction.PlayGame, null, "Launches the game from the First Scene defined in the project settings.");
-            playActionGroup.AddItem("Play Scenes", InterfaceOptions.PlayAction.PlayScenes, null, "Launches the game using the scenes currently loaded in the editor.");
-            playActionGroup.AddItemsToContextMenu(playSubMenu.ContextMenu);
-            playActionGroup.Selected = Editor.Options.Options.Interface.PlayButtonAction;
-            playActionGroup.SelectedChanged = SetPlayAction;
-            Editor.Options.OptionsChanged += options => { playActionGroup.Selected = options.Interface.PlayButtonAction; };
-            var windowModesGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.GameWindowMode>();
-            var windowTypeMenu = _toolStripPlay.ContextMenu.AddChildMenu("Game window mode");
-            windowModesGroup.AddItem("Docked", InterfaceOptions.GameWindowMode.Docked, null, "Shows the game window docked, inside the editor");
-            windowModesGroup.AddItem("Popup", InterfaceOptions.GameWindowMode.PopupWindow, null, "Shows the game window as a popup");
-            windowModesGroup.AddItem("Maximized", InterfaceOptions.GameWindowMode.MaximizedWindow, null, "Shows the game window maximized (Same as pressing F11)");
-            windowModesGroup.AddItem("Borderless", InterfaceOptions.GameWindowMode.BorderlessWindow, null, "Shows the game window borderless");
-            windowModesGroup.AddItemsToContextMenu(windowTypeMenu.ContextMenu);
-            windowModesGroup.Selected = Editor.Options.Options.Interface.DefaultGameWindowMode;
-            windowModesGroup.SelectedChanged = SetGameWindowMode;
-            Editor.Options.OptionsChanged += options => { windowModesGroup.Selected = options.Interface.DefaultGameWindowMode; };
-
-            _toolStripPause = ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip("Pause/Resume game", ref inputOptions.Pause);
-            _toolStripStep = ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game", ref inputOptions.StepFrame);
-
-            ToolStrip.AddSeparator();
-
             // Build scenes
             _toolStripBuildScenes = ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options", ref inputOptions.BuildScenesData);
 
@@ -949,6 +927,36 @@ namespace FlaxEditor.Modules
             _toolStripCook.ContextMenu.AddSeparator();
             var numberOfClientsMenu = _toolStripCook.ContextMenu.AddChildMenu("Number of game clients");
             _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
+
+            ToolStrip.AddSeparator();
+
+            // Play
+            _toolStripPlay = ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip("Play In Editor", ref inputOptions.Play);
+            _toolStripPlay.ContextMenu = new ContextMenu();
+            {
+                var playSubMenu = _toolStripPlay.ContextMenu.AddChildMenu("Play button action");
+                var playActionGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.PlayAction>();
+                playActionGroup.AddItem("Play Game", InterfaceOptions.PlayAction.PlayGame, null, "Launches the game from the First Scene defined in the project settings.");
+                playActionGroup.AddItem("Play Scenes", InterfaceOptions.PlayAction.PlayScenes, null, "Launches the game using the scenes currently loaded in the editor.");
+                playActionGroup.AddItemsToContextMenu(playSubMenu.ContextMenu);
+                playActionGroup.Selected = Editor.Options.Options.Interface.PlayButtonAction;
+                playActionGroup.SelectedChanged = SetPlayAction;
+                _toolStripPlayAction = playActionGroup;
+            }
+            {
+                var windowTypeMenu = _toolStripPlay.ContextMenu.AddChildMenu("Game window mode");
+                var windowModesGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.GameWindowMode>();
+                windowModesGroup.AddItem("Docked", InterfaceOptions.GameWindowMode.Docked, null, "Shows the game window docked, inside the editor");
+                windowModesGroup.AddItem("Popup", InterfaceOptions.GameWindowMode.PopupWindow, null, "Shows the game window as a popup");
+                windowModesGroup.AddItem("Maximized", InterfaceOptions.GameWindowMode.MaximizedWindow, null, "Shows the game window maximized (Same as pressing F11)");
+                windowModesGroup.AddItem("Borderless", InterfaceOptions.GameWindowMode.BorderlessWindow, null, "Shows the game window borderless");
+                windowModesGroup.AddItemsToContextMenu(windowTypeMenu.ContextMenu);
+                windowModesGroup.Selected = Editor.Options.Options.Interface.DefaultGameWindowMode;
+                windowModesGroup.SelectedChanged = SetGameWindowMode;
+                _toolStripPlayWindowMode = windowModesGroup;
+            }
+            _toolStripPause = ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip("Pause/Resume game", ref inputOptions.Pause);
+            _toolStripStep = ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game", ref inputOptions.StepFrame);
 
             UpdateToolstrip();
         }
@@ -962,7 +970,8 @@ namespace FlaxEditor.Modules
                 Parent = mainWindow,
                 Offsets = new Margin(0, 0, -StatusBar.DefaultHeight, StatusBar.DefaultHeight),
             };
-            // Output log button
+
+            // Output Log button
             _outputLogButton = new Button()
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -970,7 +979,7 @@ namespace FlaxEditor.Modules
                 Visible = false,
                 Text = "",
                 Width = 200,
-                TooltipText = "Opens or shows the output log window.",
+                TooltipText = "Opens or shows the Output Log window.",
                 BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BackgroundColorHighlighted = Color.Transparent,
