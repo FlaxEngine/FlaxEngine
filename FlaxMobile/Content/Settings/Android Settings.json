@@ -6,7 +6,7 @@
 	"PackageName": "com.flaxmobile.flaxmobile",
 	"OverrideIcon": "00000000-0000-0000-0000-000000000000",
 	"VersionCode": "1",
-	"MinimumAPILevel": "23",
+	"MinimumAPILevel": "28",
 	"TargetAPILevel": "33",
 	"Permissions": [],
 	"DefaultOrientation": 2,

@@ -66,7 +66,7 @@ jobs:
         sed -i 's/LatestMajor/Minor/g' Source/Tools/Flax.Build/Flax.Build.csproj
     - name: Build Engine (Android ARM64 Release)
       run: |
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=10 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=10 -arch=ARM64 -platform=Android -configuration=Release -platformApi=28 -buildtargets=FlaxGame
     - name: Verify engine binaries
       run: |
         find Source/Platforms/Android/Binaries -type f | head -50

@@ -198,6 +198,11 @@ bool CompileScriptsStep::Perform(CookingData& data)
     auto args = String::Format(
         TEXT("-log -logfile=\"{4}\" -build -mutex -buildtargets={0} -platform={1} -arch={2} -configuration={3} -aotMode={5} {6}"),
         target, platform, architecture, configuration, logFile, ToString(data.Tools->UseAOT()), data.GetDotnetCommandArg());
+    // Note: NDK 27+ requires versioned target triples (API-level suffix) for Android compilation
+    if (data.Platform == BuildPlatform::AndroidARM64)
+    {
+        args += TEXT(" -platformApi=28");
+    }
 #if PLATFORM_WINDOWS
     if (data.Platform == BuildPlatform::LinuxX64)
 #elif PLATFORM_LINUX
