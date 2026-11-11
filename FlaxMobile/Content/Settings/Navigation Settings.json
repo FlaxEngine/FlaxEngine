@@ -1,0 +1,10 @@
+{
+	"ID": "82e936724a508f1f74892ab6c1fff514",
+	"TypeName": "FlaxEditor.Content.Settings.NavigationSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"NavMeshRenderingMode": 0,
+	"AutoNavigationMesh": true,
+	"NavMeshConfig": null
+}
+}

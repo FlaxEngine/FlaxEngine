@@ -1,0 +1,8 @@
+{
+	"ID": "9742801b4e7ddc39cba69ebcee7a1e7e",
+	"TypeName": "FlaxEditor.Content.Settings.NetworkSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"OfflineMode": true
+}
+}

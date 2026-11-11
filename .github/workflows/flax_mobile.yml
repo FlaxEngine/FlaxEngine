@@ -1,0 +1,243 @@
+name: Flax Mobile CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+  DOTNET_ROLL_FORWARD: 'minor'
+  FLAX_PROJECT: FlaxMobile
+  KEYSTORE_PASS: flaxmobile
+  KEY_ALIAS: flaxmobile
+  KEY_PASS: flaxmobile
+
+jobs:
+
+  # Build Flax Engine native game engine for Android ARM64
+  android-engine:
+    name: Engine (Android, Release ARM64)
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v6
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+    - name: Setup .NET Workload
+      run: |
+        dotnet workload install android
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    - name: Install Android SDK components
+      run: |
+        yes | sdkmanager --licenses > /dev/null || true
+        sdkmanager --install "cmdline-tools;latest" > /dev/null
+        sdkmanager --install "platform-tools" > /dev/null
+        sdkmanager --install "platforms;android-33" > /dev/null
+        sdkmanager --install "build-tools;33.0.2" > /dev/null
+        sdkmanager --install "ndk;27.0.12077973" > /dev/null
+    - name: Set Android env vars
+      run: |
+        SDK_ROOT="$ANDROID_HOME"
+        echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROID_NDK=$SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+        echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+    - name: Patch global.json (latestMajor -> minor)
+      run: |
+        sed -i 's/latestMajor/minor/g' global.json
+        sed -i 's/latestMajor/minor/g' Source/Tools/Flax.Build/global.json
+        sed -i 's/LatestMajor/Minor/g' Source/Tools/Flax.Build/Flax.Build.csproj
+    - name: Build Engine (Android ARM64 Release)
+      run: |
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=10 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
+    - name: Verify engine binaries
+      run: |
+        find Source/Platforms/Android/Binaries -type f | head -50
+        test -f Source/Platforms/Android/Binaries/Game/ARM64/Release/libFlaxGame.so || ls -la Source/Platforms/Android/Binaries/Game/ARM64/Release/
+    - name: Upload engine binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-engine-binaries
+        path: |
+          Source/Platforms/Android/Binaries/Game
+          Source/Platforms/Android/Binaries/Data
+          Source/Platforms/Android/Binaries/Project
+        retention-days: 3
+        if-no-files-found: error
+
+  # Build Linux editor, cook the FlaxMobile game and package APK
+  cook-apk:
+    name: Cook + APK (FlaxMobile)
+    runs-on: ubuntu-24.04
+    needs: android-engine
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v6
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+    - name: Setup .NET Workload
+      run: |
+        dotnet workload install android
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    - name: Install Android SDK components
+      run: |
+        yes | sdkmanager --licenses > /dev/null || true
+        sdkmanager --install "cmdline-tools;latest" > /dev/null
+        sdkmanager --install "platform-tools" > /dev/null
+        sdkmanager --install "platforms;android-33" > /dev/null
+        sdkmanager --install "build-tools;33.0.2" > /dev/null
+        sdkmanager --install "ndk;27.0.12077973" > /dev/null
+    - name: Set Android env vars
+      run: |
+        SDK_ROOT="$ANDROID_HOME"
+        echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROID_NDK=$SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+        echo "$SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+    - name: Install editor dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --fix-missing libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libwayland-dev
+    - name: Patch global.json (latestMajor -> minor)
+      run: |
+        sed -i 's/latestMajor/minor/g' global.json
+        sed -i 's/latestMajor/minor/g' Source/Tools/Flax.Build/global.json
+        sed -i 's/LatestMajor/Minor/g' Source/Tools/Flax.Build/Flax.Build.csproj
+    - name: Download engine binaries
+      uses: actions/download-artifact@v4
+      with:
+        name: android-engine-binaries
+        path: artifact-engine
+    - name: Deploy engine binaries
+      run: |
+        if [ -d artifact-engine/Game ]; then
+          mkdir -p Source/Platforms/Android/Binaries
+          rm -rf Source/Platforms/Android/Binaries/Game Source/Platforms/Android/Binaries/Data
+          cp -r artifact-engine/Game Source/Platforms/Android/Binaries/Game
+          cp -r artifact-engine/Data Source/Platforms/Android/Binaries/Data 2>/dev/null || true
+          cp -r artifact-engine/Project Source/Platforms/Android/Binaries/Project 2>/dev/null || true
+        fi
+        ls -la Source/Platforms/Android/Binaries/ || true
+    - name: Build Linux Editor
+      run: |
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -printSDKs -dotnet=10 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxEditor
+    - name: Generate Android debug keystore
+      run: |
+        keytool -genkeypair -v \
+          -keystore $HOME/flaxmobile.keystore \
+          -storetype PKCS12 \
+          -alias $KEY_ALIAS \
+          -keyalg RSA -keysize 2048 -validity 10000 \
+          -storepass $KEYSTORE_PASS -keypass $KEY_PASS \
+          -dname "CN=Flax Mobile, OU=Mobile, O=FlaxMobile, L=Cairo, C=EG"
+    - name: Cook FlaxMobile (Android)
+      run: |
+        export JAVA_HOME=${JAVA_HOME:-$(dirname $(dirname $(readlink -f $(which java))))}
+        ./Binaries/Editor/Linux/Development/FlaxEditor \
+          -std -headless -mute -null \
+          -project "$GITHUB_WORKSPACE/FlaxMobile" \
+          -build "Android.Android"
+      timeout-minutes: 90
+    - name: Locate built APK
+      run: |
+        find FlaxMobile/Output -name "*.apk" || true
+        APK=$(find FlaxMobile/Output -name "*.apk" | head -n 1)
+        if [ -z "$APK" ]; then
+          echo "ERROR: no APK produced"; exit 1
+        fi
+        echo "APK_PATH=$APK" >> $GITHUB_ENV
+    - name: Sign APK (debug-style self-signed)
+      run: |
+        APK_PATH="${APK_PATH}"
+        APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | head -n 1)
+        ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | head -n 1)
+        "$ZIPALIGN" -f -p 4 "$APK_PATH" "$APK_PATH.aligned"
+        "$APKSIGNER" sign --ks $HOME/flaxmobile.keystore \
+          --ks-pass pass:$KEYSTORE_PASS --key-pass pass:$KEY_PASS \
+          --ks-key-alias $KEY_ALIAS \
+          --out "FlaxMobile.apk" "$APK_PATH.aligned"
+        "$APKSIGNER" verify --print-certs FlaxMobile.apk
+        ls -la FlaxMobile.apk
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: flax-mobile-apk
+        path: FlaxMobile.apk
+        retention-days: 7
+        if-no-files-found: error
+
+  # Publish a Release named "Flax Mobile" with the APK
+  release:
+    name: Release (Flax Mobile)
+    runs-on: ubuntu-24.04
+    needs: cook-apk
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v6
+    - name: Download APK artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: flax-mobile-apk
+        path: apk
+    - name: Create Flax Mobile Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: flax-mobile-v1.0.0
+        name: "Flax Mobile"
+        body: |
+          # Flax Mobile
+
+          Flax Engine demo game for Android phones (ARM64).
+
+          ## Download
+          - **FlaxMobile.apk** — install on your phone (allow unknown sources), launch "Flax Mobile".
+
+          ## What's inside
+          - Flax Engine ${{ github.sha }} built for Android ARM64 (Release)
+          - Demo game: touch camera orbit, pinch zoom, spinning wireframe cube, HUD with FPS
+          - Signed with a CI-generated self-signed key (first release key)
+
+          ## Notes
+          - Requires Android 6.0+ (API 23+)
+          - The editor itself remains a desktop tool; this APK is a game built with Flax.
+        files: apk/FlaxMobile.apk
+        fail_on_unmatched_files: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

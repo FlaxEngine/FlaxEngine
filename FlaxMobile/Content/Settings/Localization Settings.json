@@ -1,0 +1,9 @@
+{
+	"ID": "e8a4596b4ee70e9a4aef32abc6675884",
+	"TypeName": "FlaxEditor.Content.Settings.LocalizationSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"Localizations": null,
+	"DefaultCulture": null
+}
+}

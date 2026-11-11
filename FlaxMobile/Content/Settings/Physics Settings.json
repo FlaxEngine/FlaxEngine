@@ -1,0 +1,17 @@
+{
+	"ID": "7871f0364d398555ccd9e297acdc8983",
+	"TypeName": "FlaxEditor.Content.Settings.PhysicsSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"DefaultGravity": {
+		"X": 0.0,
+		"Y": -981.0,
+		"Z": 0.0
+	},
+	"AllowSubstepping": true,
+	"SubsteppingMax": 5,
+	"SubsteppingMin": 2,
+	"MaxDelta": 0.033,
+	"DisablePhysics": false
+}
+}
