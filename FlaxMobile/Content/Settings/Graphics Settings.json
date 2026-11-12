@@ -1,0 +1,12 @@
+{
+	"ID": "4eaf325e4cd72aa4cdeb6393cad05466",
+	"TypeName": "FlaxEditor.Content.Settings.GraphicsSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"UseVSync": false,
+	"MaxFPS": 60,
+	"RenderQuality": 2,
+	"AllowHDRTitleIcon": false,
+	"ShaderProfileQuality": 0
+}
+}

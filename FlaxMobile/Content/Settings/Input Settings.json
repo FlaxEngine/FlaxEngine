@@ -1,0 +1,11 @@
+{
+	"ID": "f4c1c67842f6b745a6976aa8e7eff360",
+	"TypeName": "FlaxEditor.Content.Settings.InputSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"InputMaps": null,
+	"InputActions": null,
+	"Axis dead zone": 0.05,
+	"Keyboard layout in use": null
+}
+}

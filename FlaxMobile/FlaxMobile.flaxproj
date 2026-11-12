@@ -1,0 +1,13 @@
+{
+  "Name": "FlaxMobile",
+  "Version": "1.0.0",
+  "Company": "FlaxMobile",
+  "Copyright": "Based on Flax Engine (https://flaxengine.com) - Apache License 2.0",
+  "GameTarget": "FlaxGameTarget",
+  "EditorTarget": "FlaxEditorTarget",
+  "References": [
+    {
+      "Name": "$(EnginePath)/Flax.flaxproj"
+    }
+  ]
+}

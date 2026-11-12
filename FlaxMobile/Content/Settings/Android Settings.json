@@ -1,0 +1,15 @@
+{
+	"ID": "babd7e284b164de5cb7c8ca933064e43",
+	"TypeName": "FlaxEditor.Content.Settings.AndroidPlatformSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"PackageName": "com.flaxmobile.flaxmobile",
+	"OverrideIcon": "00000000-0000-0000-0000-000000000000",
+	"VersionCode": "1",
+	"MinimumAPILevel": "28",
+	"TargetAPILevel": "33",
+	"Permissions": [],
+	"DefaultOrientation": 2,
+	"BuildAAB": false
+}
+}
