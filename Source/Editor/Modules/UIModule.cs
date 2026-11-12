@@ -496,11 +496,11 @@ namespace FlaxEditor.Modules
             InitViewportScaleOptions();
 
             InitSharedMenus();
+            InitWindowDecorations(mainWindow);
             InitMainMenu(mainWindow);
             InitToolstrip(mainWindow);
             InitStatusBar(mainWindow);
             InitDockPanel(mainWindow);
-            InitWindowDecorations(mainWindow);
 
             Editor.Options.OptionsChanged += OnOptionsChanged;
             Editor.CodeEditing.SelectedEditorChanged += OnSelectedCodeEditorChanged;

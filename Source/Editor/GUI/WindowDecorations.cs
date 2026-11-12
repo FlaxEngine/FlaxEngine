@@ -51,18 +51,16 @@ public class WindowDecorations : ContainerControl
     : base(0, 0, 0, 20)
     {
         _window = window.RootWindow.Window;
-
         AutoFocus = false;
         AnchorPreset = AnchorPresets.HorizontalStretchTop;
-        BackgroundColor = Color.Transparent;
         var style = Style.Current;
+        BackgroundColor = style.DarkBackground;
 
         _icon = new Image
         {
             Margin = new Margin(4, 4, 4, 4),
             Brush = new TextureBrush(FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.WindowIcon)),
             Color = style.Foreground,
-            BackgroundColor = style.DarkBackground,
             KeepAspectRatio = false,
             Parent = this,
         };
@@ -86,7 +84,7 @@ public class WindowDecorations : ContainerControl
                 ClipText = true,
                 TextColor = style.ForegroundGrey,
                 TextColorHighlighted = style.ForegroundGrey,
-                BackgroundColor = _icon.BackgroundColor,
+                BackgroundColor = Color.Transparent,
                 Parent = this,
             };
 
@@ -94,7 +92,7 @@ public class WindowDecorations : ContainerControl
             {
                 Text = ((char)EditorAssets.SegMDL2Icons.ChromeClose).ToString(),
                 Font = new FontReference(iconFont),
-                BackgroundColor = _icon.BackgroundColor,
+                BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BorderColorHighlighted = Color.Transparent,
                 BorderColorSelected = Color.Transparent,
@@ -110,7 +108,7 @@ public class WindowDecorations : ContainerControl
             {
                 Text = ((char)EditorAssets.SegMDL2Icons.ChromeMinimize).ToString(),
                 Font = new FontReference(iconFont),
-                BackgroundColor = _icon.BackgroundColor,
+                BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BorderColorHighlighted = Color.Transparent,
                 BorderColorSelected = Color.Transparent,
@@ -125,7 +123,7 @@ public class WindowDecorations : ContainerControl
             {
                 Text = ((char)(_window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize)).ToString(),
                 Font = new FontReference(iconFont),
-                BackgroundColor = _icon.BackgroundColor,
+                BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BorderColorHighlighted = Color.Transparent,
                 BorderColorSelected = Color.Transparent,
