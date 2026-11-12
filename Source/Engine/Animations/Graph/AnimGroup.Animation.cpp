@@ -2420,6 +2420,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 auto& slot = slots[i];
                 if (slot.Animation && slot.Name == slotName)
                 {
+                    if (slot.Stop)
+                    {
+                        // Stopped before it started playing so skip it
+                        slot.Animation = nullptr;
+                        slot.Stop = false;
+                        continue;
+                    }
+
                     // Start playing animation
                     bucket.Index = i;
 
@@ -2488,7 +2496,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 if (bucket.Index == i)
                     continue;
                 auto& other = slots[i];
-                if (other.Animation && other.Name == slotName)
+                if (other.Animation && other.Name == slotName && !other.Stop)
                 {
                     otherAnim = other.Animation;
                     other.ActiveBlend = true;
