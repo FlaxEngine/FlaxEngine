@@ -8,6 +8,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Async/GPUTask.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 REGISTER_BINARY_ASSET(FontTextureAtlas, "FlaxEngine.FontTextureAtlas", true);
 

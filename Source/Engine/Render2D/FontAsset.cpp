@@ -9,6 +9,7 @@
 #include "Engine/Content/Upgraders/FontAssetUpgrader.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
 #if USE_EDITOR
