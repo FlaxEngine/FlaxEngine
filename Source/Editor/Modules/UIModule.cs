@@ -928,8 +928,6 @@ namespace FlaxEditor.Modules
             var numberOfClientsMenu = _toolStripCook.ContextMenu.AddChildMenu("Number of game clients");
             _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
 
-            ToolStrip.AddSeparator();
-
             // Play
             _toolStripPlay = ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip("Play In Editor", ref inputOptions.Play);
             _toolStripPlay.ContextMenu = new ContextMenu();
@@ -957,6 +955,7 @@ namespace FlaxEditor.Modules
             }
             _toolStripPause = ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip("Pause/Resume game", ref inputOptions.Pause);
             _toolStripStep = ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game", ref inputOptions.StepFrame);
+            _toolStripPlay.AnchorPreset = _toolStripPause.AnchorPreset = _toolStripStep.AnchorPreset = AnchorPresets.MiddleCenter;
 
             UpdateToolstrip();
         }

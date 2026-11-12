@@ -169,17 +169,58 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
-            // Arrange controls
-            float x = _itemsMargin.Left;
-            float h = ItemsHeight;
+            // Check size of the controls to place in each area
+            float leftSize = 0, middleSize = 0;
             for (int i = 0; i < _children.Count; i++)
             {
                 var c = _children[i];
-                if (c.Visible)
+                if (!c.Visible)
+                    continue;
+                float w = c.Width + _itemsMargin.Width;
+                if (c.AnchorPreset == AnchorPresets.MiddleCenter)
+                    middleSize += w;
+                else
+                    leftSize += w;
+            }
+            if (middleSize > 0)
+                middleSize -= _itemsMargin.Left;
+            float totalSize = leftSize + middleSize + _itemsMargin.Width;
+            float x = _itemsMargin.Left;
+            float xMiddle = (Width - middleSize) * 0.5f;
+            float h = ItemsHeight;
+            if (xMiddle <= leftSize)
+            {
+                // Arrange controls packed
+                for (int i = 0; i < _children.Count; i++)
                 {
+                    var c = _children[i];
+                    if (c.Visible)
+                    {
+                        var w = c.Width;
+                        c.Bounds = new Rectangle(x, _itemsMargin.Top, w, h);
+                        x += w + _itemsMargin.Width;
+                    }
+                }
+            }
+            else
+            {
+                // Arrange controls in groups
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    var c = _children[i];
+                    if (!c.Visible)
+                        continue;
                     var w = c.Width;
-                    c.Bounds = new Rectangle(x, _itemsMargin.Top, w, h);
-                    x += w + _itemsMargin.Width;
+                    if (c.AnchorPreset == AnchorPresets.MiddleCenter)
+                    {
+                        c.Bounds = new Rectangle(xMiddle, _itemsMargin.Top, w, h);
+                        xMiddle += w + _itemsMargin.Width;
+                    }
+                    else
+                    {
+                        c.Bounds = new Rectangle(x, _itemsMargin.Top, w, h);
+                        x += w + _itemsMargin.Width;
+                    }
                 }
             }
         }
