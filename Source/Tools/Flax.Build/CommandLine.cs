@@ -15,6 +15,7 @@ namespace Flax.Build
     /// </summary>
     public class CommandLine
     {
+        private static string _commandLine;
         internal static List<MethodInfo> ConsoleCommands;
 
         /// <summary>
@@ -47,15 +48,18 @@ namespace Flax.Build
         /// <returns>The command line.</returns>
         public static string Get()
         {
+            if (_commandLine != null)
+                return _commandLine;
+
+            _commandLine = string.Empty;
             string[] args = Environment.GetCommandLineArgs();
             if (args.Length > 1)
             {
                 string commandLine = Environment.CommandLine.Remove(0, args[0].Length + 2);
-                commandLine = commandLine.Trim(' ');
-                return commandLine;
+                _commandLine = commandLine.Trim(' ');
             }
 
-            return string.Empty;
+            return _commandLine;
         }
 
         /// <summary>
@@ -396,6 +400,8 @@ namespace Flax.Build
         /// <param name="configuration">The configuration (key=value pairs).</param>
         public static void Configure(Type type, Dictionary<string, string> configuration)
         {
+            if (configuration == null || configuration.Count == 0)
+                return;
             Configure(GetMembers(type), null, configuration);
         }
 
@@ -406,15 +412,21 @@ namespace Flax.Build
         /// <param name="configuration">The configuration (key=value pairs).</param>
         public static void Configure(object obj, Dictionary<string, string> configuration)
         {
+            if (configuration == null || configuration.Count == 0)
+                return;
             Configure(GetMembers(obj), obj, configuration);
         }
 
-        internal static void ConfigureChild(Type type, Dictionary<string, string> configuration, string name = null)
+        internal static void ConfigureChild(Type type, Dictionary<string, string> configuration, string name = null, bool withCommandLine = true)
         {
-            if (configuration.TryGetValue(name ?? type.Name, out var subConfig) && subConfig?.Length != 0)
+            if (configuration != null && configuration.TryGetValue(name ?? type.Name, out var subConfig) && subConfig?.Length != 0)
             {
                 var child = JsonSerializer.Deserialize<Dictionary<string, string>>(subConfig.AsSpan(), ProjectInfo.JsonOptions);
                 Configure(type, child);
+            }
+            if (withCommandLine)
+            {
+                Configure(type);
             }
         }
 

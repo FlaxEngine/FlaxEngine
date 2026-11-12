@@ -228,6 +228,18 @@ void RenderView::GetWorldMatrix(Double4x4& world) const
     world.M43 -= Origin.Z;
 }
 
+void RenderView::GetLocalFrustum(BoundingFrustum& frustum) const
+{
+    frustum = Frustum;
+    if (!Origin.IsZero())
+    {
+        // Translate frustum to the origin
+        Matrix m = frustum.GetMatrix();
+        m.SetTranslation(Origin - m.GetTranslation());
+        frustum.SetMatrix(m);
+    }
+}
+
 TaaJitterRemoveContext::TaaJitterRemoveContext(const RenderView& view)
 {
     if (view.IsTaaResolved)

@@ -32,11 +32,13 @@ private:
     {
         double Lag;
         NetworkEvent Event;
+        Array<byte> Data;
     };
 
     INetworkDriver* _driver = nullptr;
     Array<LagMessage> _messages;
     Array<LagEvent> _events;
+    Array<Array<byte>> _usedEventsData;
 
 public:
     ~NetworkLagDriver();
