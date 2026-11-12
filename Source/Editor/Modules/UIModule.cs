@@ -77,8 +77,6 @@ namespace FlaxEditor.Modules
         private ContentStats _contentStats;
         private bool _progressFailed;
 
-        ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
-
         /// <summary>
         /// Defines a viewport scaling option.
         /// </summary>
@@ -182,6 +180,8 @@ namespace FlaxEditor.Modules
         private ToolStripButton _toolStripStep;
         private ContextMenuSingleSelectGroup<InterfaceOptions.PlayAction> _toolStripPlayAction;
         private ContextMenuSingleSelectGroup<InterfaceOptions.GameWindowMode> _toolStripPlayWindowMode;
+        private ContextMenuSingleSelectGroup<BuildConfiguration> _toolStripCookConfiguration;
+        private ContextMenuSingleSelectGroup<int> _toolStripCookNumberOfClients;
 
         /// <summary>
         /// The main menu control.
@@ -494,8 +494,6 @@ namespace FlaxEditor.Modules
             mainWindow.BackgroundColor = Style.Current.Background;
 
             InitViewportScaleOptions();
-
-            InitSharedMenus();
             InitWindowDecorations(mainWindow);
             InitMainMenu(mainWindow);
             InitToolstrip(mainWindow);
@@ -643,20 +641,6 @@ namespace FlaxEditor.Modules
             return dialog;
         }
 
-        private void InitSharedMenus()
-        {
-            for (int i = 1; i <= 4; i++)
-                _numberOfClientsGroup.AddItem(i.ToString(), i);
-
-            _numberOfClientsGroup.Selected = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
-            _numberOfClientsGroup.SelectedChanged = value =>
-            {
-                var options = Editor.Options.Options;
-                options.Interface.NumberOfGameClientsToLaunch = value;
-                Editor.Options.Apply(options);
-            };
-        }
-
         private void InitMainMenu(RootControl mainWindow)
         {
             MainMenu = new MainMenu()
@@ -728,9 +712,6 @@ namespace FlaxEditor.Modules
             _menuGamePlayCurrentScenes = cm.AddButton("Play Current Scenes", inputOptions.PlayCurrentScenes, Editor.Simulation.RequestPlayScenesOrStopPlay);
             _menuGameStop = cm.AddButton("Stop Game", inputOptions.Play, Editor.Simulation.RequestStopPlay);
             _menuGamePause = cm.AddButton("Pause", inputOptions.Pause, Editor.Simulation.RequestPausePlay);
-            cm.AddSeparator();
-            var numberOfClientsMenu = cm.AddChildMenu("Number of game clients");
-            _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
             cm.AddSeparator();
             _menuGameCookAndRun = cm.AddButton("Cook & Run", inputOptions.CookAndRun, Editor.Windows.GameCookerWin.BuildAndRun);
             _menuGameCookAndRun.LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
@@ -885,7 +866,8 @@ namespace FlaxEditor.Modules
 
             MainMenuShortcutKeysUpdated?.Invoke();
 
-            _numberOfClientsGroup.Selected = options.Interface.NumberOfGameClientsToLaunch;
+            _toolStripCookConfiguration.Selected = options.Interface.CookAndRunBuildConfiguration;
+            _toolStripCookNumberOfClients.Selected = options.Interface.NumberOfGameClientsToLaunch;
             _toolStripPlayAction.Selected = options.Interface.PlayButtonAction;
             _toolStripPlayWindowMode.Selected = options.Interface.DefaultGameWindowMode;
 
@@ -923,10 +905,35 @@ namespace FlaxEditor.Modules
             // Cook and run
             _toolStripCook = ToolStrip.AddButton(Editor.Icons.ShipIt64, Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Cook & Run - build game for the current platform and run it locally", ref inputOptions.CookAndRun);
             _toolStripCook.ContextMenu = new ContextMenu();
-            _toolStripCook.ContextMenu.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked);
-            _toolStripCook.ContextMenu.AddSeparator();
-            var numberOfClientsMenu = _toolStripCook.ContextMenu.AddChildMenu("Number of game clients");
-            _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
+            {
+                _toolStripCook.ContextMenu.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked);
+                _toolStripCook.ContextMenu.AddSeparator();
+                var configurationMenu = _toolStripCook.ContextMenu.AddChildMenu("Configuration");
+                _toolStripCookConfiguration = new ContextMenuSingleSelectGroup<BuildConfiguration>();
+                _toolStripCookConfiguration.AddItem(BuildConfiguration.Debug);
+                _toolStripCookConfiguration.AddItem(BuildConfiguration.Development);
+                _toolStripCookConfiguration.AddItem(BuildConfiguration.Release);
+                _toolStripCookConfiguration.Selected = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
+                _toolStripCookConfiguration.SelectedChanged = value =>
+                {
+                    var options = Editor.Options.Options;
+                    options.Interface.CookAndRunBuildConfiguration = value;
+                    Editor.Options.Apply(options);
+                };
+                _toolStripCookConfiguration.AddItemsToContextMenu(configurationMenu.ContextMenu);
+                var numberOfClientsMenu = _toolStripCook.ContextMenu.AddChildMenu("Number of game clients");
+                _toolStripCookNumberOfClients = new ContextMenuSingleSelectGroup<int>();
+                for (int i = 1; i <= 4; i++)
+                    _toolStripCookNumberOfClients.AddItem(i.ToString(), i);
+                _toolStripCookNumberOfClients.Selected = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
+                _toolStripCookNumberOfClients.SelectedChanged = value =>
+                {
+                    var options = Editor.Options.Options;
+                    options.Interface.NumberOfGameClientsToLaunch = value;
+                    Editor.Options.Apply(options);
+                };
+                _toolStripCookNumberOfClients.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
+            }
 
             // Play
             _toolStripPlay = ToolStrip.AddButton(Editor.Icons.Play64, Editor.Simulation.DelegatePlayOrStopPlayInEditor).LinkTooltip("Play In Editor", ref inputOptions.Play);

@@ -41,6 +41,11 @@ namespace FlaxEditor.GUI.ContextMenu
 
         public Action<T> SelectedChanged;
 
+        public ContextMenuSingleSelectGroup<T> AddItem(T value, Action selected = null, string tooltip = null)
+        {
+            return AddItem(value.ToString(), value, selected, tooltip);
+        }
+
         public ContextMenuSingleSelectGroup<T> AddItem(string text, T value, Action selected = null, string tooltip = null)
         {
             var item = new SingleSelectGroupItem
