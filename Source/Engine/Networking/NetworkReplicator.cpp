@@ -410,7 +410,7 @@ NetworkReplicatedObject* ResolveObject(Guid objectId, Guid parentId, const Strin
             {
                 // Boost future lookups by using indirection
                 NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, item.ToString(), obj->GetType().ToString());
-                IdsRemappingTable.Add(objectId, item.ObjectId);
+                IdsRemappingTable[objectId] = item.ObjectId;
             }
 
             return &item;
@@ -1339,7 +1339,7 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const Guid& pre
 
         // Boost future lookups by using indirection
         NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", msgDataItem.ObjectId, item.ToString(), obj->GetType().ToString());
-        IdsRemappingTable.Add(msgDataItem.ObjectId, item.ObjectId);
+        IdsRemappingTable[msgDataItem.ObjectId] = item.ObjectId;
     }
 
     // Spawn all newly spawned objects (ensure to have valid ownership hierarchy set before spawning object)
