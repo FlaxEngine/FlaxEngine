@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
+#include "AnimGraphTime.h"
 #include "Engine/Core/Types/VariantValueCast.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Content/Assets/SkeletonMask.h"
@@ -399,7 +400,7 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
     }
 }
 
-float GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, float length)
+float AnimGraphTime::GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, float length)
 {
     // Apply animation offset and looping to calculate the animation sampling position within [0;length]
     float result = startTimePos + timePos * speed;
@@ -429,32 +430,50 @@ float GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, flo
         }
         else
         {
-            // Animation ended
-            timePos = result = length;
+            // Animation ended: held at its end, its own time no more than takes it there from the start position (set to
+            // the end itself, the start position added would hold a node played by its start position past its end for good)
+            result = length;
+            if (speed > 0.0f)
+                timePos = Math::Max((length - startTimePos) / speed, 0.0f);
         }
     }
     return result;
 }
 
-float GetAnimSamplePos(float length, Animation* anim, float pos)
+float AnimGraphTime::GetAnimSamplePos(float length, float animLength, float framesPerSecond, float pos)
 {
     // Convert into animation local time (track length may be bigger so fill the gaps with animation clip and include playback speed)
     // Also, scale the animation to fit the total animation node length without cut in a middle
-    const float animLength = anim->GetLength();
     if (animLength <= ANIM_GRAPH_BLEND_THRESHOLD)
         return 0;
     const int32 cyclesCount = Math::Max(Math::FloorToInt(length / animLength), 1);
     const float cycleLength = animLength * (float)cyclesCount;
     const float adjustRateScale = length / cycleLength;
     float animPos = pos * adjustRateScale;
-    animPos = Math::Mod(animPos, animLength);
+    if (animPos >= cycleLength)
     {
-        animPos -= animLength;
+        // At its end (an animation held there): its last frame, not its first
+        animPos = animLength;
     }
-    if (animPos < 0)
-        animPos = animLength + animPos;
-    animPos = (float)(animPos * anim->Data.FramesPerSecond);
+    else
+    {
+        animPos = Math::Mod(animPos, animLength);
+        animPos -= animLength;
+        if (animPos < 0)
+            animPos = animLength + animPos;
+    }
+    animPos = (float)(animPos * framesPerSecond);
     return animPos;
+}
+
+float GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, float length)
+{
+    return AnimGraphTime::GetAnimPos(timePos, startTimePos, speed, loop, length);
+}
+
+float GetAnimSamplePos(float length, Animation* anim, float pos)
+{
+    return AnimGraphTime::GetAnimSamplePos(length, anim->GetLength(), (float)anim->Data.FramesPerSecond, pos);
 }
 
 FORCE_INLINE void GetAnimPos(bool loop, float length, float speed, float startTimePos, float prevTimePos, float& newTimePos, float& pos, float& prevPos)
