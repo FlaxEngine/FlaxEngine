@@ -1148,6 +1148,59 @@ namespace FlaxEditor.Surface.Archetypes
             },
             new NodeArchetype
             {
+                TypeID = 39,
+                Title = "Orientation Warp",
+                Description = "Turns the lower body toward the movement direction while the upper body keeps its facing",
+                Flags = NodeFlags.AnimGraph | NodeFlags.FixedSize,
+                Size = new Float2(270, 325),
+                DefaultValues = new object[]
+                {
+                    string.Empty, // Body root node
+                    string.Empty, // IK foot root node
+                    string.Empty, // Spine start node
+                    string.Empty, // Spine end node
+                    string.Empty, // Keep node
+                    0.0f, // Angle
+                    1.0f, // Alpha
+                    0.0f, // Speed
+                    0.0f, // Min speed
+                    0.75f, // Distribution
+                    0.0f, // Rotation interp speed
+                    0.0f, // Max correction
+                    false, // Use root motion speed
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 0),
+                    NodeElementArchetype.Factory.Output(1, "Applied", typeof(float), 5),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 1),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 2, 5),
+                    NodeElementArchetype.Factory.Input(2, "Alpha", true, typeof(float), 3, 6),
+                    NodeElementArchetype.Factory.Input(3, "Speed", true, typeof(float), 4, 7),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Min Speed:", tooltip: "Off below this speed. 0 to always warp."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 4, 8, -1, 0.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 5, "Body Root:", tooltip: "Lower body node (eg. pelvis)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 5, 150, 0),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 6, "IK Foot Root:", tooltip: "Optional IK feet parent (eg. ik_foot_root)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 6, 150, 1),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 7, "Spine Start:", tooltip: "First spine node that turns back (eg. spine_01)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 7, 150, 2),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 8, "Spine End:", tooltip: "Last spine node; keeps its facing (eg. spine_05)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 8, 150, 3),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 9, "Keep Node:", tooltip: "Optional node that keeps its model transform (eg. ik_hand_root)."),
+                    NodeElementArchetype.Factory.SkeletonNodeNameSelect(110, Surface.Constants.LayoutOffsetY * 9, 150, 4),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 10, "Distribution:", tooltip: "0: first spine node turns back fully. 1: even spread."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 10, 9, -1, 0.0f, 1.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 11, "Interp Speed:", tooltip: "How fast the angle follows its input, the short way round. 0 to follow it at once."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 11, 10, -1, 0.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 12, "Max Correction:", tooltip: "The largest angle either way, in degrees. 0 for no limit."),
+                    NodeElementArchetype.Factory.Float(110, Surface.Constants.LayoutOffsetY * 12, 11, -1, 0.0f, 180.0f),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 13, "Root Motion Speed:", tooltip: "Use the input pose's own root motion speed instead of the Speed input for the minimum speed."),
+                    NodeElementArchetype.Factory.Bool(110, Surface.Constants.LayoutOffsetY * 13, 12),
+                }
+            },
+            new NodeArchetype
+            {
                 TypeID = 37,
                 Title = "Instance Transform",
                 Description = "Animated model transformation (in world space).",
