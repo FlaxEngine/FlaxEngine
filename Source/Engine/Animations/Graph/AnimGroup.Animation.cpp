@@ -2407,7 +2407,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         }
         const StringView slotName(node->Values[0]);
         auto& bucket = context.Data->State[node->BucketIndex].Slot;
-        if (bucket.Index != -1 && (slots.Count() <= bucket.Index || slots[bucket.Index].Animation == nullptr))
+        if (bucket.Index != -1 && (slots.Count() <= bucket.Index || slots[bucket.Index].Animation == nullptr || slots[bucket.Index].Name != slotName))
         {
             // Current slot animation ended
             bucket.Index = -1;
@@ -2525,6 +2525,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 slot.Animation = nullptr;
                 slot.Stop = false;
                 slot.ActiveBlend = false;
+                bucket.Index = -1;
                 if (!otherAnim)
                 {
                     bucket.TimePosition = 0;
