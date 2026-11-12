@@ -4,11 +4,296 @@
 
 #include "GPUSwapChainDX11.h"
 #include "GPUContextDX11.h"
+#include "Engine/Graphics/Graphics.h"
+#include <atomic>
 #include "Engine/Platform/Window.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+
+#if PLATFORM_WINDOWS
+// The render device/context stays on the render thread. The worker exclusively
+// owns a second device/context on the same adapter. Keyed mutexes synchronize
+// cross-device GPU copies; Published transfers CPU ownership of each slot.
+struct GPUSwapChainDX11::AsyncPresenter
+{
+    struct Frame
+    {
+        ID3D11Texture2D* RenderTexture = nullptr;
+        ID3D11Texture2D* PresentTexture = nullptr;
+        IDXGIKeyedMutex* RenderMutex = nullptr;
+        IDXGIKeyedMutex* PresentMutex = nullptr;
+        std::atomic<bool> Published{false};
+        uint64 Serial = 0;
+    };
+    GPUSwapChainDX11* Owner;
+    ID3D11Device* Device = nullptr;
+    ID3D11DeviceContext* Context = nullptr;
+    ID3D11Texture2D* RenderTarget = nullptr;
+    GPUTextureViewDX11 RenderView;
+    Frame Frames[2];
+    HANDLE Thread = nullptr, StopEvent = nullptr, WakeEvent = nullptr;
+    std::atomic<uint64> Presented{0};
+    std::atomic<HRESULT> Failure{S_OK};
+    uint64 Serial = 0;
+    bool FailureReported = false;
+
+    explicit AsyncPresenter(GPUSwapChainDX11* owner) : Owner(owner) {}
+    ~AsyncPresenter()
+    {
+        ReleaseFrames();
+        SAFE_RELEASE(Context);
+        SAFE_RELEASE(Device);
+    }
+    bool InitDevice()
+    {
+        ComPtr<IDXGIDevice> dxgiDevice;
+        ComPtr<IDXGIAdapter> adapter;
+        if (FAILED(Owner->_device->GetDevice()->QueryInterface(IID_PPV_ARGS(&dxgiDevice))) || FAILED(dxgiDevice->GetAdapter(&adapter)))
+            return false;
+        D3D_FEATURE_LEVEL level;
+        if (FAILED(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+            D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0, D3D11_SDK_VERSION, &Device, &level, &Context)))
+            return false;
+        ComPtr<IDXGIDevice1> presentationDevice;
+        return SUCCEEDED(Device->QueryInterface(IID_PPV_ARGS(&presentationDevice))) &&
+            SUCCEEDED(presentationDevice->SetMaximumFrameLatency(1));
+    }
+    void Stop()
+    {
+        if (Thread)
+        {
+            SetEvent(StopEvent);
+            if (GetCurrentThreadId() == GetWindowThreadProcessId(Owner->_windowHandle, nullptr))
+            {
+                // DXGI may send synchronous window messages even with DO_NOT_WAIT.
+                // Service sent messages while joining, without dispatching posted input.
+                while (MsgWaitForMultipleObjects(1, &Thread, FALSE, INFINITE, QS_SENDMESSAGE) == WAIT_OBJECT_0 + 1)
+                {
+                    MSG message;
+                    PeekMessageW(&message, nullptr, 0, 0, PM_NOREMOVE);
+                }
+            }
+            else
+                WaitForSingleObject(Thread, INFINITE);
+            CloseHandle(Thread);
+            Thread = nullptr;
+        }
+        if (StopEvent) CloseHandle(StopEvent);
+        if (WakeEvent) CloseHandle(WakeEvent);
+        StopEvent = WakeEvent = nullptr;
+    }
+    void ReleaseFrames()
+    {
+        Stop();
+        if (Context)
+        {
+            Context->ClearState();
+            // The engine's render-device fence does not cover this second device.
+            // Drain it on lifecycle changes before releasing swapchain resources.
+            ID3D11Query* done = nullptr;
+            const D3D11_QUERY_DESC desc = {D3D11_QUERY_EVENT, 0};
+            if (SUCCEEDED(Device->CreateQuery(&desc, &done)))
+            {
+                Context->End(done);
+                Context->Flush();
+                while (Context->GetData(done, nullptr, 0, 0) == S_FALSE)
+                    Platform::Sleep(1);
+                done->Release();
+            }
+            else
+                Context->Flush();
+        }
+        RenderView.Release();
+        SAFE_RELEASE(RenderTarget);
+        for (auto& frame : Frames)
+        {
+            SAFE_RELEASE(frame.PresentMutex);
+            SAFE_RELEASE(frame.RenderMutex);
+            SAFE_RELEASE(frame.PresentTexture);
+            SAFE_RELEASE(frame.RenderTexture);
+            frame.Published.store(false);
+        }
+    }
+    bool InitFrames()
+    {
+        Failure.store(S_OK);
+        FailureReported = false;
+        Presented.store(0);
+        D3D11_TEXTURE2D_DESC desc;
+        Owner->_backBuffer->GetDesc(&desc);
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.CPUAccessFlags = 0;
+        desc.MiscFlags = 0;
+        desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+#if GPU_ENABLE_WINDOW_SRV
+        desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+#endif
+        auto renderDevice = Owner->_device->GetDevice();
+        if (FAILED(renderDevice->CreateTexture2D(&desc, nullptr, &RenderTarget)))
+            return false;
+        ID3D11RenderTargetView* rtv = nullptr;
+        ID3D11ShaderResourceView* srv = nullptr;
+        if (FAILED(renderDevice->CreateRenderTargetView(RenderTarget, nullptr, &rtv)))
+            return false;
+#if GPU_ENABLE_WINDOW_SRV
+        if (FAILED(renderDevice->CreateShaderResourceView(RenderTarget, nullptr, &srv)))
+        {
+            SAFE_RELEASE(rtv);
+            return false;
+        }
+#endif
+        RenderView.Init(Owner, rtv, srv, nullptr, nullptr, Owner->_format, MSAALevel::None);
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
+        for (auto& frame : Frames)
+        {
+            ComPtr<IDXGIResource> resource;
+            HANDLE shared = nullptr;
+            if (FAILED(renderDevice->CreateTexture2D(&desc, nullptr, &frame.RenderTexture)) ||
+                FAILED(frame.RenderTexture->QueryInterface(IID_PPV_ARGS(&frame.RenderMutex))) ||
+                FAILED(frame.RenderTexture->QueryInterface(IID_PPV_ARGS(&resource))) ||
+                FAILED(resource->GetSharedHandle(&shared)) ||
+                FAILED(Device->OpenSharedResource(shared, IID_PPV_ARGS(&frame.PresentTexture))) ||
+                FAILED(frame.PresentTexture->QueryInterface(IID_PPV_ARGS(&frame.PresentMutex))))
+                return false;
+            // Legacy shared handles returned by GetSharedHandle must not be closed.
+        }
+        StopEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+        WakeEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+        if (!StopEvent || !WakeEvent)
+            return false;
+        Thread = CreateThread(nullptr, 0, Run, this, 0, nullptr);
+        if (Thread)
+            LOG(Info, "DX11 async presentation active: separate presentation device, two shared frame slots, synchronized scanout.");
+        return Thread != nullptr;
+    }
+    void Capture()
+    {
+        const HRESULT failure = Failure.load();
+        if (FAILED(failure))
+        {
+            if (!FailureReported)
+            {
+                LOG_DIRECTX_RESULT(failure);
+                FailureReported = true;
+            }
+            return;
+        }
+        // Base bookkeeping (including window visibility) stays on the render thread.
+        const uint64 count = Presented.exchange(0);
+        if (count)
+        {
+            Owner->GPUSwapChain::Present(true);
+            Owner->_presentCount += count - 1;
+        }
+        auto graphicsContext = Owner->_device->GetMainContextDX11();
+        graphicsContext->ResetRenderTarget();
+        graphicsContext->FlushState();
+        for (auto& frame : Frames)
+        {
+            if (frame.Published.load(std::memory_order_acquire))
+                continue;
+            // Zero timeout: never wait for a slot still used by the GPU.
+            const HRESULT acquired = frame.RenderMutex->AcquireSync(0, 0);
+            if (acquired != S_OK)
+            {
+                if (acquired != WAIT_TIMEOUT)
+                    Failure.store(FAILED(acquired) ? acquired : E_FAIL);
+                continue;
+            }
+            graphicsContext->GetContext()->CopyResource(frame.RenderTexture, RenderTarget);
+            const HRESULT released = frame.RenderMutex->ReleaseSync(1);
+            if (FAILED(released))
+            {
+                Failure.store(released);
+                return;
+            }
+            graphicsContext->GetContext()->Flush();
+            frame.Serial = ++Serial;
+            frame.Published.store(true, std::memory_order_release);
+            SetEvent(WakeEvent);
+            return;
+        }
+        // Both slots occupied: discard this capture and keep rendering.
+    }
+    static DWORD WINAPI Run(void* arg)
+    {
+        auto self = static_cast<AsyncPresenter*>(arg);
+        HANDLE events[] = {self->StopEvent, self->WakeEvent};
+        bool pending = false;
+        uint64 lastPresented = 0;
+        uint64 pendingSerial = 0;
+        while (WaitForMultipleObjects(2, events, FALSE, 1) != WAIT_OBJECT_0)
+        {
+            Frame* newest = nullptr;
+            for (auto& frame : self->Frames)
+            {
+                if (!frame.Published.load(std::memory_order_acquire))
+                    continue;
+                const HRESULT acquired = frame.PresentMutex->AcquireSync(1, 0);
+                if (acquired != S_OK)
+                {
+                    if (acquired != WAIT_TIMEOUT) self->Failure.store(FAILED(acquired) ? acquired : E_FAIL);
+                    continue;
+                }
+                if (frame.Serial <= lastPresented || (pending && frame.Serial <= pendingSerial) || (newest && frame.Serial < newest->Serial))
+                {
+                    const HRESULT released = frame.PresentMutex->ReleaseSync(0);
+                    if (FAILED(released)) self->Failure.store(released);
+                    else frame.Published.store(false, std::memory_order_release);
+                    continue;
+                }
+                if (newest)
+                {
+                    const HRESULT released = newest->PresentMutex->ReleaseSync(0);
+                    if (FAILED(released)) self->Failure.store(released);
+                    else newest->Published.store(false, std::memory_order_release);
+                }
+                newest = &frame;
+            }
+            if (FAILED(self->Failure.load()))
+                break;
+            if (newest)
+            {
+                self->Context->CopyResource(self->Owner->_backBuffer, newest->PresentTexture);
+                pendingSerial = newest->Serial;
+                const HRESULT released = newest->PresentMutex->ReleaseSync(0);
+                if (FAILED(released))
+                {
+                    self->Failure.store(released);
+                    break;
+                }
+                self->Context->Flush();
+                newest->Published.store(false, std::memory_order_release);
+                pending = true;
+            }
+            if (pending)
+            {
+                // Synchronized scanout, but do not block teardown behind a full queue.
+                const HRESULT result = self->Owner->_swapChain->Present(1, DXGI_PRESENT_DO_NOT_WAIT);
+                if (result == S_OK)
+                {
+                    lastPresented = pendingSerial;
+                    self->Presented.fetch_add(1);
+                    pending = false;
+                }
+                else if (result == DXGI_STATUS_OCCLUDED)
+                {
+                    WaitForSingleObject(self->StopEvent, 16);
+                }
+                else if (result != DXGI_ERROR_WAS_STILL_DRAWING)
+                {
+                    self->Failure.store(result);
+                    break;
+                }
+            }
+        }
+        return 0;
+    }
+};
+#endif
 
 GPUSwapChainDX11::GPUSwapChainDX11(GPUDeviceDX11* device, Window* window)
     : GPUResourceDX11(device, StringView::Empty)
@@ -32,6 +317,10 @@ void GPUSwapChainDX11::getBackBuffer()
 {
     VALIDATE_DIRECTX_CALL(_swapChain->GetBuffer(0, __uuidof(_backBuffer), reinterpret_cast<void**>(&_backBuffer)));
 
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+        return;
+#endif
     ID3D11RenderTargetView* rtv;
     ID3D11ShaderResourceView* srv;
     VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateRenderTargetView(_backBuffer, nullptr, &rtv));
@@ -46,6 +335,10 @@ void GPUSwapChainDX11::getBackBuffer()
 
 void GPUSwapChainDX11::releaseBackBuffer()
 {
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+        _asyncPresenter->ReleaseFrames();
+#endif
     // Release data
     _backBufferHandle.Release();
     DX_SAFE_RELEASE_CHECK(_backBuffer, 0);
@@ -54,8 +347,10 @@ void GPUSwapChainDX11::releaseBackBuffer()
 void GPUSwapChainDX11::OnReleaseGPU()
 {
 #if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+        _asyncPresenter->Stop();
     // Disable fullscreen mode
-    if (_swapChain)
+    if (_swapChain && _isFullscreen)
     {
         VALIDATE_DIRECTX_CALL(_swapChain->SetFullscreenState(false, nullptr));
     }
@@ -65,12 +360,20 @@ void GPUSwapChainDX11::OnReleaseGPU()
     PROFILE_MEM_DEC(Graphics, _memoryUsage);
     releaseBackBuffer();
     DX_SAFE_RELEASE_CHECK(_swapChain, 0);
+#if PLATFORM_WINDOWS
+    delete _asyncPresenter;
+    _asyncPresenter = nullptr;
+#endif
     _width = _height = 0;
     _memoryUsage = 0;
 }
 
 ID3D11Resource* GPUSwapChainDX11::GetResource()
 {
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+        return _asyncPresenter->RenderTarget;
+#endif
     return _backBuffer;
 }
 
@@ -89,6 +392,11 @@ bool GPUSwapChainDX11::IsFullscreen()
 void GPUSwapChainDX11::SetFullscreen(bool isFullscreen)
 {
 #if PLATFORM_WINDOWS
+    if (isFullscreen && _asyncPresenter)
+    {
+        LOG(Warning, "Async presentation is windowed/borderless only.");
+        return;
+    }
     if (_swapChain && isFullscreen != IsFullscreen())
     {
         _device->WaitForGPU();
@@ -136,6 +444,10 @@ void GPUSwapChainDX11::SetFullscreen(bool isFullscreen)
 
 GPUTextureView* GPUSwapChainDX11::GetBackBufferView()
 {
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+        return &_asyncPresenter->RenderView;
+#endif
     return &_backBufferHandle;
 }
 
@@ -144,16 +456,26 @@ void GPUSwapChainDX11::Present(bool vsync)
     PROFILE_CPU();
     ZoneColor(TracyWaitZoneColor);
 
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+    {
+        _asyncPresenter->Capture();
+        return;
+    }
+#endif
     // Present frame
     ASSERT(_swapChain);
     UINT presentFlags = 0;
 #if PLATFORM_WINDOWS
     if (!vsync && !_isFullscreen && _allowTearing)
     {
-        presentFlags |= DXGI_PRESENT_ALLOW_TEARING;
+        presentFlags |= DXGI_PRESENT_DO_NOT_WAIT;
     }
 #endif
     const HRESULT result = _swapChain->Present(vsync ? 1 : 0, presentFlags);
+    // Nonblocking test: a busy presentation queue is not a device failure.
+    if (result == DXGI_ERROR_WAS_STILL_DRAWING)
+        return;
     LOG_DIRECTX_RESULT(result);
 
     // Base
@@ -165,6 +487,10 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
     if (width == _width && height == _height)
         return false;
 
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+        _asyncPresenter->Stop();
+#endif
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
 #if PLATFORM_WINDOWS
@@ -237,7 +563,24 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
         // Create swap chain
 #if PLATFORM_WINDOWS
         auto dxgi = _device->GetDXGIFactory();
-        VALIDATE_DIRECTX_CALL(dxgi->CreateSwapChain(_device->GetDevice(), &swapChainDesc, &_swapChain));
+        ID3D11Device* presentationDevice = _device->GetDevice();
+        if (Graphics::UseAsyncPresentation)
+        {
+            _asyncPresenter = new AsyncPresenter(this);
+            if (_asyncPresenter->InitDevice())
+            {
+                presentationDevice = _asyncPresenter->Device;
+                swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+                swapChainDesc.Flags = 0;
+            }
+            else
+            {
+                delete _asyncPresenter;
+                _asyncPresenter = nullptr;
+                LOG(Warning, "Async presentation device unavailable; using normal DX11 presentation.");
+            }
+        }
+        VALIDATE_DIRECTX_CALL(dxgi->CreateSwapChain(presentationDevice, &swapChainDesc, &_swapChain));
         ASSERT(_swapChain);
 
         // Disable DXGI changes to the window
@@ -273,6 +616,20 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
     PROFILE_MEM_INC(Graphics, _memoryUsage);
 
     getBackBuffer();
+#if PLATFORM_WINDOWS
+    if (_asyncPresenter)
+    {
+        if (!_asyncPresenter->InitFrames())
+        {
+            LOG(Error, "Async presentation frame setup failed.");
+            ReleaseGPU();
+            return true;
+        }
+        const uint64 extra = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * 3;
+        _memoryUsage += extra;
+        PROFILE_MEM_INC(Graphics, extra);
+    }
+#endif
 
     return false;
 }
@@ -280,7 +637,7 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
 void GPUSwapChainDX11::CopyBackbuffer(GPUContext* context, GPUTexture* dst)
 {
     const auto contextDX11 = (GPUContextDX11*)context;
-    contextDX11->GetContext()->CopyResource((ID3D11Resource*)dst->GetNativePtr(), _backBuffer);
+    contextDX11->GetContext()->CopyResource((ID3D11Resource*)dst->GetNativePtr(), GetResource());
 }
 
 #endif
