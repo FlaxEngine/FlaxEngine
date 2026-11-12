@@ -464,7 +464,7 @@ FORCE_INLINE void GetAnimPos(bool loop, float length, float speed, float startTi
     prevPos = GetAnimPos(prevTimePos, startTimePos, speed, loop, length);
 }
 
-void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight, ProcessAnimationMode mode, BitArray<InlinedAllocation<8>>* usedNodes)
+void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight, ProcessAnimationMode mode, BitArray<InlinedAllocation<8>>* usedNodes, bool holdEndPose)
 {
     PROFILE_CPU_ASSET(anim);
 
@@ -472,13 +472,17 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     const float animPos = GetAnimSamplePos(length, anim, pos);
     const float animPrevPos = GetAnimSamplePos(length, anim, prevPos);
 
+    // Sample the final pose at the clamped endpoint. Events, root motion, and nested tracks
+    // use the existing playback positions.
+    const float posePos = holdEndPose && length > ANIM_GRAPH_BLEND_THRESHOLD && pos >= length ? anim->GetDuration() : animPos;
+
     // Add to trace
     auto& context = *Context.Get();
     if (context.Data->EnableTracing)
     {
         auto& trace = context.AddTraceEvent(node);
         trace.Asset = anim;
-        trace.Value = animPos;
+        trace.Value = posePos;
     }
 
     // Evaluate nested animations
@@ -541,7 +545,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         if (nodeToChannel != -1)
         {
             // Calculate the animated node transformation
-            anim->Data.Channels[nodeToChannel].Evaluate(animPos, &srcNode, false);
+            anim->Data.Channels[nodeToChannel].Evaluate(posePos, &srcNode, false);
 
             // Optionally retarget animation into the skeleton used by the Anim Graph
             if (retarget)
@@ -704,7 +708,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     }
 }
 
-Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed)
+Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed, bool holdEndPose)
 {
     if (anim == nullptr || !anim->IsLoaded())
         return Value::Null;
@@ -716,7 +720,7 @@ Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float
     InitNodes(nodes);
     nodes->Position = pos;
     nodes->Length = length;
-    ProcessAnimation(nodes, node, loop, length, pos, prevPos, anim, speed);
+    ProcessAnimation(nodes, node, loop, length, pos, prevPos, anim, speed, 1.0f, ProcessAnimationMode::Override, nullptr, holdEndPose);
     NormalizeRotations(nodes, _rootMotionMode);
 
     return nodes;
@@ -1123,7 +1127,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             }
             float newTimePos = bucket.TimePosition + context.DeltaTime * speed;
 
-            value = SampleAnimation(node, loop, length, startTimePos, bucket.TimePosition, newTimePos, anim, 1.0f);
+            value = SampleAnimation(node, loop, length, startTimePos, bucket.TimePosition, newTimePos, anim, 1.0f, !loop);
 
             bucket.TimePosition = newTimePos;
             bucket.LastUpdateFrame = context.CurrentFrameIndex;
