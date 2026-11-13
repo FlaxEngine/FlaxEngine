@@ -150,7 +150,6 @@ namespace FlaxEditor
         private float _mouseMoveSum;
         private UndoMultiBlock _undoBlock;
         private View _view;
-        private double[] _gridTickSteps = Utilities.Utils.CurveTickSteps;
         private float[] _gridTickStrengths;
         private List<Widget> _widgets;
         private Widget _activeWidget;
@@ -534,16 +533,10 @@ namespace FlaxEditor
                 if (ShowGrid)
                 {
                     // Draw grid
-                    var viewRect = GetClientArea();
-                    var upperLeft = _view.PointFromParent(viewRect.Location);
-                    var bottomRight = _view.PointFromParent(viewRect.Size);
-                    var min = Float2.Min(upperLeft, bottomRight);
-                    var max = Float2.Max(upperLeft, bottomRight);
-                    var pixelRange = (max - min) * ViewScale;
-                    Render2D.PushClip(ref viewRect);
-                    DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
-                    DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
-                    Render2D.PopClip();
+                    var style = Style.Current;
+                    var linesColor = style.ForegroundDisabled.RGBMultiplied(0.5f);
+                    var labelsColor = style.ForegroundDisabled;
+                    Surface.VisjectSurface.DrawGridBackground(_view, GetClientArea(), ViewScale, linesColor, labelsColor);
                 }
             }
 
@@ -609,37 +602,6 @@ namespace FlaxEditor
             var startPos = pointOrigin.PointFromParent(this, start);
             var endPos = pointOrigin.PointFromParent(this, end);
             return endPos - startPos;
-        }
-
-        private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
-        {
-            var style = Style.Current;
-            var linesColor = style.ForegroundDisabled.RGBMultiplied(0.5f);
-            var labelsColor = style.ForegroundDisabled;
-            var labelsSize = 10.0f;
-            Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
-            {
-                var p = _view.PointToParent(axis * (float)tick);
-
-                // Draw line
-                var lineRect = new Rectangle
-                (
-                 viewRect.Location + (p - 0.5f) * axis,
-                 Float2.Lerp(viewRect.Size, Float2.One, axis)
-                );
-                Render2D.FillRectangle(lineRect, linesColor.AlphaMultiplied(strength));
-
-                // Draw label
-                string label = tick.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                var labelRect = new Rectangle
-                (
-                 viewRect.X + 4.0f + (p.X * axis.X),
-                 viewRect.Y - labelsSize + (p.Y * axis.Y) + (viewRect.Size.Y * axis.X),
-                 50,
-                 labelsSize
-                );
-                Render2D.DrawText(style.FontSmall, label, labelRect, labelsColor.AlphaMultiplied(strength), TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.7f);
-            }, _gridTickSteps, ref _gridTickStrengths, min, max, pixelRange);
         }
 
         private void DrawControl(UIControl uiControl, Control control, bool selection, ref Float2 mousePos, ref bool drawAnySelectedControl, bool withWidgets = false)

@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Surface
 {
@@ -67,7 +68,7 @@ namespace FlaxEditor.Surface
         {
             DrawBackgroundDefault(Style.Background, Size, _rootControl.Location);
             //DrawBackgroundSolidColor(Style.BackgroundColor, Width, Height);
-            DrawGridBackground();
+            DrawGridBackground(_rootControl, GetClientArea(), ViewScale * 2.75f, Style.BackgroundColor.RGBMultiplied(1.2f), Color.Transparent);
         }
 
         internal static void DrawBackgroundSolidColor(Color color, float width, float height)
@@ -76,27 +77,25 @@ namespace FlaxEditor.Surface
             Render2D.FillRectangle(backgroundRect, color);
         }
 
-        internal void DrawGridBackground()
+        internal static void DrawGridBackground(ContainerControl root, Rectangle viewRect, float viewScale, Color linesColor, Color labelsColor)
         {
-            var viewRect = GetClientArea();
-            var upperLeft = _rootControl.PointFromParent(viewRect.Location);
-            var bottomRight = _rootControl.PointFromParent(viewRect.Size);
+            var upperLeft = root.PointFromParent(viewRect.Location);
+            var bottomRight = root.PointFromParent(viewRect.Size);
             var min = Float2.Min(upperLeft, bottomRight);
             var max = Float2.Max(upperLeft, bottomRight);
-            var pixelRange = (max - min) * ViewScale * 2.75f;
+            var pixelRange = (max - min) * viewScale;
             Render2D.PushClip(ref viewRect);
-            DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
-            DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
+            DrawAxis(root, linesColor, labelsColor, Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
+            DrawAxis(root, linesColor, labelsColor, Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
             Render2D.PopClip();
         }
 
-        private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
+        private static void DrawAxis(ContainerControl root, Color linesColor, Color labelsColor, Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
         {
-            var linesColor = Style.BackgroundColor.RGBMultiplied(1.2f);
             float[] gridTickStrengths = null;
             Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
             {
-                var p = _rootControl.PointToParent(axis * (float)tick); ;
+                var p = root.PointToParent(axis * (float)tick);
 
                 // Draw line
                 var lineRect = new Rectangle
@@ -106,6 +105,20 @@ namespace FlaxEditor.Surface
                 );
                 Render2D.FillRectangle(lineRect, linesColor.AlphaMultiplied(strength));
 
+                // Draw label
+                if (labelsColor.A > 0)
+                {
+                    var labelsSize = 10.0f;
+                    var label = tick.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    var labelRect = new Rectangle
+                    (
+                     viewRect.X + 4.0f + (p.X * axis.X),
+                     viewRect.Y - labelsSize + (p.Y * axis.Y) + (viewRect.Size.Y * axis.X),
+                     50,
+                     labelsSize
+                    );
+                    Render2D.DrawText(FlaxEngine.GUI.Style.Current.FontSmall, label, labelRect, labelsColor.AlphaMultiplied(strength), TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.7f);
+                }
             }, Utilities.Utils.CurveTickSteps, ref gridTickStrengths, min, max, pixelRange);
         }
 

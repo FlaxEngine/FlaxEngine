@@ -258,6 +258,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Texture preview
             _preview = preview;
+            _preview.EnableBackground = true;
             _preview.Parent = _split.Panel1;
 
             // Properties tabs
