@@ -128,6 +128,9 @@ public:
     // Creates a left-handed, look-at matrix.
     static void LookAt(const Double3& eye, const Double3& target, const Double3& up, Double4x4& result);
 
+    // Creates a left-handed, look-to matrix from the eye position and the view direction (LookAt with target = eye + direction, without the rounding of that sum far from the origin).
+    static void LookTo(const Double3& eye, const Double3& direction, const Double3& up, Double4x4& result);
+
     // Calculates the product of two matrices.
     static void Multiply(const Double4x4& left, const Double4x4& right, Double4x4& result);
 

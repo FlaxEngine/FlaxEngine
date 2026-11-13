@@ -315,12 +315,12 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
     // Create view matrix
     const Vector3 direction = Vector3::Transform(Vector3::Forward, GetOrientation());
     const Vector3 position = _transform.Translation - origin;
-    const Vector3 target = position + direction;
 
     Vector3 up;
     Vector3::Transform(Vector3::Up, GetOrientation(), up);
     Real4x4 viewResult;
-    Real4x4::LookAt(position, target, up, viewResult);
+    // LookTo with the direction: LookAt(position, position + direction) would round the direction to the precision of a position far from the origin
+    Real4x4::LookTo(position, direction, up, viewResult);
     view = Matrix(viewResult);
 }
 
