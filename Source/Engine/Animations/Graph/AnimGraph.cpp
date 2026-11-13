@@ -299,6 +299,8 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         context.Functions.Clear();
         context.PoseCacheSize = 0;
         context.ValueCache.Clear();
+        context.InertializationDepth = 0;
+        context.InertializationRequest = -1.0f;
 
         // Prepare instance data
         if (data.Version != _graph.Version)
@@ -310,6 +312,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         {
             // Prepare memory for buckets state information
             data.State.Resize(_graph.BucketsCountTotal, false);
+            Platform::MemoryClear(data.State.Get(), data.State.Count() * sizeof(AnimGraphInstanceData::Bucket));
             data.DynamicState.Clear();
 
             // Initialize buckets
