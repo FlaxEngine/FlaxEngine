@@ -147,8 +147,8 @@ MaterialLayer* MaterialLayer::Load(const Guid& id, ReadStream* graphData, const 
     // Create new layer object
     auto layer = New<MaterialLayer>(id);
 
-    // Load graph
-    if (layer->Graph.Load(graphData, false))
+    // Load graph (with metadata, parameters keep their GPU texture type in it)
+    if (layer->Graph.Load(graphData, true))
     {
         LOG(Warning, "Cannot load graph '{0}'.", caller);
     }

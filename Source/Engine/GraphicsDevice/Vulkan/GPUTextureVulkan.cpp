@@ -502,6 +502,13 @@ void GPUTextureVulkan::OnResidentMipsChanged()
     GPUTextureViewVulkan& view = IsVolume() ? _handleVolume : _handlesPerSlice[0];
     view.Release();
     view.Init(_device, this, _image, mipLevels, Format(), MultiSampleLevel(), extent, viewType, mipLevels, firstMipIndex, ArraySize());
+
+    // A streamed texture array also gets its whole-array view (ViewArray), over the same resident mips
+    if (ArraySize() > 1 && !IsCubeMap() && !IsVolume())
+    {
+        _handleArray.Release();
+        _handleArray.Init(_device, this, _image, mipLevels, Format(), MultiSampleLevel(), extent, VK_IMAGE_VIEW_TYPE_2D_ARRAY, mipLevels, firstMipIndex, ArraySize());
+    }
 }
 
 void GPUTextureVulkan::OnReleaseGPU()

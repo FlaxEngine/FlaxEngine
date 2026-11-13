@@ -4,6 +4,7 @@
 
 #include "ShaderGraphUtilities.h"
 #include "ShaderGraphValue.h"
+#include "VisjectMeta.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Content/Content.h"
@@ -12,6 +13,25 @@
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/Renderer/Utils/GlobalSignDistanceFieldPass.h"
+
+MaterialParameterType ShaderGraphUtilities::GetGPUTextureType(const VisjectMeta& meta)
+{
+    const auto entry = meta.GetEntry(GPUTextureTypeMetaTypeID);
+    if (entry && entry->Data.Count() == sizeof(MaterialParameterType))
+    {
+        const auto type = *(const MaterialParameterType*)entry->Data.Get();
+        switch (type)
+        {
+        case MaterialParameterType::GPUTextureArray:
+        case MaterialParameterType::GPUTextureVolume:
+        case MaterialParameterType::GPUTextureCube:
+            return type;
+        default:
+            break;
+        }
+    }
+    return MaterialParameterType::GPUTexture;
+}
 
 void ShaderGraphUtilities::GenerateShaderConstantBuffer(TextWriterUnicode& writer, Array<SerializedMaterialParam>& parameters)
 {

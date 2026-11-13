@@ -28,7 +28,7 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
 {
     ASSERT(texture && box);
     const auto parent = box->GetParent<ShaderGraphNode<>>();
-    const bool isCubemap = texture->Type == MaterialParameterType::CubeTexture;
+    const bool isCubemap = texture->Type == MaterialParameterType::CubeTexture || texture->Type == MaterialParameterType::GPUTextureCube;
     const bool isArray = texture->Type == MaterialParameterType::GPUTextureArray;
     const bool isVolume = texture->Type == MaterialParameterType::GPUTextureVolume;
     const bool isNormalMap = texture->Type == MaterialParameterType::NormalMap;
