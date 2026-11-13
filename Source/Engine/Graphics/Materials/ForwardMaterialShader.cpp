@@ -102,7 +102,7 @@ void ForwardMaterialShader::Unload()
 
 bool ForwardMaterialShader::Load()
 {
-    _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::QuadOverdraw | DrawPass::Wireframe;
+    _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::Custom | DrawPass::QuadOverdraw | DrawPass::Wireframe;
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthTest);
     psDesc.DepthWriteEnable = EnumHasNoneFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthWrite);
@@ -185,8 +185,9 @@ bool ForwardMaterialShader::Load()
         break;
     }
     _cache.Default.Init(psDesc);
-    //psDesc.VS = _shader->GetVS("VS", 1);
-    //_cacheInstanced.Default.Init(psDesc);
+    // Instanced, for the custom pass (DrawPass::Custom) which draws batched draw calls (eg. foliage) with the forward pass shader
+    psDesc.VS = _shader->GetVS("VS", 1);
+    _cacheInstanced.Default.Init(psDesc);
     psDesc.VS = _shader->GetVS("VS_Skinned");
     _cache.DefaultSkinned.Init(psDesc);
 

@@ -856,6 +856,11 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     GlobalSurfaceAtlas = 1 << 6,
 
     /// <summary>
+    /// The custom rendering pass. Draw calls are collected by the main view (with the same culling as other passes) into a separate list (DrawCallsListType.Custom) that the renderer never draws itself. Use it to draw a subset of the scene into own targets (eg. from PostProcessEffect via RenderList.ExecuteDrawCalls with the view's Pass set to Custom). Supported only by models and foliage with forward (transparent domain) materials. The list is batched by material and not sorted back to front, so it suits order-independent blending (eg. multiply or additive). Not part of All or Default (like QuadOverdraw and Wireframe), so objects have to opt in explicitly.
+    /// </summary>
+    Custom = 1 << 7,
+
+    /// <summary>
     /// The debug quad overdraw rendering (development-only).
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
@@ -874,7 +879,7 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     Default = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
 
     /// <summary>
-    /// The all draw passes combined into a single mask.
+    /// All the draw passes the renderer draws itself, combined into a single mask. Custom, QuadOverdraw and Wireframe are not included.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
     All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,

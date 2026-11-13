@@ -34,6 +34,7 @@ private:
             case DrawPass::Distortion:
                 return useSkinning ? &DistortionSkinned : &Distortion;
             case DrawPass::Forward:
+            case DrawPass::Custom:
                 return useSkinning ? &DefaultSkinned : &Default;
 #if GPU_ENABLE_DEVELOPMENT
             case DrawPass::QuadOverdraw:

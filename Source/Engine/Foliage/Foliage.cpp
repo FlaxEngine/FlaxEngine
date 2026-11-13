@@ -492,7 +492,7 @@ void Foliage::DrawFoliageJob(int32 i)
 #else
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
-    draw.DrawModes = (DrawPass)(DrawPass::Default & renderContext.View.Pass);
+    draw.DrawModes = (DrawPass)((DrawPass::All | DrawPass::Custom) & renderContext.View.Pass);
     DrawType(renderContext, type, draw);
 #endif
 }
@@ -633,6 +633,10 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Me
         if (EnumHasAnyFlags(drawModes, DrawPass::MotionVectors) && (_staticFlags & StaticFlags::Transform) == StaticFlags::None)
         {
             renderContext.List->DrawCallsLists[(int32)DrawCallsListType::MotionVectors].PreBatchedDrawCalls.Add(batchIndex);
+        }
+        if (EnumHasAnyFlags(drawModes, DrawPass::Custom))
+        {
+            renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Custom].PreBatchedDrawCalls.Add(batchIndex);
         }
     }
 #else
@@ -1347,7 +1351,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
 #if FOLIAGE_USE_SINGLE_QUAD_TREE || !FOLIAGE_USE_DRAW_CALLS_BATCHING
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
-    draw.DrawModes = (DrawPass)(DrawPass::Default & view.Pass);
+    draw.DrawModes = (DrawPass)((DrawPass::All | DrawPass::Custom) & view.Pass);
 #endif
 #if FOLIAGE_USE_SINGLE_QUAD_TREE
     if (Root)
