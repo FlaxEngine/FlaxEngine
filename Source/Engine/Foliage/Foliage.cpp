@@ -30,6 +30,9 @@
 #include "Engine/Utilities/Encryption.h"
 #include <ThirdParty/LZ4/lz4.h>
 
+// The least instances a foliage has to have to be drawn on async jobs in views other than the main (GBuffer) one, which always draws it async. Counted over the whole foliage (all its types), which is tracked for free, though the jobs are per drawn type. Below it, drawing inline is faster: in a forward-only view of a forest, foliage of 128-255 instances drew in 17.5us inline and 17.9us on jobs, and of 256-511 instances in 35us inline and 23us on jobs
+#define FOLIAGE_ASYNC_MIN_INSTANCES 256
+
 #define FOLIAGE_GET_DRAW_MODES(renderContext, type) (type._drawModes & renderContext.View.Pass & renderContext.View.GetShadowsDrawPassMask(type.ShadowsMode))
 #define FOLIAGE_CAN_DRAW(renderContext, type) (type.IsReady() && type._canDraw && FOLIAGE_GET_DRAW_MODES(renderContext, type) != DrawPass::None && type.Model->CanBeRendered())
 
@@ -480,20 +483,20 @@ void Foliage::DrawFoliageJob(int32 i)
 {
     PROFILE_CPU();
     PROFILE_MEM(Graphics);
-    const int32 foliageIndex = i / _renderContextBatch->Contexts.Count();
-    const int32 contextIndex = i % _renderContextBatch->Contexts.Count();
-    const FoliageType& type = FoliageTypes[foliageIndex];
-    if (!type._canDraw)
-        return;
-    DrawCallsList drawCallsLists[MODEL_MAX_LODS];
-    RenderContext& renderContext = _renderContextBatch->Contexts[contextIndex];
+    const int32 contextsCount = _renderContextBatch->Contexts.Count();
+    const FoliageType& type = FoliageTypes[_drawTypes[i / contextsCount]];
+    RenderContext& renderContext = _renderContextBatch->Contexts[i % contextsCount];
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE && FOLIAGE_USE_DRAW_CALLS_BATCHING
+    DrawCallsList drawCallsLists[MODEL_MAX_LODS];
     DrawType(renderContext, type, drawCallsLists);
 #else
     Mesh::DrawInfo draw;
     draw.Flags = GetStaticFlags();
     draw.DrawModes = (DrawPass)(DrawPass::Default & renderContext.View.Pass);
     DrawType(renderContext, type, draw);
+#endif
+#if ENABLE_ASSERTION_LOW_LAYERS
+    Platform::InterlockedDecrement(&renderContext.List->PendingAsyncDraws);
 #endif
 }
 
@@ -1327,17 +1330,30 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
     }
 
     // Cache data per foliage instance type
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+    _drawTypes.Clear();
+#endif
     for (int32 i = 0; i < FoliageTypes.Count(); i++)
+    {
         InitType(renderContextBatch, view, i);
+#if !FOLIAGE_USE_SINGLE_QUAD_TREE
+        if (FoliageTypes[i]._canDraw)
+            _drawTypes.Add(i);
+#endif
+    }
 
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
-    // Run async job for each foliage type
-    if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
+    // Run async job for each drawn foliage type (in other views than the main one only if there's enough to draw to be worth the jobs)
+    if (_drawTypes.HasItems() && (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) || Instances.Count() >= FOLIAGE_ASYNC_MIN_INSTANCES) && !(view.Pass & (DrawPass::GlobalSDF | DrawPass::GlobalSurfaceAtlas)) && renderContextBatch.EnableAsync)
     {
         _renderContextBatch = &renderContextBatch;
+#if ENABLE_ASSERTION_LOW_LAYERS
+        for (const RenderContext& c : renderContextBatch.Contexts)
+            Platform::InterlockedAdd(&c.List->PendingAsyncDraws, _drawTypes.Count());
+#endif
         Function<void(int32)> func;
         func.Bind<Foliage, &Foliage::DrawFoliageJob>(this);
-        const int64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count() * renderContextBatch.Contexts.Count());
+        const int64 waitLabel = JobSystem::Dispatch(func, _drawTypes.Count() * renderContextBatch.Contexts.Count());
         renderContextBatch.WaitLabels.Add(waitLabel);
         return;
     }
