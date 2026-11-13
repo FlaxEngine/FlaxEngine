@@ -225,6 +225,15 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 #endif
 
 #if PLATFORM_MAC
+    // System installed app
+    NSURL* AppURL = [[NSWorkspace sharedWorkspace]URLForApplicationWithBundleIdentifier:@"com.jetbrains.rider"];
+    if (AppURL != nullptr)
+    {
+        const String path = AppleUtils::ToString((CFStringRef)[AppURL path]);
+        SearchDirectory(&installations, path / TEXT("/Contents/Resources"));
+    }
+
+    // JetBrains Toolbox installations
     String applicationSupportFolder;
     FileSystem::GetSpecialFolderPath(SpecialFolder::ProgramData, applicationSupportFolder);
 
@@ -246,6 +255,7 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 
     // Check the local installer version
     SearchDirectory(&installations, TEXT("/Applications/Rider.app/Contents/Resources"), TEXT("/Applications/Rider.app"));
+    SearchDirectory(&installations, TEXT("/Applications/Rider EAP.app/Contents/Resources"));
 
     String userFolder;
     FileSystem::GetSpecialFolderPath(SpecialFolder::Documents, userFolder);

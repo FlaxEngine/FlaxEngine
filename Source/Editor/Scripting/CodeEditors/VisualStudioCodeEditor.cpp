@@ -79,8 +79,10 @@ void VisualStudioCodeEditor::FindEditors(Array<CodeEditor*>* output)
     // Detect Flatpak installations
     {
         CreateProcessSettings procSettings;
-        procSettings.FileName = TEXT("/bin/bash -c \"flatpak list --app --columns=application | grep com.visualstudio.code -c\"");
+        procSettings.FileName = TEXT("/bin/bash");
+        procSettings.Arguments = TEXT("-c \"flatpak list --app --columns=application | grep com.visualstudio.code -c\"");
         procSettings.HiddenWindow = true;
+        procSettings.LogOutput = false;
         if (Platform::CreateProcess(procSettings) == 0)
         {
             const String runPath(TEXT("flatpak run com.visualstudio.code"));
@@ -130,7 +132,7 @@ String VisualStudioCodeEditor::GetName() const
 
 String VisualStudioCodeEditor::GetGenerateProjectCustomArgs() const
 {
-    return TEXT("-vs2026 -vscode");
+    return TEXT("-vs2026 -vscode -omnisharp");
 }
 
 void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)
