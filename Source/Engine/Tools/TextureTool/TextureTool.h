@@ -113,7 +113,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(210), VisibleIf(\"PreserveAlphaCoverage\")")
         float PreserveAlphaCoverageReference = 0.5f;
 
-        // The texture group for streaming (negative if unused). See Streaming Settings.
+        // The index of the texture group for streaming (-1 if unused) - see Streaming Settings. Each Texture Group defines a set of streaming and rendering options for all texture using specific group.
         API_FIELD(Attributes="EditorOrder(300), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor\")")
         int32 TextureGroup = -1;
 

@@ -1,10 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using FlaxEditor.Content;
-using FlaxEditor.GUI.Docking;
+using FlaxEditor.Content.Settings;
 using FlaxEditor.Windows;
 using FlaxEngine;
+using System;
 
 namespace FlaxEditor.Modules
 {
@@ -196,6 +196,22 @@ namespace FlaxEditor.Modules
         {
             // Use internal call
             return Editor.Internal_CloneAssetFile(dstPath, srcPath, ref dstId);
+        }
+
+        /// <summary>
+        /// Opens game settings asset editor.
+        /// </summary>
+        /// <typeparam name="T">The game settings type (e.g. <see cref="TimeSettings"/>).</typeparam>
+        public void OpenSettings<T>() where T : FlaxEditor.Content.Settings.SettingsBase, new()
+        {
+            var asset = GameSettings.LoadAsset<T>();
+            if (!asset)
+            {
+                GameSettings.Save(new T());
+                asset = GameSettings.LoadAsset<T>();
+            }
+            if (asset)
+                Open(asset);
         }
     }
 }

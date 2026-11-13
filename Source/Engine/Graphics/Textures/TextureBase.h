@@ -139,12 +139,12 @@ public:
     API_PROPERTY() uint64 GetTotalMemoryUsage() const;
 
     /// <summary>
-    /// Gets the index of the texture group used by this texture.
+    /// Gets the index of the texture group used by this texture - see Streaming Settings. Each Texture Group defines a set of streaming and rendering options for all texture using specific group.
     /// </summary>
     API_PROPERTY() int32 GetTextureGroup() const;
 
     /// <summary>
-    /// Sets the index of the texture group used by this texture.
+    /// Sets the index of the texture group used by this texture - see Streaming Settings. Each Texture Group defines a set of streaming and rendering options for all texture using specific group.
     /// </summary>
     API_PROPERTY() void SetTextureGroup(int32 textureGroup);
 

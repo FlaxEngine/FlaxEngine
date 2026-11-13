@@ -15,10 +15,8 @@ namespace FlaxEditor.CustomEditors.Editors
     /// </summary>
     public sealed class ActorLayerEditor : CustomEditor
     {
-        private const string AddOrEditLayersOption = "Add or Edit Layers...";
-
-        private ComboBoxElement element;
-        private int _layerCount;
+        private const string AddOrEditOption = "Add or edit Layers...";
+        private ComboBoxElement _element;
         private bool _updatingItems;
 
         /// <inheritdoc />
@@ -27,11 +25,11 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            element = layout.ComboBox();
+            _element = layout.ComboBox();
             UpdateLayerItems((int)Values[0]);
-            element.ComboBox.PopupShowing += OnPopupShowing;
-            element.ComboBox.PopupShown += OnPopupShown;
-            element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
+            _element.ComboBox.PopupShowing += OnPopupShowing;
+            _element.ComboBox.PopupShown += OnPopupShown;
+            _element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
         private void OnPopupShowing(ComboBox comboBox)
@@ -41,19 +39,18 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnPopupShown(ComboBox comboBox)
         {
-            var addOrEditLayersOption = (ContextMenuButton)comboBox.Popup.Items.FirstOrDefault(x => x is ContextMenuButton b && b.Text == AddOrEditLayersOption);
-            if (addOrEditLayersOption != null)
-                addOrEditLayersOption.Icon = Editor.Instance.Icons.Settings12;
+            var addOrEditOption = (ContextMenuButton)comboBox.Popup.Items.FirstOrDefault(x => x is ContextMenuButton b && b.Text == AddOrEditOption);
+            if (addOrEditOption != null)
+                addOrEditOption.Icon = Editor.Instance.Icons.Settings12;
         }
 
         private void UpdateLayerItems(int selectedIndex)
         {
             _updatingItems = true;
             var layers = LayersAndTagsSettings.GetCurrentLayers();
-            _layerCount = layers.Length;
-            element.ComboBox.SetItems(layers);
-            element.ComboBox.AddItem(AddOrEditLayersOption);
-            element.ComboBox.SelectedIndex = selectedIndex >= 0 && selectedIndex < _layerCount ? selectedIndex : -1;
+            _element.ComboBox.SetItems(layers);
+            _element.ComboBox.AddItem(AddOrEditOption);
+            _element.ComboBox.SelectedIndex = selectedIndex >= 0 && selectedIndex < layers.Length ? selectedIndex : -1;
             _updatingItems = false;
         }
 
@@ -62,27 +59,15 @@ namespace FlaxEditor.CustomEditors.Editors
             UpdateLayerItems(HasDifferentValues ? -1 : (int)Values[0]);
         }
 
-        private void OpenLayersAndTagsSettings()
-        {
-            var asset = GameSettings.LoadAsset<LayersAndTagsSettings>();
-            if (!asset)
-            {
-                GameSettings.Save(new LayersAndTagsSettings());
-                asset = GameSettings.LoadAsset<LayersAndTagsSettings>();
-            }
-            if (asset)
-                Editor.Instance.ContentEditing.Open(asset);
-        }
-
         private void OnSelectedIndexChanged(ComboBox comboBox)
         {
             if (_updatingItems)
                 return;
 
             int value = comboBox.SelectedIndex;
-            if (value == _layerCount)
+            if (value + 1 == comboBox.Items.Count)
             {
-                OpenLayersAndTagsSettings();
+                Editor.Instance.ContentEditing.OpenSettings<LayersAndTagsSettings>();
                 SelectCurrentLayer();
                 return;
             }
@@ -95,12 +80,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 var valueText = comboBox.SelectedItem;
 
                 // Ask user
-                var result = MessageBox.Show(
-                    string.Format("Do you want to change layer to \"{0}\" for all child actors as well?", valueText),
-                    "Change actor layer", MessageBoxButtons.YesNoCancel);
+                var result = MessageBox.Show(string.Format("Do you want to change layer to \"{0}\" for all child actors as well?", valueText), "Change actor layer", MessageBoxButtons.YesNoCancel);
                 if (result == DialogResult.Cancel)
                     return;
-
                 if (result == DialogResult.Yes)
                 {
                     // Note: this possibly breaks the design a little bit
