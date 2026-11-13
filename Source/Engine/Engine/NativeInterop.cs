@@ -1633,22 +1633,7 @@ namespace FlaxEngine.Interop
         /// </summary>
         private static Type[] GetAssemblyTypes(Assembly assembly)
         {
-            var referencedAssemblies = assembly.GetReferencedAssemblies();
-            var allAssemblies = Utils.GetAssemblies();
-            var referencedTypes = new List<string>();
-            foreach (var assemblyName in referencedAssemblies)
-            {
-                var asm = allAssemblies.FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
-                if (asm == null)
-                    continue;
-                referencedTypes.AddRange(asm.DefinedTypes.Select(x => x.FullName).ToArray());
-            }
-
-            // TODO: use MetadataReader to read types without loading any of the referenced assemblies?
-            // https://makolyte.com/csharp-get-a-list-of-types-defined-in-an-assembly-without-loading-it/
-
-            // We need private types of this assembly too, DefinedTypes contains a lot of types from other assemblies...
-            var types = referencedTypes.Any() ? assembly.DefinedTypes.Where(x => !referencedTypes.Contains(x.FullName)).ToArray() : assembly.DefinedTypes.ToArray();
+            var types = assembly.DefinedTypes.Where(x => x.Assembly == assembly).ToArray();
 
 #if FLAX_EDITOR
             Assert.IsTrue(Utils.GetAssemblies().Count(x => x.GetName().Name == "FlaxEngine.CSharp") == 1);
