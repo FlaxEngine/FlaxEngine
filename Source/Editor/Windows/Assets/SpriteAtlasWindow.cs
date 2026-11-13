@@ -91,6 +91,8 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
+            private SpriteEntry[] _savedSprites;
+
             [EditorOrder(0), EditorDisplay("Sprites")]
             [CustomEditor(typeof(SpritesCollectionEditor))]
             public SpriteEntry[] Sprites;
@@ -206,13 +208,6 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <summary>
-            /// Records the current state to restore it on DiscardChanges.
-            /// </summary>
-            public void PeekState()
-            {
-            }
-
-            /// <summary>
             /// On discard changes
             /// </summary>
             public void DiscardChanges()
@@ -224,12 +219,13 @@ namespace FlaxEditor.Windows.Assets
                 base.OnLoad(window);
 
                 UpdateSprites();
-                PeekState();
+                _savedSprites = (SpriteEntry[])Sprites.Clone();
             }
 
             public override void OnClean()
             {
                 Sprites = null;
+                _savedSprites = null;
                 base.OnClean();
             }
         }
@@ -245,6 +241,7 @@ namespace FlaxEditor.Windows.Assets
         }
 
         private SpritesTab _spritesTab;
+        private Sprite[] _savedSprites;
 
         /// <inheritdoc />
         public SpriteAtlasWindow(Editor editor, AssetItem item)
@@ -285,6 +282,28 @@ namespace FlaxEditor.Windows.Assets
             ((AtlasView)_preview).Asset = (SpriteAtlas)_asset;
 
             base.OnAssetLinked();
+        }
+
+        /// <inheritdoc />
+        protected override void OnAssetLoaded()
+        {
+            // Cache state before editing
+            _savedSprites = ((SpriteAtlas)Asset).Sprites;
+
+            base.OnAssetLoaded();
+        }
+
+        /// <inheritdoc />
+        protected override void OnClose()
+        {
+            if (Asset)
+            {
+                // Discard unsaved changes
+                ((SpriteAtlas)Asset).Sprites = _savedSprites;
+            }
+            _savedSprites = null;
+
+            base.OnClose();
         }
     }
 }
