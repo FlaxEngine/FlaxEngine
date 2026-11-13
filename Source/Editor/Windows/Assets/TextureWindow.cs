@@ -1,7 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.IO;
-using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
@@ -13,28 +11,30 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Tools;
+using System.Xml;
 
 namespace FlaxEditor.Windows.Assets
 {
     /// <summary>
-    /// Texture window allows to view and edit <see cref="Texture"/> asset.
+    /// Texture window allows to view and edit <see cref="TextureBase"/> asset.
     /// </summary>
-    /// <seealso cref="Texture" />
+    /// <seealso cref="TextureBase" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed class TextureWindow : AssetEditorWindowBase<Texture>
+    public abstract class TextureBaseWindow : AssetEditorWindowBase<TextureBase>
     {
         /// <summary>
         /// Properties base class.
         /// </summary>
         public class PropertiesProxyBase
         {
-            internal TextureWindow _window;
+            internal TextureBaseWindow _window;
 
             /// <summary>
             /// Gathers parameters from the specified texture.
             /// </summary>
             /// <param name="window">The asset window.</param>
-            public virtual void OnLoad(TextureWindow window)
+            public virtual void OnLoad(TextureBaseWindow window)
             {
                 // Link
                 _window = window;
@@ -43,7 +43,7 @@ namespace FlaxEditor.Windows.Assets
             /// <summary>
             /// Clears temporary data.
             /// </summary>
-            public void OnClean()
+            public virtual void OnClean()
             {
                 // Unlink
                 _window = null;
@@ -80,7 +80,8 @@ namespace FlaxEditor.Windows.Assets
                                                                     texture.TextureGroup = (int)value;
                                                                     window.MarkAsEdited();
                                                                 });
-                    properties.Property("Texture Group", textureGroup, new TextureGroupEditor(), "The texture group used by this texture.");
+                    var tooltip = Editor.Instance.CodeDocs.GetTooltip(typeof(TextureTool.Options), nameof(TextureTool.Options.TextureGroup));
+                    properties.Property("Texture Group", textureGroup, new TextureGroupEditor(), tooltip);
                 }
             }
         }
@@ -98,7 +99,7 @@ namespace FlaxEditor.Windows.Assets
             /// Gathers parameters from the specified texture.
             /// </summary>
             /// <param name="window">The asset window.</param>
-            public override void OnLoad(TextureWindow window)
+            public override void OnLoad(TextureBaseWindow window)
             {
                 base.OnLoad(window);
 
@@ -157,7 +158,10 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
-        private class Tab : GUI.Tabs.Tab
+        /// <summary>
+        /// Properties panel tab.
+        /// </summary>
+        protected class Tab : GUI.Tabs.Tab
         {
             /// <summary>
             /// The presenter to use in the tab.
@@ -169,7 +173,13 @@ namespace FlaxEditor.Windows.Assets
             /// </summary>
             public PropertiesProxyBase Proxy;
 
-            public Tab(string text, TextureWindow window, bool modifiesAsset = true)
+            /// <summary>
+            /// Init tab.
+            /// </summary>
+            /// <param name="text">Tab title.</param>
+            /// <param name="window">Parent window handle.</param>
+            /// <param name="modifiesAsset">True if editing tab proeprties modifies asset.</param>
+            public Tab(string text, TextureBaseWindow window, bool modifiesAsset = true)
             : base(text)
             {
                 var scrollPanel = new Panel(ScrollBars.Vertical)
@@ -200,7 +210,7 @@ namespace FlaxEditor.Windows.Assets
 
         private class TextureTab : Tab
         {
-            public TextureTab(TextureWindow window)
+            public TextureTab(TextureBaseWindow window)
             : base("Texture", window)
             {
                 Proxy = new TexturePropertiesProxy();
@@ -210,22 +220,29 @@ namespace FlaxEditor.Windows.Assets
 
         private class ImportTab : Tab
         {
-            public ImportTab(TextureWindow window)
-            : base("Import", window)
+            public ImportTab(TextureBaseWindow window)
+            : base("Import", window, false)
             {
                 Proxy = new ImportPropertiesProxy();
                 Presenter.Select(Proxy);
             }
         }
-
-        private readonly GUI.Tabs.Tabs _tabs;
         private readonly SplitPanel _split;
-        private readonly TexturePreview _preview;
         private readonly ToolStripButton _saveButton;
         private bool _isWaitingForLoad, _isWaitingForTexture;
 
+        /// <summary>
+        /// Properties tabs control.
+        /// </summary>
+        protected readonly GUI.Tabs.Tabs _tabs;
+
+        /// <summary>
+        /// Texture preview control.
+        /// </summary>
+        protected readonly TexturePreviewBase _preview;
+
         /// <inheritdoc />
-        public TextureWindow(Editor editor, AssetItem item)
+        public TextureBaseWindow(Editor editor, AssetItem item, TexturePreviewBase preview)
         : base(editor, item)
         {
             var inputOptions = Editor.Options.Options.Input;
@@ -240,10 +257,8 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Texture preview
-            _preview = new TexturePreview(true)
-            {
-                Parent = _split.Panel1
-            };
+            _preview = preview;
+            _preview.Parent = _split.Panel1;
 
             // Properties tabs
             _tabs = new()
@@ -255,7 +270,6 @@ namespace FlaxEditor.Windows.Assets
                 UseScroll = true,
                 Parent = _split.Panel2
             };
-
             _tabs.AddTab(new TextureTab(this));
             _tabs.AddTab(new ImportTab(this));
 
@@ -264,8 +278,6 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(Editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view", ref editor.Options.Options.Input.ShowEditorContents);
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/textures/index.html")).LinkTooltip("See documentation to learn more");
 
             InputActions.Add(options => options.ShowEditorContents, _preview.CenterView);
         }
@@ -278,7 +290,6 @@ namespace FlaxEditor.Windows.Assets
                 if (child is Tab tab && tab.Proxy != null)
                     tab.Proxy.OnClean();
             }
-            _preview.Asset = null;
             _isWaitingForLoad = false;
 
             base.UnlinkItem();
@@ -287,7 +298,6 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnAssetLinked()
         {
-            _preview.Asset = _asset;
             _isWaitingForLoad = true;
 
             base.OnAssetLinked();
@@ -378,6 +388,38 @@ namespace FlaxEditor.Windows.Assets
         public override void OnLayoutDeserialize()
         {
             _split.SplitterValue = 0.7f;
+        }
+    }
+
+    /// <summary>
+    /// Texture window allows to view and edit <see cref="Texture"/> asset.
+    /// </summary>
+    /// <seealso cref="Texture" />
+    /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
+    public sealed class TextureWindow : TextureBaseWindow
+    {
+        /// <inheritdoc />
+        public TextureWindow(Editor editor, AssetItem item)
+        : base(editor, item, new TexturePreview(true))
+        {
+            _toolstrip.AddSeparator();
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/textures/index.html")).LinkTooltip("See documentation to learn more");
+        }
+
+        /// <inheritdoc />
+        protected override void UnlinkItem()
+        {
+            ((TexturePreview)_preview).Asset = null;
+
+            base.UnlinkItem();
+        }
+
+        /// <inheritdoc />
+        protected override void OnAssetLinked()
+        {
+            ((TexturePreview)_preview).Asset = _asset;
+
+            base.OnAssetLinked();
         }
     }
 }

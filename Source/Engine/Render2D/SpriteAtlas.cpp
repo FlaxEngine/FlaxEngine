@@ -93,21 +93,11 @@ void SpriteAtlas::RemoveSprite(int32 index)
 
 bool SpriteAtlas::SaveSprites()
 {
-    ScopeLock lock(Locker);
+    return Save();
+}
 
-    // Load whole asset
-    if (LoadChunks(ALL_ASSET_CHUNKS))
-    {
-        return true;
-    }
-
-    // Prepare asset data
-    AssetInitData data;
-    data.SerializedVersion = 4;
-    data.CustomData.Copy(_texture.GetHeader());
-
-    // Write sprites data
-    MemoryWriteStream stream(1024);
+bool SpriteAtlas::SaveSprites(WriteStream& stream)
+{
     stream.Write(1); // Version
     stream.Write(Sprites.Count()); // Sprites Count
     for (Sprite& t : Sprites)
@@ -115,20 +105,6 @@ bool SpriteAtlas::SaveSprites()
         stream.Write(t.Area);
         stream.Write(t.Name, 49);
     }
-
-    // Link sprites data (unlink after safe)
-    auto dataChunk = GetOrCreateChunk(15);
-    dataChunk->Data.Link(stream.GetHandle(), stream.GetLength());
-
-    // Save (use silent mode to prevent asset reloading)
-    bool saveResult = SaveAsset(data, true);
-    dataChunk->Data.Unlink();
-    if (saveResult)
-    {
-        LOG(Warning, "Failed to save sprite atlas \'{0}\'.", GetPath());
-        return true;
-    }
-
     return false;
 }
 
@@ -172,6 +148,46 @@ bool SpriteAtlas::LoadSprites(ReadStream& stream)
 #endif
     return false;
 }
+
+#if USE_EDITOR
+
+bool SpriteAtlas::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+
+    // Load whole asset
+    if (LoadChunks(ALL_ASSET_CHUNKS))
+        return true;
+
+    // Prepare asset data
+    AssetInitData data;
+    data.SerializedVersion = 4;
+    data.CustomData.Copy(_texture.GetHeader());
+
+    // Write sprites data
+    MemoryWriteStream stream(1024);
+    if (SaveSprites(stream))
+        return true;
+
+    // Link sprites data (unlink after safe)
+    auto dataChunk = GetOrCreateChunk(15);
+    dataChunk->Data.Link(stream.GetHandle(), stream.GetLength());
+
+    // Save (use silent mode to prevent asset reloading)
+    const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
+    dataChunk->Data.Unlink();
+    if (saveResult)
+    {
+        LOG(Warning, "Failed to save sprite atlas \'{0}\'.", GetPath());
+        return true;
+    }
+
+    return false;
+}
+
+#endif
 
 Asset::LoadResult SpriteAtlas::load()
 {

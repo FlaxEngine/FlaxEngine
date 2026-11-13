@@ -1,19 +1,15 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.IO;
-using System.Linq;
-using System.Xml;
 using FlaxEditor.Content;
-using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.Elements;
-using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using System.Linq;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -22,11 +18,8 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="SpriteAtlas" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed class SpriteAtlasWindow : AssetEditorWindowBase<SpriteAtlas>
+    public sealed class SpriteAtlasWindow : TextureBaseWindow
     {
-        // TODO: allow to select and move sprites
-        // TODO: restore changes on win close without a changes
-
         /// <summary>
         /// Atlas view control. Shows sprites.
         /// </summary>
@@ -64,10 +57,8 @@ namespace FlaxEditor.Windows.Assets
         /// The texture properties proxy object.
         /// </summary>
         [CustomEditor(typeof(ProxyEditor))]
-        private sealed class PropertiesProxy
+        private sealed class SpritePropertiesProxy : PropertiesProxyBase
         {
-            private SpriteAtlasWindow _window;
-
             public class SpriteEntry
             {
                 [HideInEditor]
@@ -104,14 +95,11 @@ namespace FlaxEditor.Windows.Assets
             [CustomEditor(typeof(SpritesCollectionEditor))]
             public SpriteEntry[] Sprites;
 
-            [EditorOrder(1000), EditorDisplay("Import Settings", EditorDisplayAttribute.InlineStyle)]
-            public FlaxEngine.Tools.TextureTool.Options ImportSettings = new();
-
             public sealed class ProxyEditor : GenericEditor
             {
                 public override void Initialize(LayoutElementsContainer layout)
                 {
-                    var proxy = (PropertiesProxy)Values[0];
+                    var proxy = (SpritePropertiesProxy)Values[0];
                     if (proxy._window == null)
                     {
                         layout.Label("Loading...", TextAlignment.Center);
@@ -119,14 +107,6 @@ namespace FlaxEditor.Windows.Assets
                     }
                     
                     base.Initialize(layout);
-
-                    // Creates the import path UI
-                    var group = layout.Group("Import Path");
-                    Utilities.Utils.CreateImportPathUI(group, proxy._window.Item as BinaryAssetItem);
-
-                    layout.Space(5);
-                    var reimportButton = layout.Button("Reimport");
-                    reimportButton.Button.Clicked += () => ((PropertiesProxy)Values[0]).Reimport();
                 }
             }
 
@@ -182,30 +162,33 @@ namespace FlaxEditor.Windows.Assets
 
                 private void OnCopySpriteClicked(ContextMenuButton button)
                 {
-                    var window = ((PropertiesProxy)ParentEditor.Values[0])._window;
+                    var window = ((SpritePropertiesProxy)ParentEditor.Values[0])._window;
+                    var atlas = (SpriteAtlas)window.Asset;
                     var index = (int)button.Tag;
-                    var sprite = window.Asset.GetSprite(index);
+                    var sprite = atlas.GetSprite(index);
                     Clipboard.Text = FlaxEngine.Json.JsonSerializer.Serialize(sprite, typeof(Sprite));
                 }
 
                 private void OnPasteSpriteClicked(ContextMenuButton button)
                 {
-                    var window = ((PropertiesProxy)ParentEditor.Values[0])._window;
+                    var window = ((SpritePropertiesProxy)ParentEditor.Values[0])._window;
+                    var atlas = (SpriteAtlas)window.Asset;
                     var index = (int)button.Tag;
-                    var sprite = window.Asset.GetSprite(index);
+                    var sprite = atlas.GetSprite(index);
                     var pasted = FlaxEngine.Json.JsonSerializer.Deserialize<Sprite>(Clipboard.Text);
                     sprite.Area = pasted.Area;
-                    window.Asset.SetSprite(index, ref sprite);
+                    atlas.SetSprite(index, ref sprite);
                 }
 
                 private void OnDeleteSpriteClicked(ContextMenuButton button)
                 {
-                    var window = ((PropertiesProxy)ParentEditor.Values[0])._window;
+                    var window = ((SpritePropertiesProxy)ParentEditor.Values[0])._window;
+                    var atlas = (SpriteAtlas)window.Asset;
                     var index = (int)button.Tag;
-                    window.Asset.RemoveSprite(index);
+                    atlas.RemoveSprite(index);
                     window.MarkAsEdited();
-                    window._properties.UpdateSprites();
-                    window._propertiesEditor.BuildLayout();
+                    //window._properties.UpdateSprites();
+                    //window._propertiesEditor.BuildLayout();
                 }
             }
 
@@ -214,29 +197,12 @@ namespace FlaxEditor.Windows.Assets
             /// </summary>
             public void UpdateSprites()
             {
-                var atlas = _window.Asset;
+                var atlas = (SpriteAtlas)_window.Asset;
                 Sprites = new SpriteEntry[atlas.SpritesCount];
                 for (int i = 0; i < Sprites.Length; i++)
                 {
                     Sprites[i] = new SpriteEntry(atlas, i);
                 }
-            }
-
-            /// <summary>
-            /// Gathers parameters from the specified texture.
-            /// </summary>
-            /// <param name="win">The texture window.</param>
-            public void OnLoad(SpriteAtlasWindow win)
-            {
-                // Link
-                _window = win;
-                UpdateSprites();
-
-                // Try to restore target asset texture import options (useful for fast reimport)
-                Editor.TryRestoreImportOptions(ref ImportSettings, win.Item.Path);
-
-                // Prepare restore data
-                PeekState();
             }
 
             /// <summary>
@@ -247,120 +213,68 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <summary>
-            /// Reimports asset.
-            /// </summary>
-            public void Reimport()
-            {
-                ImportSettings.Sprites = null; // Don't override sprites (use sprites from asset)
-                Editor.Instance.ContentImporting.Reimport((BinaryAssetItem)_window.Item, ImportSettings, true);
-            }
-
-            /// <summary>
             /// On discard changes
             /// </summary>
             public void DiscardChanges()
             {
             }
 
-            /// <summary>
-            /// Clears temporary data.
-            /// </summary>
-            public void OnClean()
+            public override void OnLoad(TextureBaseWindow window)
             {
-                // Unlink
-                _window = null;
+                base.OnLoad(window);
+
+                UpdateSprites();
+                PeekState();
+            }
+
+            public override void OnClean()
+            {
                 Sprites = null;
+                base.OnClean();
             }
         }
 
-        private readonly SplitPanel _split;
-        private readonly AtlasView _preview;
-        private readonly CustomEditorPresenter _propertiesEditor;
-        private readonly ToolStripButton _saveButton;
+        private class SpritesTab : Tab
+        {
+            public SpritesTab(SpriteAtlasWindow window)
+            : base("Sprites", window)
+            {
+                Proxy = new SpritePropertiesProxy();
+                Presenter.Select(Proxy);
+            }
+        }
 
-        private readonly PropertiesProxy _properties;
-        private bool _isWaitingForLoad;
+        private SpritesTab _spritesTab;
 
         /// <inheritdoc />
         public SpriteAtlasWindow(Editor editor, AssetItem item)
-        : base(editor, item)
+        : base(editor, item, new AtlasView(true))
         {
-            var inputOptions = Editor.Options.Options.Input;
-
-            // Split Panel
-            _split = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
-                SplitterValue = 0.7f,
-                Parent = this
-            };
-
-            // Sprite atlas preview
-            _preview = new AtlasView(true)
-            {
-                Parent = _split.Panel1
-            };
-
-            // Sprite atlas properties editor
-            _propertiesEditor = new CustomEditorPresenter(null);
-            _propertiesEditor.Panel.Parent = _split.Panel2;
-            _properties = new PropertiesProxy();
-            _propertiesEditor.Select(_properties);
-            _propertiesEditor.Modified += MarkAsEdited;
-
-            // Toolstrip
-            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
-            _toolstrip.AddButton(editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.AddFile64, () =>
-            {
-                var sprite = new Sprite
-                {
-                    Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
-                    Area = new Rectangle(Float2.Zero, Float2.One),
-                };
-                Asset.AddSprite(sprite);
-                MarkAsEdited();
-                _properties.UpdateSprites();
-                _propertiesEditor.BuildLayout();
-            }).LinkTooltip("Add a new sprite");
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view", ref editor.Options.Options.Input.ShowEditorContents);
-
-            InputActions.Add(options => options.ShowEditorContents, _preview.CenterView);
+            _spritesTab = _tabs.AddTab(new SpritesTab(this));
+            _spritesTab.IndexInParent -= 2;
+            _tabs.SelectedTab = _spritesTab;
+            _tabs.OnChildrenChanged();
+            _toolstrip.AddButton(editor.Icons.AddFile64, AddSprite).LinkTooltip("Add a new sprite");
         }
 
-        /// <inheritdoc />
-        public override void Save()
+        private void AddSprite()
         {
-            if (!IsEdited)
-                return;
-
-            if (Asset.SaveSprites())
+            var atlas = (SpriteAtlas)Asset;
+            var sprite = new Sprite
             {
-                Editor.LogError("Cannot save asset.");
-                return;
-            }
-
-            ClearEditedFlag();
-            _item.RefreshThumbnail();
-        }
-
-        /// <inheritdoc />
-        protected override void UpdateToolstrip()
-        {
-            _saveButton.Enabled = IsEdited;
-
-            base.UpdateToolstrip();
+                Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => atlas.Sprites.All(s => s.Name != name)),
+                Area = new Rectangle(Float2.Zero, Float2.One),
+            };
+            atlas.AddSprite(sprite);
+            MarkAsEdited();
+            ((SpritePropertiesProxy)_spritesTab.Proxy).UpdateSprites();
+            _spritesTab.Presenter.BuildLayout();
         }
 
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
-            _properties.OnClean();
-            _preview.Asset = null;
-            _isWaitingForLoad = false;
+            ((AtlasView)_preview).Asset = null;
 
             base.UnlinkItem();
         }
@@ -368,67 +282,9 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnAssetLinked()
         {
-            _preview.Asset = _asset;
-            _isWaitingForLoad = true;
+            ((AtlasView)_preview).Asset = (SpriteAtlas)_asset;
 
             base.OnAssetLinked();
-        }
-
-        /// <inheritdoc />
-        public override void OnItemReimported(ContentItem item)
-        {
-            // Invalidate data
-            _isWaitingForLoad = true;
-        }
-
-        /// <inheritdoc />
-        protected override void OnClose()
-        {
-            // Discard unsaved changes
-            _properties.DiscardChanges();
-
-            base.OnClose();
-        }
-
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
-        {
-            base.Update(deltaTime);
-
-            // Check if need to load
-            if (_isWaitingForLoad && _asset.IsLoaded)
-            {
-                // Clear flag
-                _isWaitingForLoad = false;
-
-                // Init properties and parameters proxy
-                _properties.OnLoad(this);
-                _propertiesEditor.BuildLayout();
-
-                // Setup
-                ClearEditedFlag();
-            }
-        }
-
-        /// <inheritdoc />
-        public override bool UseLayoutData => true;
-
-        /// <inheritdoc />
-        public override void OnLayoutSerialize(XmlWriter writer)
-        {
-            LayoutSerializeSplitter(writer, "Split", _split);
-        }
-
-        /// <inheritdoc />
-        public override void OnLayoutDeserialize(XmlElement node)
-        {
-            LayoutDeserializeSplitter(node, "Split", _split);
-        }
-
-        /// <inheritdoc />
-        public override void OnLayoutDeserialize()
-        {
-            _split.SplitterValue = 0.7f;
         }
     }
 }

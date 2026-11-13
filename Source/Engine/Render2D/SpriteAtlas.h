@@ -100,14 +100,12 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SpriteAtlas : public TextureBase
 {
 DECLARE_BINARY_ASSET_HEADER(SpriteAtlas, TexturesSerializedVersion);
 public:
-
     /// <summary>
     /// List with all tiles in the sprite atlas.
     /// </summary>
     API_FIELD() Array<Sprite> Sprites;
 
 public:
-
     /// <summary>
     /// Gets the sprites count.
     /// </summary>
@@ -156,21 +154,25 @@ public:
     API_FUNCTION() void RemoveSprite(int32 index);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Save the sprites (texture content won't be modified).
+    /// [Deprecated in v1.14]
     /// </summary>
     /// <returns>True if cannot save, otherwise false.</returns>
-    API_FUNCTION() bool SaveSprites();
+    API_FUNCTION() DEPRECATED("Use Save method instead.") bool SaveSprites();
+#endif
 
+private:
+    bool SaveSprites(WriteStream& stream);
+    bool LoadSprites(ReadStream& stream);
+
+public:
+    // [BinaryAsset]
+#if USE_EDITOR
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:
-
-    bool LoadSprites(ReadStream& stream);
-
-protected:
-
     // [BinaryAsset]
     LoadResult load() override;
     void unload(bool isReloading) override;
