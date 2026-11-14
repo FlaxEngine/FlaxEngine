@@ -20,6 +20,7 @@ public class Content : EngineModule
         options.PrivateDependencies.Add("TextureTool");
         options.PrivateDependencies.Add("ModelTool");
         options.PrivateDependencies.Add("Particles");
+        options.PrivateDependencies.Add("Graphics");
 
         if (options.Target.IsEditor)
         {
@@ -27,7 +28,6 @@ public class Content : EngineModule
             options.PrivateDependencies.Add("MaterialGenerator");
             options.PrivateDependencies.Add("ContentImporters");
             options.PrivateDependencies.Add("ContentExporters");
-            options.PrivateDependencies.Add("Graphics");
         }
     }
 
