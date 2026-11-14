@@ -52,7 +52,7 @@ namespace FlaxEngine.Interop
 
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
         internal static Dictionary<string, string> libraryPaths = new();
-        private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
+        private static Dictionary<Assembly, List<string>> assemblyOwnedNativeLibraries = new();
         internal static AssemblyLoadContext scriptingAssemblyLoadContext;
 
         private delegate TInternal ToNativeDelegate<T, TInternal>(T value);
@@ -68,7 +68,14 @@ namespace FlaxEngine.Interop
 
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
                 loadedNativeLibraries.Add(libraryName, nativeLibrary);
-                assemblyOwnedNativeLibraries.Add(assembly, libraryName);
+
+                // An assembly can import several native libraries (eg. kernel32 and user32)
+                if (!assemblyOwnedNativeLibraries.TryGetValue(assembly, out var ownedLibraries))
+                {
+                    ownedLibraries = new List<string>();
+                    assemblyOwnedNativeLibraries.Add(assembly, ownedLibraries);
+                }
+                ownedLibraries.Add(libraryName);
             }
             return nativeLibrary;
         }
