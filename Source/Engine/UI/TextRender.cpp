@@ -199,10 +199,10 @@ void TextRender::UpdateLayout()
     _buffersDirty = true;
 
     // Init draw chunks data
-    Array<MaterialInstance*, InlinedAllocation<8>> materials;
-    materials.Resize(_drawChunks.Count());
-    for (int32 i = 0; i < materials.Count(); i++)
-        materials[i] = _drawChunks[i].Material;
+    static StringView FontParamName = TEXT("Font");
+    Dictionary<FontTextureAtlas*, MaterialBase*> materialMap;
+    for (auto& drawChunk : _drawChunks)
+        materialMap[(FontTextureAtlas*)(Asset*)drawChunk.Material->GetParameterValue(FontParamName)] = drawChunk.Material;
     DrawChunk drawChunk;
     drawChunk.Actor = this;
     drawChunk.StartIndex = 0;
@@ -255,21 +255,30 @@ void TextRender::UpdateLayout()
                         invAtlasSize = 1.0f;
                     }
 
-                    // Setup material
-                    if (_drawChunks.Count() < materials.Count())
-                        drawChunk.Material = materials[_drawChunks.Count()];
-                    else
-                        drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();
-                    drawChunk.Material->SetBaseMaterial(Material.Get());
-                    drawChunk.Material->ResetParameters();
-
-                    // Set the font parameter
-                    static StringView FontParamName = TEXT("Font");
-                    const auto param = drawChunk.Material->Params.Get(FontParamName);
-                    if (param && param->GetParameterType() == MaterialParameterType::Texture)
+                    // Try reusing existing material (to reduce amount of draw calls)
+                    MaterialBase* material = nullptr;
+                    if (fontAtlas == nullptr)
                     {
-                        param->SetValue(Variant(fontAtlas));
-                        param->SetIsOverride(true);
+                        drawChunk.Material = Material;
+                    }
+                    else if (materialMap.TryGet(fontAtlas, material))
+                    {
+                        drawChunk.Material = material;
+                    }
+                    else
+                    {
+                        // Create a new material
+                        auto materialInstance = Content::CreateVirtualAsset<MaterialInstance>();
+                        materialInstance->SetBaseMaterial(Material.Get());
+                        materialInstance->ResetParameters();
+                        const auto param = materialInstance->Params.Get(FontParamName);
+                        if (param && param->GetParameterType() == MaterialParameterType::Texture)
+                        {
+                            param->SetValue(Variant(fontAtlas));
+                            param->SetIsOverride(true);
+                        }
+                        drawChunk.Material = materialInstance;
+                        materialMap.Add(fontAtlas, materialInstance);
                     }
                 }
 

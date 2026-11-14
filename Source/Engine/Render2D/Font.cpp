@@ -6,6 +6,8 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "IncludeFreeType.h"
 
 Array<AssetReference<FontAsset>, HeapAllocation> Font::FallbackFonts;
@@ -64,6 +66,9 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
     }
     else
     {
+        PROFILE_CPU();
+        PROFILE_MEM(UIFonts);
+
         // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
         ScopeLock lock(_asset->Locker);
 
@@ -103,6 +108,9 @@ int32 Font::GetKerning(Char first, Char second) const
     const uint32 key = (uint32)first << 16 | second;
     if (_hasKerning && !_kerningTable.TryGet(key, kerning))
     {
+        PROFILE_CPU();
+        PROFILE_MEM(UIFonts);
+
         // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
         ScopeLock lock(_asset->Locker);
 
@@ -138,6 +146,7 @@ void Font::CacheText(const StringView& text)
 
 void Font::Invalidate()
 {
+    PROFILE_CPU();
     ScopeLock lock(_asset->Locker);
 
     // Invalidate cached characters (from atlas)

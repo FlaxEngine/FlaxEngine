@@ -29,7 +29,7 @@ private:
         int32 FontAtlasIndex;
         int32 StartIndex;
         int32 IndicesCount;
-        AssetReference<MaterialInstance> Material;
+        AssetReference<MaterialBase> Material;
     };
 
     bool _isDirty = false;
