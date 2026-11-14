@@ -130,7 +130,7 @@ namespace FlaxEditor.Content.GUI
         public ContentNavigationSeparator(ContentNavigationButton target, float x, float y, float height)
         {
             Target = target;
-            Bounds = new Rectangle(x, y, 16, height);
+            Bounds = new Rectangle(x, y, 14, height);
             Offsets = new Margin(Bounds.X, Bounds.Width, Bounds.Y, Bounds.Height);
             UpdateTransform();
 

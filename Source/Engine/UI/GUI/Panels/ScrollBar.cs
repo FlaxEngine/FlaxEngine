@@ -228,7 +228,7 @@ namespace FlaxEngine.GUI
             _orientation = orientation;
             var style = Style.Current;
             TrackColor = style.BackgroundHighlighted;
-            ThumbColor = style.BackgroundNormal;
+            ThumbColor = style.BackgroundHighlighted;
             ThumbSelectedColor = style.BackgroundSelected;
         }
 
@@ -400,8 +400,8 @@ namespace FlaxEngine.GUI
             base.Draw();
 
             var style = Style.Current;
-            Render2D.FillRectangle(_trackRect, TrackColor * _thumbOpacity);
-            Render2D.FillRectangle(_thumbRect, (_thumbClicked ? ThumbSelectedColor : ThumbColor) * _thumbOpacity);
+            Render2D.FillRectangle(_trackRect, TrackColor.AlphaMultiplied(_thumbOpacity));
+            Render2D.FillRectangle(_thumbRect, (_thumbClicked ? ThumbSelectedColor : ThumbColor).AlphaMultiplied(_thumbOpacity));
         }
 
         /// <inheritdoc />

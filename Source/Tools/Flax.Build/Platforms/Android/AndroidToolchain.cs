@@ -15,7 +15,7 @@ namespace Flax.Build
         /// Specifies the Android API level to use (eg. 24).
         /// </summary>
         [CommandLine("platformApi", "<version>", "Specifies the Android API level to use (eg. 24).")]
-        public static int PlatformApi = 24;
+        public static int PlatformApi = 28;
     }
 }
 

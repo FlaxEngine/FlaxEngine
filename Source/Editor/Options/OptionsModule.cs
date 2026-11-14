@@ -244,6 +244,12 @@ namespace FlaxEditor.Options
                     style.Selection = Color.Orange * 0.4f;
                     style.SelectionBorder = Color.Orange;
                 }
+                if (style.SearchHighlight == Color.Transparent)
+                    style.SearchHighlight = style.ProgressNormal * 0.6f;
+                if (style.ProgressWarning == Color.Transparent)
+                    style.ProgressWarning = Color.Yellow;
+                if (style.BackgroundTone == Color.Transparent)
+                    style.BackgroundTone = style.Background * 0.9f;
 
                 Style.Current = style;
             }
@@ -284,25 +290,34 @@ namespace FlaxEditor.Options
         public Style CreateDefaultStyle()
         {
             var options = Options;
+            var primaryColor = Color.FromRGB(0x007ACC);
+            var backgroundMain = Color.FromRGB(0x28282B);
+            var backgroundLight = Color.FromRGB(0x3A3A3D);
+            var backgroundDark = Color.FromRGB(0x121213);
+            var backgroundTone = backgroundMain * 0.9f;
+            var backgroundElements = Color.FromRGB(0x1A1A1B);
             var style = new Style
             {
-                Background = Color.FromBgra(0xFF1C1C1C),
-                LightBackground = Color.FromBgra(0xFF2D2D30),
+                Background = backgroundMain,
+                BackgroundTone = backgroundTone,
+                LightBackground = backgroundLight,
+                DarkBackground = backgroundDark,
                 Foreground = Color.FromBgra(0xFFFFFFFF),
                 ForegroundGrey = Color.FromBgra(0xFFA9A9B3),
                 ForegroundDisabled = Color.FromBgra(0xFF787883),
                 ForegroundViewport = Color.FromBgra(0xFFFFFFFF),
-                BackgroundHighlighted = Color.FromBgra(0xFF54545C),
+                BackgroundHighlighted = backgroundLight.RGBMultiplied(1.3f),
                 BorderHighlighted = Color.FromBgra(0xFF6A6A75),
-                BackgroundSelected = Color.FromBgra(0xFF007ACC),
-                BorderSelected = Color.FromBgra(0xFF1C97EA),
-                BackgroundNormal = Color.FromBgra(0xFF3F3F46),
-                BorderNormal = Color.FromBgra(0xFF54545C),
-                TextBoxBackground = Color.FromBgra(0xFF333337),
-                TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
-                CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
-                ProgressNormal = Color.FromBgra(0xFF0ad328),
+                BackgroundSelected = primaryColor,
+                BorderSelected = primaryColor,
+                BackgroundNormal = backgroundLight,
+                BorderNormal = backgroundLight.RGBMultiplied(1.1f),
+                TextBoxBackground = backgroundElements,
+                TextBoxBackgroundSelected = backgroundElements,
+                CollectionBackgroundColor = backgroundTone,
+                ProgressNormal = Color.FromRGB(0x3ECB4C),
                 ProgressError = new Color(0.79f, 0.146f, 0.0f, 1.0f),
+                ProgressWarning = Color.FromRGB(Utilities.Constants.ColorModifiedValue),
                 Selection = Color.Orange * 0.4f,
                 SelectionBorder = Color.Orange,
 
@@ -335,8 +350,8 @@ namespace FlaxEditor.Options
 
                 SharedTooltip = new Tooltip(),
             };
+            style.SearchHighlight = style.ProgressNormal * 0.6f;
             style.SharedTooltip.HorizontalTextAlignment = Editor.Instance.Options.Options.Interface.TooltipTextAlignment;
-            style.DragWindow = style.BackgroundSelected * 0.7f;
             return style;
         }
 
@@ -351,7 +366,7 @@ namespace FlaxEditor.Options
             {
                 Background = new Color(0.92f, 0.92f, 0.92f, 1f),
                 LightBackground = new Color(0.84f, 0.84f, 0.88f, 1f),
-                DragWindow = new Color(0.0f, 0.26f, 0.43f, 0.70f),
+                DarkBackground = new Color(0.67f, 0.67f, 0.75f, 1f),
                 Foreground = new Color(0.0f, 0.0f, 0.0f, 1f),
                 ForegroundGrey = new Color(0.30f, 0.30f, 0.31f, 1f),
                 ForegroundDisabled = new Color(0.45f, 0.45f, 0.49f, 1f),
@@ -367,6 +382,7 @@ namespace FlaxEditor.Options
                 CollectionBackgroundColor = new Color(0.85f, 0.85f, 0.88f, 1f),
                 ProgressNormal = new Color(0.03f, 0.65f, 0.12f, 1f),
                 ProgressError = new Color(0.79f, 0.146f, 0.0f, 1.0f),
+                ProgressWarning = Color.Yellow,
                 Selection = Color.Orange * 0.4f,
                 SelectionBorder = Color.Orange,
 
@@ -392,6 +408,8 @@ namespace FlaxEditor.Options
 
                 SharedTooltip = new Tooltip(),
             };
+            style.SearchHighlight = style.ProgressNormal * 0.6f;
+            style.BackgroundTone = style.Background * 0.9f;
             style.SharedTooltip.HorizontalTextAlignment = Editor.Instance.Options.Options.Interface.TooltipTextAlignment;
             return style;
         }

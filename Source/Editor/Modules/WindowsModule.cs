@@ -705,12 +705,11 @@ namespace FlaxEditor.Modules
 #endif
                 var dpiScale = Platform.CustomDpiScale;
                 var defaultSize = window.DefaultSize * dpi;
-                for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
+                foreach (FloatWindowDockPanel panel in Editor.UI.MasterPanel.FloatingPanels)
                 {
-                    var win = Editor.UI.MasterPanel.FloatingPanels[i];
-                    if (Float2.Abs(win.Size - defaultSize).LengthSquared < 100)
+                    if (Float2.Abs(panel.Window.Window.Size - defaultSize).LengthSquared < 100)
                     {
-                        window.Show(DockState.DockFill, win);
+                        window.Show(DockState.DockFill, panel);
                         window.Focus();
                         return;
                     }

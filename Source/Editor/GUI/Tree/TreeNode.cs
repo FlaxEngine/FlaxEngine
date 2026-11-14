@@ -293,6 +293,8 @@ namespace FlaxEditor.GUI.Tree
             }
         }
 
+        internal bool SelectionFill = true;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TreeNode"/> class.
         /// </summary>
@@ -593,10 +595,10 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <summary>
-        /// Caches the color of the text for this node. Called during update before children nodes but after parent node so it can reuse parent tree node data.
+        /// Gets the text color for the node.
         /// </summary>
         /// <returns>Text color.</returns>
-        protected virtual Color CacheTextColor()
+        protected virtual Color GetTextColor()
         {
             return Enabled ? TextColor : TextColor * 0.6f;
         }
@@ -707,10 +709,12 @@ namespace FlaxEditor.GUI.Tree
             _margin.ShrinkRectangle(ref textRect);
 
             // Draw background
-            if (isSelected || _mouseOverHeader)
-            {
+            if (SelectionFill && (isSelected || _mouseOverHeader))
                 Render2D.FillRectangle(_headerRect, (isSelected && isFocused) ? BackgroundColorSelected : (_mouseOverHeader ? BackgroundColorHighlighted : BackgroundColorSelectedUnfocused));
-            }
+            else if (!SelectionFill && _mouseOverHeader)
+                Render2D.FillRectangle(_headerRect, BackgroundColorHighlighted);
+            if (isSelected && (!SelectionFill || !isFocused))
+                Render2D.FillRectangle(new Rectangle(_headerRect.Location, Utilities.Constants.UIAccent, _headerRect.Height), BackgroundColorSelected);
 
             // Draw arrow
             if (HasAnyVisibleChild)
@@ -739,8 +743,7 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Draw text
-            Color textColor = CacheTextColor();
-            Render2D.DrawText(TextFont.GetFont(), _text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(TextFont.GetFont(), _text, textRect, GetTextColor(), TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)
@@ -770,27 +773,24 @@ namespace FlaxEditor.GUI.Tree
                 {
                     float bottomOffset = 0;
                     float topOffset = 0;
-
                     if (parent == parentNode && this == parent.Children[0])
                         topOffset = 2;
-
                     if (thisNodeIsLast && parentNode.Children.Count == 1)
                         bottomOffset = topOffset != 0 ? 4 : 2;
-
                     if (parent == parentNode && this == parent.Children[^1] && !_opened)
                     {
                         thisNodeIsLast = true;
                         bottomOffset = topOffset != 0 ? 4 : 2;
                     }
-
                     float leftOffset = 9;
+
                     // Adjust offset for icon image
                     if (_iconCollaped.IsValid)
                         leftOffset += 18;
                     var lineRect1 = new Rectangle(parentNode.TextRect.Left - leftOffset, parentNode.HeaderRect.Top + topOffset, 1, parentNode.HeaderRect.Height - bottomOffset);
                     if (HasAnyVisibleChild && CustomArrowRect.HasValue && CustomArrowRect.Value.Intersects(lineRect1))
                         lineRect1 = Rectangle.Empty; // Skip drawing line if it's overlapping the arrow rectangle
-                    Render2D.FillRectangle(lineRect1, isSelected ? style.ForegroundGrey : style.LightBackground);
+                    Render2D.FillRectangle(lineRect1, isSelected ? (isFocused && SelectionFill ? style.ForegroundGrey : style.BackgroundHighlighted) : style.LightBackground);
                     parentNode = parentNode.Parent as TreeNode;
                 }
             }

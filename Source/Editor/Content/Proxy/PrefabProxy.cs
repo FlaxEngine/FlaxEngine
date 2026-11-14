@@ -56,7 +56,7 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override Color AccentColor => Color.FromRGB(0x7eef21);
+        public override Color AccentColor => Color.FromRGB(Utilities.Constants.ColorPrefab);
 
         /// <inheritdoc />
         public override string TypeName => AssetTypename;

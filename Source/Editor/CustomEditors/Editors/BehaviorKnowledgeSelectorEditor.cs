@@ -33,7 +33,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 Size = new Float2(16.0f),
                 Text = "...",
-                TooltipText = "Edit...",
+                TooltipText = "Edit selector path...",
                 Parent = _label,
             };
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);

@@ -10,6 +10,8 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Render2D/MSDFGenerator.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "IncludeFreeType.h"
 #include <ThirdParty/freetype/ftsynth.h>
 #include <ThirdParty/freetype/ftbitmap.h>
@@ -50,11 +52,13 @@ FT_MemoryRec_ FreeTypeMemory;
 
 static void* FreeTypeAlloc(FT_Memory memory, long size)
 {
+    PROFILE_MEM(UIFonts);
     return Allocator::Allocate(size);
 }
 
 void* FreeTypeRealloc(FT_Memory memory, long oldSize, long newSize, void* ptr)
 {
+    PROFILE_MEM(UIFonts);
     return AllocatorExt::Realloc(ptr, oldSize, newSize);
 }
 
@@ -65,6 +69,7 @@ void FreeTypeFree(FT_Memory memory, void* ptr)
 
 bool FontManagerService::Init()
 {
+    PROFILE_MEM(UIFonts);
     ASSERT(Library == nullptr);
 
     // Scale UI fonts to match the monitor DPI
@@ -115,6 +120,8 @@ FontTextureAtlas* FontManager::GetAtlas(int32 index)
 
 bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 {
+    PROFILE_CPU();
+    PROFILE_MEM(UIFonts);
     ScopeLock lock(Locker);
 
     const FontAsset* asset = font->GetAsset();

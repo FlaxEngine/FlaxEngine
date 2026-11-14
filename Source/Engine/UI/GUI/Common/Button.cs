@@ -7,7 +7,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Button control
     /// </summary>
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class Button : Label
     {
         /// <summary>

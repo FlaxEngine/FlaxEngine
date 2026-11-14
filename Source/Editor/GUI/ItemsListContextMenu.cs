@@ -172,7 +172,7 @@ namespace FlaxEditor.GUI
                 // Draw all highlights
                 if (DrawHighlights && _highlights != null)
                 {
-                    var color = style.ProgressNormal * 0.6f;
+                    var color = Style.Current.SearchHighlight;
                     for (int i = 0; i < _highlights.Count; i++)
                     {
                         var rect = _highlights[i];

@@ -6,7 +6,7 @@ namespace FlaxEngine.GUI
     /// The blur panel that applied the Gaussian-blur to all content beneath the control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class BlurPanel : ContainerControl
     {
         /// <summary>

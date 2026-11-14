@@ -109,11 +109,19 @@ public sealed class ContentItemTreeNode : TreeNode, IContentItemOwner
 
         if (_highlights != null)
         {
-            var style = Style.Current;
-            var color = style.ProgressNormal * 0.6f;
+            var color = Style.Current.SearchHighlight;
             for (int i = 0; i < _highlights.Count; i++)
                 Render2D.FillRectangle(_highlights[i], color);
         }
+    }
+
+    /// <inheritdoc />
+    protected override Color GetTextColor()
+    {
+        var item = Item;
+        if (item.ShowFileExtension && string.IsNullOrEmpty(item.ShortName))
+            return Style.Current.ForegroundGrey; // Different color for extension-only files like .gitignore or .editorocnfig
+        return base.GetTextColor();
     }
 
     /// <inheritdoc />

@@ -33,10 +33,11 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 Size = new Float2(16.0f),
                 Text = "...",
-                TooltipText = "Edit...",
+                TooltipText = "Edit tags...",
                 Parent = _label,
             };
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);
+            button.X -= 1;
             button.Clicked += ShowPicker;
         }
 
@@ -632,7 +633,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 Size = new Float2(16.0f),
                 Text = buttonText,
-                TooltipText = "Edit...",
+                TooltipText = "Edit tags...",
                 Parent = _label,
             };
             var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(buttonText);
@@ -640,6 +641,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 button.Width = textSize.Y + 2;
 
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);
+            button.X -= 1;
             button.Clicked += ShowPicker;
         }
 

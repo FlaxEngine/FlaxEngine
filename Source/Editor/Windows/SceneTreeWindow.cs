@@ -22,7 +22,7 @@ namespace FlaxEditor.Windows
     /// <seealso cref="FlaxEditor.Windows.SceneEditorWindow" />
     public partial class SceneTreeWindow : SceneEditorWindow
     {
-        private TextBox _searchBox;
+        private SearchBox _searchBox;
         private Tree _tree;
         private Panel _sceneTreePanel;
         private bool _isUpdatingSelection;
@@ -51,33 +51,10 @@ namespace FlaxEditor.Windows
             Title = "Scene";
             Icon = editor.Icons.Globe32;
 
-            // Scene searching query input box
-            var headerPanel = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                BackgroundColor = Style.Current.Background,
-                IsScrollable = false,
-                Offsets = new Margin(0, 0, 0, 18 + 6),
-            };
-            _searchBox = new SearchBox
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = headerPanel,
-                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
-                TooltipText = "Search the scene tree.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
-            };
+            // Scene searching query input box and tree panel
+            SceneEditingTools.BuildTreePanel(this, out _searchBox, out _sceneTreePanel);
             _searchBox.TextChanged += OnSearchBoxTextChanged;
             ScriptsBuilder.ScriptsReloadEnd += OnSearchBoxTextChanged;
-
-            // Scene tree panel
-            _sceneTreePanel = new Panel
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
-                IsScrollable = true,
-                ScrollBars = ScrollBars.Both,
-                Parent = this,
-            };
 
             // Create scene structure tree
             var root = editor.Scene.Root;
@@ -101,8 +78,6 @@ namespace FlaxEditor.Windows
                     ScrollToSelectedNode();
                 }
             };
-
-            headerPanel.Parent = this;
 
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
@@ -182,6 +157,12 @@ namespace FlaxEditor.Windows
             var query = _searchBox.Text;
             var root = Editor.Scene.Root;
             root.TreeNode.UpdateFilter(query);
+            root.TreeNode.Expand(true);
+            foreach (var child in root.TreeNode.Children)
+            {
+                if (child is TreeNode node)
+                    node.ExpandAll(true);
+            }
 
             _tree.UnlockChildrenRecursive();
 

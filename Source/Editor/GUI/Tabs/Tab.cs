@@ -90,6 +90,9 @@ namespace FlaxEditor.GUI.Tabs
         }
 
         /// <inheritdoc />
+        protected override bool ShowTooltip => false; // Tabs.TabHeader handles tooltip showing for tab
+
+        /// <inheritdoc />
         protected override void OnParentChangedInternal()
         {
             if (_selectedInTabs != null)

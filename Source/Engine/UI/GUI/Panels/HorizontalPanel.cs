@@ -6,7 +6,7 @@ namespace FlaxEngine.GUI
     /// This panel arranges child controls horizontally.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.PanelWithMargins" />
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class HorizontalPanel : PanelWithMargins
     {
         /// <summary>

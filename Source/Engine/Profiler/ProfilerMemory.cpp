@@ -269,6 +269,7 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
     INIT_PARENT(Scripting, ScriptingCSharp);
     INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCCommitted);
     INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCHeap);
+    INIT_PARENT(UI, UIFonts);
 #undef INIT_PARENT
 
     // Init group names

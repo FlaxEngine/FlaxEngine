@@ -11,6 +11,8 @@ using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.Interop;
 using FlaxEngine.Utilities;
+using FlaxEngine.GUI;
+using FlaxEditor.GUI.Input;
 
 namespace FlaxEditor.CustomEditors
 {
@@ -32,6 +34,36 @@ namespace FlaxEditor.CustomEditors
             { typeof(decimal), "decimal" },
             { typeof(string), "string" },
         };
+
+        internal static void BuildSearchBar(ContainerControl parent, out SearchBox searchBox, float topOffset = 0)
+        {
+            var margin = Utilities.Constants.UIMargin;
+            var headerPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                BackgroundColor = Style.Current.Background,
+                IsScrollable = false,
+                Offsets = new Margin(0, 0, topOffset, TextBoxBase.DefaultHeight + margin * 2),
+                Parent = parent,
+            };
+            searchBox = new SearchBox
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
+                Parent = headerPanel,
+                Bounds = new Rectangle(margin, margin, headerPanel.Width - margin * 2, TextBoxBase.DefaultHeight),
+            };
+        }
+
+        internal static void BuildSearchBar(ContainerControl parent, out SearchBox searchBox, out Panel propertiesPanel, float topOffset = 0)
+        {
+            BuildSearchBar(parent, out searchBox, topOffset);
+            propertiesPanel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, searchBox.Parent.Bottom, 0),
+                Parent = parent,
+            };
+        }
 
         /// <summary>
         /// Gets the type name for UI. Handles in-build types like System.Single and returns float.

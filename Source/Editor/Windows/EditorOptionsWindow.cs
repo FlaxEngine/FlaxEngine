@@ -51,27 +51,14 @@ namespace FlaxEditor.Windows
             _saveButton.Enabled = false;
 
             // Header panel for search
-            var headerPanel = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                BackgroundColor = Style.Current.Background,
-                IsScrollable = false,
-                Offsets = new Margin(0, 0, toolstrip.Bottom, 18 + 6),
-                Parent = this,
-            };
-            _searchBox = new SearchBox
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
-                Parent = headerPanel,
-                Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
-            };
+            CustomEditorsUtil.BuildSearchBar(this, out _searchBox);
             _searchBox.TextChanged += ApplySearchFilter;
 
             _tabs = new Tabs
             {
                 Orientation = Orientation.Vertical,
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, headerPanel.Bottom, 0),
+                Offsets = new Margin(0, 0, _searchBox.Parent.Bottom, 0),
                 TabsSize = new Float2(120, 32),
                 UseScroll = true,
                 Parent = this

@@ -218,7 +218,7 @@ bool VolumetricFogPass::Init(FrameCache& cache, RenderContext& renderContext, GP
     auto& options = fog.VolumetricFog;
 
     // Setup configuration
-    cache.FogJitter = true;
+    cache.FogJitter = renderContext.List->Setup.UseTemporalAAJitter;
     cache.HistoryWeight = 0.92f;
     cache.InverseSquaredLightDistanceBiasScale = 1.0f;
     switch (Graphics::VolumetricFogQuality)

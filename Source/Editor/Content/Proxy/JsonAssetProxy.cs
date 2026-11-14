@@ -50,9 +50,6 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override Color AccentColor => Color.FromRGB(0xd14f67);
-
-        /// <inheritdoc />
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
         {
             return new JsonAssetItem(path, id, typeName);

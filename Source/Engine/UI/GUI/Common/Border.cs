@@ -5,7 +5,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Border control that draws the border around the control edges (inner and outer sides).
     /// </summary>
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class Border : ContainerControl
     {
         /// <summary>

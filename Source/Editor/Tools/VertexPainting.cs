@@ -182,6 +182,7 @@ namespace FlaxEditor.Tools
         public VertexPaintingTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
+            TooltipText = "Vertex painting tool.";
             _editor = editor;
 
             _proxy = new ProxyObject(this);

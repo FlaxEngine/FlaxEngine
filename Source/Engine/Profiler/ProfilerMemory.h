@@ -141,6 +141,8 @@ public:
 
         // Total User Interface components memory.
         UI,
+        // Total font and glyph characters memory.
+        UIFonts,
 
         // Total video system memory (video file data, frame buffers, GPU images and any audio buffers used by video playback).
         Video,

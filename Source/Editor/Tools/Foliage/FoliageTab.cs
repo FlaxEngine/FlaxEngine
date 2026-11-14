@@ -99,6 +99,7 @@ namespace FlaxEditor.Tools.Foliage
         public FoliageTab(SpriteHandle icon, Editor editor)
         : base(string.Empty, icon)
         {
+            TooltipText = "Foliage editing tool.";
             Level.SceneLoaded += OnSceneLoaded;
             Editor = editor;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;

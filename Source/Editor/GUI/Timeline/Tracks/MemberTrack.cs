@@ -336,7 +336,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             base.Update(deltaTime);
 
             var p = Member;
-            TitleTintColor = p != null ? Color.White : Color.Red;
+            var style = Style.Current;
+            TextColor = p != null ? style.Foreground : style.ProgressError;
         }
 
         /// <inheritdoc />

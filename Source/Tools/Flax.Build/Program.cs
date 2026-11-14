@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -79,17 +80,20 @@ namespace Flax.Build
                 // Configure engine
                 {
                     var engineProject = EngineTarget.EngineProject;
+                    Dictionary<string, string> configuration = null;
                     if (engineProject != null && engineProject.Configuration != null && engineProject.Configuration.Count != 0)
                     {
+                        configuration = engineProject.Configuration;
                         CommandLine.Configure(typeof(EngineConfiguration), engineProject.Configuration);
                         CommandLine.Configure(typeof(Configuration), engineProject.Configuration);
-                        CommandLine.ConfigureChild(typeof(WindowsConfiguration), engineProject.Configuration, "Windows");
-                        CommandLine.ConfigureChild(typeof(LinuxConfiguration), engineProject.Configuration, "Linux");
-                        CommandLine.ConfigureChild(typeof(MacConfiguration), engineProject.Configuration, "Mac");
-                        CommandLine.ConfigureChild(typeof(iOSConfiguration), engineProject.Configuration, "iOS");
-                        CommandLine.ConfigureChild(typeof(WebConfiguration), engineProject.Configuration, "Web");
                     }
                     CommandLine.Configure(typeof(EngineConfiguration));
+                    CommandLine.ConfigureChild(typeof(WindowsConfiguration), configuration, "Windows");
+                    CommandLine.ConfigureChild(typeof(LinuxConfiguration), configuration, "Linux");
+                    CommandLine.ConfigureChild(typeof(MacConfiguration), configuration, "Mac");
+                    CommandLine.ConfigureChild(typeof(iOSConfiguration), configuration, "iOS");
+                    CommandLine.ConfigureChild(typeof(WebConfiguration), configuration, "Web");
+                    CommandLine.ConfigureChild(typeof(AndroidConfiguration), configuration, "Android");
                 }
 
                 // Use mutex if required

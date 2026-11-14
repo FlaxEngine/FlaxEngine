@@ -145,8 +145,16 @@ namespace Flax.Build
                         case JsonTokenType.String:
                             value += $"\"{reader.GetString()}\",";
                             break;
-                            case JsonTokenType.Number:
-                            value += $"{reader.GetString()},";
+                        case JsonTokenType.Number:
+                            if (reader.TryGetInt32(out var intValue))
+                                value += $"\"{intValue.ToString()}\",";
+                            else if (reader.TryGetSingle(out var floatValue))
+                                value += $"\"{floatValue.ToString()}\",";
+                            else
+                            {
+                                Log.Warning("Failed to parse number value from JSON");
+                                value += "\"\"";
+                            }
                             break;
                         case JsonTokenType.True:
                             value += "true,";
@@ -162,8 +170,10 @@ namespace Flax.Build
                         }
                     }
                 }
-                else
+                else if (reader.TokenType == JsonTokenType.String)
                     value = reader.GetString();
+                else
+                    continue;
                 dictionary.Add(key, value);
             }
             throw new Exception();

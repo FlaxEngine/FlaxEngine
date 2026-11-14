@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.Actions;
+using FlaxEditor.Content;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
@@ -245,7 +246,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Actor or Script
             else if (editor.Values[0] is SceneObject sceneObject)
             {
-                node.TextColor = sceneObject.HasPrefabLink ? FlaxEngine.GUI.Style.Current.ProgressNormal : FlaxEngine.GUI.Style.Current.BackgroundSelected;
+                node.TextColor = sceneObject.HasPrefabLink ? Color.FromRGB(Utilities.Constants.ColorPrefab) : FlaxEngine.GUI.Style.Current.BackgroundSelected;
                 if (editor.Values.Info != ScriptMemberInfo.Null)
                 {
                     if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute && !string.IsNullOrEmpty(editorDisplayAttribute.Name))

@@ -32,7 +32,7 @@ namespace FlaxEditor.SceneGraph.GUI
         }
 
         /// <inheritdoc />
-        protected override Color CacheTextColor()
+        protected override Color GetTextColor()
         {
             return Style.Current.Foreground;
         }

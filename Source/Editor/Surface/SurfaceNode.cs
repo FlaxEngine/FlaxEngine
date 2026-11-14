@@ -149,7 +149,8 @@ namespace FlaxEditor.Surface
             AutoFocus = false;
             TooltipText = GetTooltip();
             CullChildren = false;
-            BackgroundColor = Color.Lerp(Style.Current.Background, Style.Current.BackgroundHighlighted, 0.55f);
+            var style = Style.Current;
+            BackgroundColor = style.Background;
 
             if (Archetype.DefaultValues != null)
             {

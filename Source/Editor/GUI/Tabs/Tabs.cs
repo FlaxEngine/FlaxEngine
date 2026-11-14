@@ -13,6 +13,8 @@ namespace FlaxEditor.GUI.Tabs
     [HideInEditor]
     public class Tabs : ContainerControl
     {
+        internal const float MinSize = 26;
+
         /// <summary>
         /// Tab header control. Draw the tab title and handles selecting it.
         /// </summary>
@@ -39,6 +41,7 @@ namespace FlaxEditor.GUI.Tabs
             {
                 Tabs = tabs;
                 Tab = tab;
+                TooltipText = tab.TooltipText;
             }
 
             /// <inheritdoc />
@@ -64,30 +67,19 @@ namespace FlaxEditor.GUI.Tabs
                 var textOffset = Tabs._orientation == Orientation.Horizontal ? 0 : 8;
 
                 // Draw bar
+                if (IsMouseOver)
+                    Render2D.FillRectangle(tabRect, style.BackgroundHighlighted);
                 if (Tabs.SelectedTab == Tab)
                 {
                     var color = style.BackgroundSelected;
                     if (!enabled)
                         color *= 0.6f;
+                    var leftEdgeRect = tabRect;
                     if (Tabs._orientation == Orientation.Horizontal)
-                    {
-                        Render2D.FillRectangle(tabRect, color);
-                    }
+                        leftEdgeRect.Size.Y = Utilities.Constants.UIAccent;
                     else
-                    {
-                        const float lefEdgeWidth = 4;
-                        var leftEdgeRect = tabRect;
-                        leftEdgeRect.Size.X = lefEdgeWidth;
-                        var fillRect = tabRect;
-                        fillRect.Size.X -= lefEdgeWidth;
-                        fillRect.Location.X += lefEdgeWidth;
-                        Render2D.FillRectangle(fillRect, style.Background);
-                        Render2D.FillRectangle(leftEdgeRect, color);
-                    }
-                }
-                else if (IsMouseOver && enabled)
-                {
-                    Render2D.FillRectangle(tabRect, style.BackgroundHighlighted);
+                        leftEdgeRect.Size.X = Utilities.Constants.UIAccent;
+                    Render2D.FillRectangle(leftEdgeRect, color);
                 }
 
                 // Draw icon
@@ -316,7 +308,7 @@ namespace FlaxEditor.GUI.Tabs
 
             TabsPanel = new TabsHeader(this);
 
-            TabStripColor = Style.Current.LightBackground;
+            TabStripColor = Style.Current.Background;
 
             TabsPanel.Parent = this;
         }
@@ -421,16 +413,10 @@ namespace FlaxEditor.GUI.Tabs
                 if (_orientation == Orientation.Horizontal && TabsPanel.HScrollBar.Visible)
                 {
                     tabsSize.Y += TabsPanel.HScrollBar.Height;
-                    var style = Style.Current;
-                    TabsPanel.HScrollBar.TrackColor = style.Background;
-                    TabsPanel.HScrollBar.ThumbColor = style.ForegroundGrey;
                 }
                 else if (_orientation == Orientation.Vertical && TabsPanel.VScrollBar.Visible)
                 {
                     tabsSize.X += TabsPanel.VScrollBar.Width;
-                    var style = Style.Current;
-                    TabsPanel.VScrollBar.TrackColor = style.Background;
-                    TabsPanel.VScrollBar.ThumbColor = style.ForegroundGrey;
                 }
             }
 

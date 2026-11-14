@@ -384,7 +384,7 @@ namespace FlaxEditor.SceneGraph.GUI
         }
 
         /// <inheritdoc />
-        protected override Color CacheTextColor()
+        protected override Color GetTextColor()
         {
             // Update node text color (based on ActorNode.IsActiveInHierarchy but with optimized logic a little)
             if (Parent is ActorTreeNode)
@@ -396,7 +396,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     if (actor.HasPrefabLink)
                     {
                         // Prefab
-                        color = Style.Current.ProgressNormal;
+                        color = Color.FromRGB(Utilities.Constants.ColorPrefab);
                     }
 
                     if (!actor.IsActiveInHierarchy)
@@ -416,7 +416,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 return color;
             }
 
-            return base.CacheTextColor();
+            return base.GetTextColor();
         }
 
         /// <inheritdoc />
@@ -493,8 +493,7 @@ namespace FlaxEditor.SceneGraph.GUI
             // Draw all highlights
             if (_highlights != null)
             {
-                var style = Style.Current;
-                var color = style.ProgressNormal * 0.6f;
+                var color = Style.Current.SearchHighlight;
                 var textRect = TextRect;
                 for (int i = 0; i < _highlights.Count; i++)
                 {

@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI;
 /// <summary>
 /// The slider control.
 /// </summary>
-[ActorToolbox("GUI")]
+[ActorToolbox("UI")]
 public class Slider : ContainerControl
 {
     /// <summary>

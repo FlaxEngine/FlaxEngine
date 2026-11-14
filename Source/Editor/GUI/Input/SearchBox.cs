@@ -8,6 +8,8 @@ namespace FlaxEditor.GUI.Input
     /// </summary>
     public class SearchBox : TextBox
     {
+        private const float IconSize = 14.0f;
+
         /// <summary>
         /// A button that clears the search bar.
         /// </summary>
@@ -32,11 +34,10 @@ namespace FlaxEditor.GUI.Input
             ClearSearchButton = new Button
             {
                 Parent = this,
-                Width = 14.0f,
-                Height = 14.0f,
+                Size = new Float2(IconSize),
                 AnchorPreset = AnchorPresets.TopRight,
                 Text = "",
-                TooltipText = "Cancel Search.",
+                TooltipText = "Cancel search.",
                 BackgroundColor = TextColor,
                 BorderColor = Color.Transparent,
                 BackgroundColorHighlighted = Style.Current.ForegroundGrey,
@@ -57,6 +58,44 @@ namespace FlaxEditor.GUI.Input
             ClearSearchButton.HoverEnd += () => _changeCursor = true;
 
             TextChanged += () => ClearSearchButton.Visible = !string.IsNullOrEmpty(Text);
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            // Draw search icon
+            var style = Style.Current;
+            var rect = new Rectangle(2, 2, IconSize, IconSize);
+            Render2D.DrawSprite(style.Search, rect, EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled);
+        }
+
+        /// <inheritdoc />
+        protected override Rectangle TextRectangle
+        {
+            get
+            {
+                var result = base.TextRectangle;
+                var searchIconOffset = IconSize + 2;
+                result.Location.X += searchIconOffset;
+                result.Size.X -= searchIconOffset;
+                if (ClearSearchButton.Visible)
+                    result.Size.X -= IconSize;
+                return result;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override Rectangle TextClipRectangle
+        {
+            get
+            {
+                var result = base.TextRectangle;
+                if (ClearSearchButton.Visible)
+                    result.Size.X -= IconSize;
+                return result;
+            }
         }
     }
 }

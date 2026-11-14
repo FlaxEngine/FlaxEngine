@@ -55,7 +55,6 @@ namespace FlaxEditor.GUI
         {
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
-            BackgroundColor = Style.Current.LightBackground;
         }
 
         /// <summary>

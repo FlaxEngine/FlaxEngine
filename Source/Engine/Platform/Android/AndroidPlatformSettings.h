@@ -82,7 +82,7 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// The minimum Android API level (eg. 20, 28, 34).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\")")
-    String MinimumAPILevel = TEXT("23");
+    String MinimumAPILevel = TEXT("28");
 
     /// <summary>
     /// The target Android API level (eg. 20, 28, 34).

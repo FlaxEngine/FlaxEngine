@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// The basic GUI image control. Shows texture, sprite or render target.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class Image : ContainerControl
     {
         /// <summary>

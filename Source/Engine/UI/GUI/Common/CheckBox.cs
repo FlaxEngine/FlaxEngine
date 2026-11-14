@@ -29,7 +29,7 @@ namespace FlaxEngine.GUI
     /// Check box control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
-    [ActorToolbox("GUI")]
+    [ActorToolbox("UI")]
     public class CheckBox : Control
     {
         /// <summary>
@@ -175,7 +175,7 @@ namespace FlaxEngine.GUI
         : base(x, y, size, size)
         {
             _state = isChecked ? CheckBoxState.Checked : CheckBoxState.Default;
-            _boxSize = Mathf.Min(16.0f, size);
+            _boxSize = size;
 
             var style = Style.Current;
             ImageColor = style.BorderSelected * 1.2f;
@@ -183,6 +183,7 @@ namespace FlaxEngine.GUI
             BorderColorHighlighted = style.BorderSelected;
             CheckedImage = style.CheckBoxTick.IsValid ? new SpriteBrush(style.CheckBoxTick) : new SolidColorBrush(style.Foreground);
             IntermediateImage = style.CheckBoxIntermediate.IsValid ? new SpriteBrush(style.CheckBoxIntermediate) : new SolidColorBrush(style.ForegroundGrey);
+            BackgroundColor = style.TextBoxBackground;
 
             CacheBox();
         }
@@ -229,9 +230,16 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void Draw()
         {
-            base.Draw();
+            //base.Draw(); // Draw background under checkbox area only
 
             bool enabled = EnabledInHierarchy;
+
+            // Background
+            var backgroundColor = BackgroundColor;
+            if (BackgroundBrush != null)
+                BackgroundBrush.Draw(_box, backgroundColor);
+            else if (backgroundColor.A > 0.0f)
+                Render2D.FillRectangle(_box, backgroundColor);
 
             // Border
             if (HasBorder)

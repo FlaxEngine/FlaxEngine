@@ -8,6 +8,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Dedicated;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -249,7 +250,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Float2(60, 20),
+                TabsSize = new Float2(60, Tabs.MinSize),
                 TabsTextHorizontalAlignment = TextAlignment.Center,
                 UseScroll = true,
                 Parent = _split.Panel2

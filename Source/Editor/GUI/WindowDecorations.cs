@@ -51,19 +51,16 @@ public class WindowDecorations : ContainerControl
     : base(0, 0, 0, 20)
     {
         _window = window.RootWindow.Window;
-
         AutoFocus = false;
         AnchorPreset = AnchorPresets.HorizontalStretchTop;
-        BackgroundColor = Color.Transparent;
-
-        var windowIcon = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.WindowIcon);
+        var style = Style.Current;
+        BackgroundColor = style.DarkBackground;
 
         _icon = new Image
         {
             Margin = new Margin(4, 4, 4, 4),
-            Brush = new TextureBrush(windowIcon),
-            Color = Style.Current.Foreground,
-            BackgroundColor = Style.Current.LightBackground,
+            Brush = new TextureBrush(FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.WindowIcon)),
+            Color = style.Foreground,
             KeepAspectRatio = false,
             Parent = this,
         };
@@ -85,9 +82,9 @@ public class WindowDecorations : ContainerControl
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 ClipText = true,
-                TextColor = Style.Current.ForegroundGrey,
-                TextColorHighlighted = Style.Current.ForegroundGrey,
-                BackgroundColor = Style.Current.LightBackground,
+                TextColor = style.ForegroundGrey,
+                TextColorHighlighted = style.ForegroundGrey,
+                BackgroundColor = Color.Transparent,
                 Parent = this,
             };
 
@@ -95,11 +92,11 @@ public class WindowDecorations : ContainerControl
             {
                 Text = ((char)EditorAssets.SegMDL2Icons.ChromeClose).ToString(),
                 Font = new FontReference(iconFont),
-                BackgroundColor = Style.Current.LightBackground,
+                BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BorderColorHighlighted = Color.Transparent,
                 BorderColorSelected = Color.Transparent,
-                TextColor = Style.Current.Foreground,
+                TextColor = style.Foreground,
                 Width = 46,
                 BackgroundColorHighlighted = Color.Red,
                 BackgroundColorSelected = Color.Red.RGBMultiplied(1.3f),
@@ -111,13 +108,13 @@ public class WindowDecorations : ContainerControl
             {
                 Text = ((char)EditorAssets.SegMDL2Icons.ChromeMinimize).ToString(),
                 Font = new FontReference(iconFont),
-                BackgroundColor = Style.Current.LightBackground,
+                BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BorderColorHighlighted = Color.Transparent,
                 BorderColorSelected = Color.Transparent,
-                TextColor = Style.Current.Foreground,
+                TextColor = style.Foreground,
                 Width = 46,
-                BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(1.3f),
+                BackgroundColorHighlighted = style.LightBackground.RGBMultiplied(1.3f),
                 Parent = this,
             };
             _minimizeButton.Clicked += () => _window.Minimize();
@@ -126,13 +123,13 @@ public class WindowDecorations : ContainerControl
             {
                 Text = ((char)(_window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize)).ToString(),
                 Font = new FontReference(iconFont),
-                BackgroundColor = Style.Current.LightBackground,
+                BackgroundColor = Color.Transparent,
                 BorderColor = Color.Transparent,
                 BorderColorHighlighted = Color.Transparent,
                 BorderColorSelected = Color.Transparent,
-                TextColor = Style.Current.Foreground,
+                TextColor = style.Foreground,
                 Width = 46,
-                BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(1.3f),
+                BackgroundColorHighlighted = style.LightBackground.RGBMultiplied(1.3f),
                 Parent = this,
             };
             _maximizeButton.Clicked += () =>

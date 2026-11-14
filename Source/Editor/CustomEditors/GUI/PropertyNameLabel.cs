@@ -121,8 +121,7 @@ namespace FlaxEditor.CustomEditors.GUI
                 var font = Font?.GetFont();
                 if (font != null)
                 {
-                    var style = Style.Current;
-                    var color = style.ProgressNormal * 0.6f;
+                    var color = Style.Current.SearchHighlight;
                     var margin = Margin;
                     var textSize = font.MeasureText(text);
                     var textX = margin.Left;

@@ -146,7 +146,7 @@ namespace FlaxEditor.GUI
 
             // Draw background
             if (enabled && (IsMouseOver || IsNavFocused || Checked))
-                Render2D.FillRectangle(clientRect, Checked ? style.BackgroundSelected : mouseButtonDown ? style.BackgroundHighlighted : (style.LightBackground * 1.3f));
+                Render2D.FillRectangle(clientRect, Checked || mouseButtonDown ? style.BackgroundSelected : style.BackgroundHighlighted);
 
             // Draw icon
             if (_icon.IsValid)

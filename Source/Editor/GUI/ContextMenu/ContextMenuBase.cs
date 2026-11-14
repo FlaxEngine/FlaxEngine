@@ -646,7 +646,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var style = Style.Current;
             var bounds = new Rectangle(Float2.Zero, Size);
             Render2D.FillRectangle(bounds, style.Background);
-            Render2D.DrawRectangle(bounds, Color.Lerp(style.BackgroundSelected, style.Background, 0.6f));
+            Render2D.DrawRectangle(bounds, style.BackgroundSelected);
 
             base.Draw();
         }

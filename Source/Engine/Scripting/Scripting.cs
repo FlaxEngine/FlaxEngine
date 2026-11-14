@@ -286,6 +286,7 @@ namespace FlaxEngine
             {
                 Background = Color.FromBgra(0xFF1C1C1C),
                 LightBackground = Color.FromBgra(0xFF2D2D30),
+                DarkBackground = Color.FromBgra(0xFF3F3F46),
                 Foreground = Color.FromBgra(0xFFFFFFFF),
                 ForegroundGrey = Color.FromBgra(0xFFA9A9B3),
                 ForegroundDisabled = Color.FromBgra(0xFF787883),
@@ -301,6 +302,7 @@ namespace FlaxEngine
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
                 ProgressError = new Color(0.79f, 0.146f, 0.0f, 1.0f),
+                ProgressWarning = Color.Yellow,
                 Statusbar = new Style.StatusbarStyle
                 {
                     PlayMode = Color.FromBgra(0xFF2F9135),
@@ -310,7 +312,7 @@ namespace FlaxEngine
 
                 SharedTooltip = new Tooltip(),
             };
-            style.DragWindow = style.BackgroundSelected * 0.7f;
+            style.SearchHighlight = style.ProgressNormal * 0.6f;
 
             // Use optionally bundled default font (matches Editor)
             var defaultFont = Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/Roboto-Regular");

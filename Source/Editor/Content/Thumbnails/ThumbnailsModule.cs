@@ -355,7 +355,6 @@ namespace FlaxEditor.Content.Thumbnails
                 {
                     // Setup
                     _guiRoot.RemoveChildren();
-                    _guiRoot.AccentColor = request.Proxy.AccentColor;
 
                     // Call proxy to prepare for thumbnail rendering
                     request.Proxy.OnThumbnailDrawBegin(request, _guiRoot, context);
@@ -617,28 +616,12 @@ namespace FlaxEditor.Content.Thumbnails
         /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
         private class PreviewRoot : ContainerControl
         {
-            /// <summary>
-            /// The item accent color to draw.
-            /// </summary>
-            public Color AccentColor;
-
             /// <inheritdoc />
             public PreviewRoot()
             : base(0, 0, PreviewsCache.AssetIconSize, PreviewsCache.AssetIconSize)
             {
                 AutoFocus = false;
-                AccentColor = Color.Pink;
                 IsLayoutLocked = false;
-            }
-
-            /// <inheritdoc />
-            public override void Draw()
-            {
-                base.Draw();
-
-                // Draw accent
-                const float accentHeight = 2;
-                Render2D.FillRectangle(new Rectangle(0, Height - accentHeight, Width, accentHeight), AccentColor);
             }
         }
     }
