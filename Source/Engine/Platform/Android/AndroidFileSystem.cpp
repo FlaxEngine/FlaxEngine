@@ -519,11 +519,12 @@ AndroidFile* AndroidFile::Open(const StringView& path, FileMode mode, FileAccess
 {
     // Check if use AAssetManager API from NDK to access assets bounded in APK
     const StringAsANSI<> pathANSI(*path, path.Length());
-    if (mode == FileMode::OpenExisting && path.StartsWith(StringView(Globals::ProjectFolder), StringSearchCase::CaseSensitive))
+    if (mode == FileMode::OpenExisting && access == FileAccess::Read && path.StartsWith(StringView(Globals::ProjectFolder), StringSearchCase::CaseSensitive))
     {
         AAsset* asset = AAssetManager_open(GetAssetManager(), pathANSI.Get() + Globals::ProjectFolder.Length() + 1, AASSET_MODE_RANDOM);
         if (asset)
         {
+            // TODO: try another file impl that uses both AAsset and AAsset_openFileDescriptor to use fastest pread
             return New<AndroidAssetFile>(asset);
         }
     }

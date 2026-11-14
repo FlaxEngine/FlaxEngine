@@ -271,6 +271,8 @@ RETRY:
         Platform::InterlockedDecrement(&_chunksLock);
         do
         {
+            PROFILE_CPU_NAMED("LockChunksWait");
+            ZoneColor(TracyWaitZoneColor);
             Platform::Sleep(1);
         } while (Platform::AtomicRead(&_isUnloadingData) != 0);
         goto RETRY;
@@ -717,7 +719,11 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
 #if PLATFORM_THREADS_LIMIT > 1
     // Protect against loading the same chunk from multiple threads at once
     while (Platform::InterlockedCompareExchange(&chunk->IsLoading, 1, 0) != 0)
+    {
+        PROFILE_CPU_NAMED("LoadAssetChunkWait");
+        ZoneColor(TracyWaitZoneColor);
         Platform::Sleep(1);
+    }
     SCOPE_EXIT{ Platform::AtomicStore(&chunk->IsLoading, 0); };
 #endif
     if (chunk->IsLoaded())
@@ -744,9 +750,10 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
         {
             // Sometimes stream->HasError() from setposition. result in a crash or missing media in release (stream _file._handle = nullptr).
             // When retrying, it looks like it works and we can continue. We need this to success.
-
-            for (int retry = 0; retry < 5; retry++)
+            for (int32 retry = 0; retry < 5; retry++)
             {
+                PROFILE_CPU_NAMED("LoadAssetChunkError");
+                ZoneColor(TracyWaitZoneColor);
                 Platform::Sleep(50);
                 stream = OpenFile();
                 failed = stream == nullptr;
@@ -1415,6 +1422,7 @@ FileReadStream* FlaxStorage::OpenFile()
     auto& stream = _file.Get();
     if (stream == nullptr)
     {
+        PROFILE_CPU();
         PROFILE_MEM(ContentFiles);
 
         // Open file

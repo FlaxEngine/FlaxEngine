@@ -14,7 +14,6 @@ typedef struct AAsset AAsset;
 class FLAXENGINE_API AndroidFile : public UnixFile
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AndroidFile"/> class.
     /// </summary>
@@ -27,7 +26,6 @@ public:
     ~AndroidFile();
 
 public:
-
     /// <summary>
     /// Creates or opens a file.
     /// </summary>
@@ -45,11 +43,9 @@ public:
 class AndroidAssetFile : public AndroidFile
 {
 private:
-
     AAsset* _asset;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="AndroidAssetFile"/> class.
     /// </summary>
@@ -62,11 +58,10 @@ public:
     ~AndroidAssetFile();
 
 public:
-
     // [AndroidFile]
     bool Read(void* buffer, uint32 bytesToRead, uint32* bytesRead = nullptr) override;
     bool Write(const void* buffer, uint32 bytesToWrite, uint32* bytesWritten = nullptr) override;
-    void Close() override;
+    void Close() final override;
     uint32 GetSize() const override;
     DateTime GetLastWriteTime() const override;
     uint32 GetPosition() const override;
