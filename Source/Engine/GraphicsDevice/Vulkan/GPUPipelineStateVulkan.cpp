@@ -99,10 +99,12 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetState(bool precaching)
     PROFILE_CPU();
     PROFILE_MEM(GraphicsShaders);
     ZoneText(*_name, _name.Length());
+#if COMPILE_WITH_PSO_PRECACHING
     GPUPipelineLookup psoLookup;
     if (precaching)
         psoLookup.Flags |= GPUPipelineLookup::Precaching;
     else
+#endif
     {
         ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
     }
@@ -127,7 +129,9 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetState(bool precaching)
     // Create pipeline object
     VkPipeline pipeline;
     VkResult result = vkCreateComputePipelines(_device->Device, _device->PipelineCache, 1, &desc, nullptr, &pipeline);
+#if COMPILE_WITH_PSO_PRECACHING
     psoLookup.Flags |= GPUPipelineLookup::Miss;
+#endif
     _device->PipelineCacheUsage++;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
@@ -250,10 +254,12 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     GetDebugName(name);
     ZoneText(name.Get(), name.Count() - 1);
 #endif
+#if COMPILE_WITH_PSO_PRECACHING
     GPUPipelineLookup psoLookup;
     if (precaching)
         psoLookup.Flags |= GPUPipelineLookup::Precaching;
     else
+#endif
     {
         ZoneColor(GPU_PSO_ZONE_COLOR_MISS);
     }
@@ -344,7 +350,9 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     _descDepthStencil.depthWriteEnable &= renderPass->CanDepthStencilWrite ? 1 : 0;
     _descDepthStencil.front.writeMask &= renderPass->CanDepthStencilWrite ? MAX_uint32 : 0;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
+#if COMPILE_WITH_PSO_PRECACHING
     psoLookup.Flags |= GPUPipelineLookup::Miss;
+#endif
     _device->PipelineCacheUsage++;
     _descDepthStencil.depthWriteEnable = depthWrite;
     _descDepthStencil.front.writeMask = _descDepthStencil.back.writeMask = stencilWriteMask;
@@ -668,6 +676,8 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     return GPUPipelineState::Init(desc);
 }
 
+#if COMPILE_WITH_PSO_PRECACHING
+
 void GPUPipelineStateVulkan::PrecachePSO(const PrecacheContext& context)
 {
     RenderTargetLayoutVulkan layout;
@@ -703,5 +713,7 @@ void GPUPipelineStateVulkan::PrecachePSO(const PrecacheContext& context)
     _precachedPSOs.Add({ layout, context.VertexLayout });
 #endif
 }
+
+#endif
 
 #endif

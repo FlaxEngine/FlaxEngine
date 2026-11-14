@@ -198,7 +198,9 @@ public:
     // [GPUPipelineState]
     bool IsValid() const final override;
     bool Init(const Description& desc) final override;
+#if COMPILE_WITH_PSO_PRECACHING
     void PrecachePSO(const PrecacheContext& context) override;
+#endif
 
 protected:
     // [GPUResourceVulkan]

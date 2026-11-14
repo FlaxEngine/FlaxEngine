@@ -741,6 +741,10 @@ void ShadowsPass::PrecachePSO()
     context.VertexLayout = _sphereModel->LODs[0].Meshes[0].GetVertexLayout();
     Quality minQuality = Quality::Low;
     Quality maxQuality = Quality::Ultra;
+#if !PLATFORM_DESKTOP
+    // Non-desktop platforms use fixed quality (in mosty cases)
+    minQuality = maxQuality = Graphics::ShadowsQuality;
+#endif
     for (int32 shadowQuality = (int32)minQuality; shadowQuality <= (int32)maxQuality; shadowQuality++)
     {
         for (int32 contactShadows = 0; contactShadows <= 1; contactShadows++)

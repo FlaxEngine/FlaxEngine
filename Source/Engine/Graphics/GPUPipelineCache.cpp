@@ -180,7 +180,7 @@ public:
         }
 
     RETRY_TASK:
-        // Go over all skipped materials to resume precaching when noone else is running them
+        // Go over all skipped materials to resume precaching when no-one else is running them
         Platform::Yield();
         bool gotMaterial = true;
         while (gotMaterial)
@@ -323,7 +323,7 @@ struct Counter
         LOG(Info, "    > Count: {}", Count);
         if (Count == 0)
             return;
-        double inv = (1000.0 / TimeFreq); // Convert cycles count to miliseconds
+        double inv = (1000.0 / TimeFreq); // Convert cycles count to milliseconds
         LOG(Info, "    > Time: avg {:.2f} ms (max: {:.2f} ms, sum: {:.1f}s)", TimeSum * inv / Count, TimeMax * inv, TimeSum * inv * 0.001);
     }
 };
@@ -420,7 +420,7 @@ void GPUPipelineCache::PrecacheAsync(const BatchCallback& callback, volatile int
     // Add to the batch
     BatchJobs.Add({ callback, handle });
 
-    // Check if start a new batching task (avoid overspamming tasks but ensure sth can pick up a newly added job)
+    // Check if start a new batching task (avoid over-spamming tasks but ensure sth can pick up a newly added job)
     constexpr uint32 headroom = 10;
     uint32 neededTasks = Math::DivideAndRoundUp<uint32>((uint32)BatchJobs.size_approx() + headroom, BATCH_SIZE_MAX);
     if (Platform::AtomicRead(&PendingBatchTasks) < neededTasks)
