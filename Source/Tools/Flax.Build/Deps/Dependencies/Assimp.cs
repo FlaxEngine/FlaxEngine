@@ -57,7 +57,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetArchitecture.x64,
-                        //TargetArchitecture.ARM64,
+                        TargetArchitecture.ARM64,
                     };
                 case TargetPlatform.Mac:
                     return new[]
@@ -155,17 +155,19 @@ namespace Flax.Deps.Dependencies
                         {
                             { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
                             { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
-                            { "CXX", "clang-" + LinuxConfiguration.ClangMinVer },
+                            { "CXX", "clang++-" + LinuxConfiguration.ClangMinVer },
                             { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                         };
 
                         // Build for Linux
                         File.Delete(Path.Combine(root, "CMakeCache.txt"));
-                        RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
-                        Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool, envVars);
-                        configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
+                        var buildDir = Path.Combine(root, "build-" + architecture);
+                        SetupDirectory(buildDir, true);
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
+                        BuildCmake(buildDir, options: Utilities.RunOptions.ConsoleLogOutput, envVars: envVars);
+                        configHeaderFilePath = Path.Combine(buildDir, "include", "assimp", "config.h");
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
-                        Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
+                        Utilities.FileCopy(Path.Combine(buildDir, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
                         break;
                     }
                     case TargetPlatform.Mac:

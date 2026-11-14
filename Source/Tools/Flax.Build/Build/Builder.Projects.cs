@@ -648,7 +648,7 @@ namespace Flax.Build
                         {
                             // Hardcoded dummy configuration even if platform tools are missing for this platform
                             var platform = Platform.BuildPlatform;
-                            var architecture = TargetArchitecture.x64;
+                            var architecture = Platform.BuildTargetArchitecture;
                             var configuration = TargetConfiguration.Debug;
                             var buildOptions = GetBuildOptions(target, platform, null, architecture, configuration, project.WorkspaceRootPath);
                             buildOptions.Flags |= BuildFlags.GenerateProject;

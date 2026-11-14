@@ -115,7 +115,7 @@ namespace Flax.Build
         public static BuildOptions GetBuildOptions(Target target, Platform platform, Toolchain toolchain, TargetArchitecture architecture, TargetConfiguration configuration, string workingDirectory, string hotReloadPostfix = "")
         {
             var platformName = platform.Target.ToString();
-            var architectureName = architecture.ToString();
+            var architectureName = architecture.ToString().ToLower();
             var configurationName = configuration.ToString();
             var options = new BuildOptions
             {

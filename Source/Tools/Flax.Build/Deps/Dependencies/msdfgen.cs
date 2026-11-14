@@ -65,7 +65,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetArchitecture.x64,
-                        //TargetArchitecture.ARM64,
+                        TargetArchitecture.ARM64,
                     };
                 case TargetPlatform.Mac:
                     return new[]

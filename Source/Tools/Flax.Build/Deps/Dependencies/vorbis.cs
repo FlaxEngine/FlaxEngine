@@ -246,8 +246,8 @@ namespace Flax.Deps.Dependencies
                 liboggFilename = "ogg";
                 break;
             case TargetPlatform.Linux:
-                oggConfig += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
-                vorbisConfig += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
+                oggConfig += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_LIBDIR=lib";
+                vorbisConfig += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_LIBDIR=lib";
                 envVars = new Dictionary<string, string>
                 {
                     { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
@@ -307,7 +307,7 @@ namespace Flax.Deps.Dependencies
                 if (platform == TargetPlatform.Windows)
                     Deploy.VCEnvironment.BuildSolution(Path.Combine(oggBuildDir, "ogg.sln"), _configuration, architecture.ToString());
                 else
-                    BuildCmake(oggBuildDir);
+                    BuildCmake(oggBuildDir, envVars: envVars);
                 Utilities.Run("cmake", $"--build . --config {_configuration} --target install", null, oggBuildDir, Utilities.RunOptions.DefaultTool);
             }
             // Build vorbis
@@ -317,7 +317,7 @@ namespace Flax.Deps.Dependencies
                 if (platform == TargetPlatform.Windows)
                     Deploy.VCEnvironment.BuildSolution(Path.Combine(vorbisBuildDir, "vorbis.sln"), _configuration, architecture.ToString());
                 else
-                    BuildCmake(vorbisBuildDir);
+                    BuildCmake(vorbisBuildDir, envVars: envVars);
                 Utilities.Run("cmake", $"--build . --config {_configuration} --target install", null, vorbisBuildDir, Utilities.RunOptions.DefaultTool);
             }
 
