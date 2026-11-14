@@ -28,6 +28,10 @@ android {
     packagingOptions {
         doNotStrip '**.so'
     }
+    androidResources {
+        // Disable compression for content files to allow AAsset_openFileDescriptor to work
+        noCompress 'flax', 'flaxpac'
+    }
 }
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
