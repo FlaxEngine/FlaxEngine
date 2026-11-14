@@ -145,11 +145,11 @@ void TextRender::UpdateLayout()
 #endif
 
     // Skip if no font in use
-    if (Font == nullptr || !Font->IsLoaded())
+    if (Font == nullptr || Font->WaitForLoaded())
         return;
 
     // Skip if material is not ready
-    if (Material == nullptr || !Material->IsLoaded() || !Material->IsReady())
+    if (Material == nullptr || Material->WaitForLoaded())
         return;
 
     // Clear flag
@@ -406,7 +406,7 @@ void TextRender::Draw(RenderContextBatch& renderContextBatch)
         return;
     if (_isDirty)
         UpdateLayout();
-    if (_vb.Data.IsEmpty())
+    if (_drawChunks.IsEmpty() || _vb.Data.IsEmpty() || !Material || !Material->IsReady())
         return;
     Matrix world;
     renderContext.View.GetWorldMatrix(_transform, world);
