@@ -37,6 +37,7 @@ struct PSOMaterialBatchJob
 namespace
 {
     ConcurrentQueue<PSOBatchJob> BatchJobs;
+    volatile int64 ActiveTasks = 0; // Amount of active PSO tasks
     volatile int64 PendingBatchTasks = 0; // Amount of PSO batch tasks that haven't started processing yet (meaning they can still pick up work from the queue)
 #if GPU_ENABLE_DEVELOPMENT
     volatile int64 PrecacheAsyncMaterialJobsCounter = 0;
@@ -61,6 +62,7 @@ public:
     {
     }
 
+protected:
     Result run() override
     {
         PROFILE_CPU_NAMED(GPU_PSO_ZONE_NAME_PRECACHE);
@@ -74,12 +76,19 @@ public:
         }
         return Result::Ok;
     }
+
+    void OnEnd() override
+    {
+        Platform::InterlockedDecrement(&ActiveTasks);
+
+        ContentLoadTask::OnEnd();
+    }
 };
 
 // Async task that precaches batches of PSO and runs on Content Pool threads.
 class PSOBatchTask : public ContentLoadTask
 {
-public:
+protected:
     Result run() override
     {
         PROFILE_CPU_NAMED(GPU_PSO_ZONE_NAME_PRECACHE);
@@ -237,6 +246,13 @@ public:
         return Result::Ok;
     }
 
+    void OnEnd() override
+    {
+        Platform::InterlockedDecrement(&ActiveTasks);
+
+        ContentLoadTask::OnEnd();
+    }
+
     void Run(Material* material, GPUPipelineCacheBatch::MaterialPSO& pso, Span<volatile int32*> handles)
     {
         PROFILE_CPU_ASSET(material);
@@ -371,6 +387,9 @@ void GPUDevice::DumpPSOs()
     LOG(Info, "    > Async Jobs: {}", PrecacheAsyncJobsCounter);
     LOG(Info, "    > Async Batch Jobs: {}", PrecacheAsyncBatchJobsCounter);
     LOG(Info, "    > Async Material Jobs: {}", PrecacheAsyncMaterialJobsCounter);
+    int32 activeTasks = (int32)Platform::AtomicRead(&ActiveTasks);
+    if (activeTasks > 0)
+        LOG(Info, "    > Active Tasks: {}", activeTasks);
     LOG(Info, "GPU PSO lookup stats:");
     LookupCounter.Log();
     LOG(Info, "    > Misses: {}", MissCounter);
@@ -405,6 +424,7 @@ void GPUPipelineCache::PrecacheAsync(const Callback& callback, volatile int32* h
     PROFILE_MEM(GraphicsShaders);
 
     // Spawn a task
+    Platform::InterlockedIncrement(&ActiveTasks);
     New<PSOTask>(callback, handle)->Start();
 }
 
@@ -427,6 +447,7 @@ void GPUPipelineCache::PrecacheAsync(const BatchCallback& callback, volatile int
     {
         // Spawn a task
         Platform::InterlockedIncrement(&PendingBatchTasks);
+        Platform::InterlockedIncrement(&ActiveTasks);
         New<PSOBatchTask>()->Start();
     }
 }
@@ -448,6 +469,11 @@ bool GPUPipelineCache::IsPrecacheReady(volatile int32* handle, bool wait)
         } while (Platform::AtomicRead(handle) > 0 && !IsClosing);
     }
     return Platform::AtomicRead(handle) <= 0;
+}
+
+int32 GPUPipelineCache::GetPrecacheTasksCount()
+{
+    return (int32)Platform::AtomicRead(&ActiveTasks);
 }
 
 #endif

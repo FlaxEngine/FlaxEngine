@@ -53,7 +53,7 @@ struct GPUPipelineLookup
 enum class DrawPass : int32;
 
 // Utility for collecting PSOs in batches for a set of objects (eg. actors) for efficient precaching at scale for diferent rendering passes at once.
-struct GPUPipelineCacheBatch
+struct FLAXENGINE_API GPUPipelineCacheBatch
 {
     enum class PassDomains
     {
@@ -85,7 +85,7 @@ struct GPUPipelineCacheBatch
 };
 
 // Utility for PSO precaching.
-class GPUPipelineCache
+class FLAXENGINE_API GPUPipelineCache
 {
 public:
     // Current modes for PSO precaching.
@@ -104,6 +104,9 @@ public:
 
     // Checks if specific async precaching job to be finished. Can be used to skip drawing or wait for PSO.
     static bool IsPrecacheReady(volatile int32* handle, bool wait = false);
+
+    // Gets the number of active precaching tasks (queued or in progress). Can be used to continue displaying the loading screen until all PSOs are ready during game level load.
+    static int32 GetPrecacheTasksCount();
 };
 
 inline GPUPipelineLookup::Flag& operator|=(GPUPipelineLookup::Flag& a, GPUPipelineLookup::Flag b)
