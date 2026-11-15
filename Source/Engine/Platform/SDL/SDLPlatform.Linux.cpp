@@ -1847,7 +1847,7 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     StringAnsi textAnsi(text);
     StringAnsi captionAnsi(caption);
 
-    SDL_MessageBoxData data;
+    SDL_MessageBoxData data = {}; // the icon flags are ORed into flags below
     SDL_MessageBoxButtonData dataButtons[3];
     data.window = parent ? static_cast<SDLWindow*>(parent)->_window : nullptr;
     data.title = captionAnsi.GetText();

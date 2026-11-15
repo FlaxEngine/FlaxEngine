@@ -159,7 +159,7 @@ bool Win32Network::GetSocketOption(NetworkSocket& socket, NetworkSocketOption op
     int32 optlvl = 0;
     int32 optnme = 0;
     TranslateSockOptToNative(option, &optlvl, &optnme);
-    int32 size;
+    int32 size = sizeof(value); // read as the buffer length, written as the option length
     if (getsockopt(*(SOCKET*)socket.Data, optlvl, optnme, (char*)&value, &size) == SOCKET_ERROR)
     {
         LOG(Warning, "Unable to get socket option ! Socket : {0} Error : {1}", *(SOCKET*)socket.Data, GetLastErrorMessage());
