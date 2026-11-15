@@ -2,6 +2,7 @@
 
 using System;
 using System.Text;
+using FlaxEditor.GUI;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface.Elements
@@ -17,6 +18,7 @@ namespace FlaxEditor.Surface.Elements
         : base(parentNode, archetype)
         {
             _isAutoSelect = true;
+            PopupShowing += OnPopupShowing;
 
             if (Surface == null)
                 return;
@@ -31,6 +33,18 @@ namespace FlaxEditor.Surface.Elements
                     SelectedIndex = selectedIndex;
                 ParentNode.ValuesChanged += OnNodeValuesChanged;
             }
+        }
+
+        private void OnPopupShowing(ComboBox comboBox)
+        {
+            // Reload the bones in case the base model was set or changed after this node was created
+            if (Surface == null || Archetype.ValueIndex == -1)
+                return;
+            var surfaceParam = Surface.GetParameter(Windows.Assets.AnimationGraphWindow.BaseModelId);
+            var skeleton = surfaceParam != null ? FlaxEngine.Content.LoadAsync<SkinnedModel>((Guid)surfaceParam.Value) : null;
+            if (skeleton == null || skeleton.WaitForLoaded())
+                return;
+            UpdateComboBox();
         }
 
         private void OnNodeValuesChanged()
@@ -79,8 +93,19 @@ namespace FlaxEditor.Surface.Elements
                 _items.Add(sb.ToString());
             }
 
-            // Restore the selected bone
-            SelectedItem = selectedBone;
+            // Restore the selected bone (the saved index, the current selection may come from an outdated list)
+            // Note: the bone is saved by index, so after a base model change the same index may point at a different bone
+            if (Archetype.ValueIndex != -1)
+            {
+                var selectedIndex = (int)ParentNode.Values[Archetype.ValueIndex];
+                _selectedIndices.Clear();
+                if (selectedIndex > -1 && selectedIndex < _items.Count)
+                    _selectedIndices.Add(selectedIndex);
+            }
+            else
+            {
+                SelectedItem = selectedBone;
+            }
         }
     }
 }
