@@ -114,7 +114,7 @@ bool GPUSwapChainVulkan::IsFullscreen()
     // Not supported
     return true;
 #else
-    return false;
+    return _isFullscreen;
 #endif
 }
 
@@ -122,11 +122,27 @@ void GPUSwapChainVulkan::SetFullscreen(bool isFullscreen)
 {
 #if PLATFORM_ANDROID || PLATFORM_SWITCH || PLATFORM_IOS
     // Not supported
-#else
-    if (!_surface)
+#elif PLATFORM_WINDOWS && !PLATFORM_SDL
+    if (!_surface || isFullscreen == _isFullscreen)
         return;
-    // TODO: support fullscreen mode on Vulkan
-    MISSING_CODE("support fullscreen mode on Vulkan");
+    // Vulkan has no fullscreen mode: use a borderless window that covers the monitor
+    if (isFullscreen)
+    {
+        _windowedHasBorder = _window->GetSettings().HasBorder;
+        _windowedBounds = _window->GetClientBounds();
+        _window->SetBorderless(true, false);
+        _window->SetClientBounds(Platform::GetMonitorBounds(_windowedBounds.GetCenter()));
+        _isFullscreen = true; // After SetBorderless: it leaves the fullscreen mode when IsFullscreen returns true
+    }
+    else
+    {
+        _isFullscreen = false;
+        _window->SetBorderless(!_windowedHasBorder, false);
+        _window->SetClientBounds(_windowedBounds);
+    }
+#else
+    if (_surface && isFullscreen)
+        LOG(Warning, "Fullscreen mode is not supported on Vulkan on this platform.");
 #endif
 }
 
