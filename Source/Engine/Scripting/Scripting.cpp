@@ -685,6 +685,10 @@ void Scripting::Release()
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
 
+    // Nothing managed exists when the runtime never loaded (Init failed before the root domain was set): the exit must not call into it
+    if (_rootDomain == nullptr)
+        return;
+
     // Fire event
     ScriptsUnload();
 
