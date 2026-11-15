@@ -14,6 +14,8 @@
 #define DEBUG_LUMINANCE_DIFF 0
 #define DEBUG_MOTION 0
 #define DEBUG_VELOCITY_REJECTION 0
+#define DEBUG_DISOCCLUSION 0
+#define DISOCCLUSION_REJECTION 1
 
 #define NO_GBUFFER_SAMPLING
 #define NEED_DEPTH_VELOCITY (MINMAX_4TAP_VARYING)
@@ -251,6 +253,23 @@ float4 PS(Quad_VS2PS input) : SV_Target0
     return velocityRejection.xxxx;
 #endif
     historyBlend = lerp(historyBlend, 0.0f, velocityRejection);
+
+#if DISOCCLUSION_REJECTION
+    // Drop history for pixels that were hidden in the previous frame. The motion vector where the history is read from
+    // is compared with this pixel's own: when they differ by a large share of the motion (e.g. the background sliding
+    // out from behind an object that holds still on screen), the history there belongs to another surface. The
+    // neighbourhood clip alone keeps it when the neighbourhood is noisy (foliage), which leaves a trail of the occluder.
+    float2 historyVelocity = SAMPLE_RT(MotionVectors, input.TexCoord - velocityDepth.xy).xy;
+    float2 velocityPixels = velocityDepth.xy / ScreenSizeInv;
+    float2 historyVelocityPixels = historyVelocity / ScreenSizeInv;
+    float velocityDiff = length(velocityPixels - historyVelocityPixels);
+    float velocityLength = max(max(length(velocityPixels), length(historyVelocityPixels)), 1.0f);
+    float disocclusion = saturate((velocityDiff / velocityLength - 0.5f) * 3.0f) * saturate(velocityDiff - 1.0f);
+#if DEBUG_DISOCCLUSION
+    return disocclusion.xxxx;
+#endif
+    historyBlend = lerp(historyBlend, 0.0f, disocclusion);
+#endif
 
     // Blend current frame with history
     float4 color = lerp(current, history, historyBlend);
