@@ -8,6 +8,7 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Core/Math/Math.h"
 
 const Char* BytesSizesData[] = { TEXT("b"), TEXT("Kb"), TEXT("Mb"), TEXT("Gb"), TEXT("Tb"), TEXT("Pb"), TEXT("Eb"), TEXT("Zb"), TEXT("Yb") };
 const Char* HertzSizesData[] = { TEXT("Hz"), TEXT("KHz"), TEXT("MHz"), TEXT("GHz"), TEXT("THz"), TEXT("PHz"), TEXT("EHz"), TEXT("ZHz"), TEXT("YHz") };
@@ -126,7 +127,10 @@ void ObjectsRemoval::LateUpdate()
 
     // Delete all objects
     const double now = Platform::GetTimeSeconds();
-    const float dt = (float)(now - LastUpdate);
+
+    // A stall of the main thread (eg. a long editor job) must not use up the time to live of the objects at once. The code that
+    // still references an object (eg. a list of GPU tasks) needs frames to release it, so the stall counts as one second at most.
+    const float dt = Math::Min((float)(now - LastUpdate), 1.0f);
     float gameDelta = Time::Update.DeltaTime.GetTotalSeconds();
     if (Time::GetGamePaused())
         gameDelta = 0;
