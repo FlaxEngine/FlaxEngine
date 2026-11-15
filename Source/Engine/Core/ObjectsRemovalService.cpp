@@ -3,6 +3,7 @@
 #include "ObjectsRemovalService.h"
 #include "Utilities.h"
 #include "Collections/Dictionary.h"
+#include "Engine/Core/Math/Math.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/CriticalSection.h"
@@ -126,7 +127,8 @@ void ObjectsRemoval::LateUpdate()
 
     // Delete all objects
     const double now = Platform::GetTimeSeconds();
-    const float dt = (float)(now - LastUpdate);
+    constexpr float maxDelta = 1.0f; // Don't allow to use more than 1 second of delta time
+    const float dt = Math::Min((float)(now - LastUpdate), maxDelta);
     float gameDelta = Time::Update.DeltaTime.GetTotalSeconds();
     if (Time::GetGamePaused())
         gameDelta = 0;
