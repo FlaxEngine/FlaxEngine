@@ -93,6 +93,7 @@ void DeferredMaterialShader::PrecachePSO(const PrecacheParameters& params)
 {
     // Precache all used shader permutations
     PROFILE_CPU();
+    int32 permutations = 0;
     auto& context = *(GPUPipelineState::PrecacheContext*)params.PrecacheContext;
     uint32 canUseInstancing = _instanced || params.Pass == DrawPass::Depth;
     for (uint32 instanced = 0; instanced <= canUseInstancing; instanced++)
@@ -116,10 +117,12 @@ void DeferredMaterialShader::PrecachePSO(const PrecacheParameters& params)
                 auto psCache = cache->GetPS(params.Pass, useLightmap, useSkinning, usePerBoneMotionBlur);
                 auto cullMode = GetCullMode(params.Pass, worldDeterminant == MaterialPrecacheFlags::Negative);
                 PipelineStateCache::PrecachePSO(psCache, params, this, cullMode);
+                permutations++;
             }
         }
         context.VertexLayout = vertexLayout;
     }
+    ZoneValue(permutations);
 }
 
 #endif
