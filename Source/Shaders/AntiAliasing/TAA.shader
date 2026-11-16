@@ -9,11 +9,13 @@
 #define UNJITTER_NEIGHBORHOOD 0
 #define UNJITTER_VELOCITY_DEPTH 0
 #define MINMAX_3X3 1
+#define DISOCCLUSION_REJECTION 1
 //#define MINMAX_3X3_ROUNDED 1
 //#define MINMAX_4TAP_VARYING 1
 #define DEBUG_LUMINANCE_DIFF 0
 #define DEBUG_MOTION 0
 #define DEBUG_VELOCITY_REJECTION 0
+#define DEBUG_DISOCCLUSION 0
 
 #define NO_GBUFFER_SAMPLING
 #define NEED_DEPTH_VELOCITY (MINMAX_4TAP_VARYING)
@@ -251,6 +253,24 @@ float4 PS(Quad_VS2PS input) : SV_Target0
     return velocityRejection.xxxx;
 #endif
     historyBlend = lerp(historyBlend, 0.0f, velocityRejection);
+
+#if DISOCCLUSION_REJECTION
+    // Reject history at disoccluded pixels: the motion at the history uv differs a lot from this pixel's own motion
+    const float disocclusionRatio = 0.5f;
+    const float disocclusionRatioScale = 3.0f;
+    const float disocclusionMinPixels = 1.0f;
+    float2 ownVelocity = SAMPLE_RT(MotionVectors, input.TexCoord).xy / ScreenSizeInv;
+    float2 historyVelocity = SAMPLE_RT(MotionVectors, input.TexCoord - velocityDepth.xy).xy / ScreenSizeInv;
+    float velocityDiff = length(ownVelocity - historyVelocity);
+    float velocityLength = max(max(length(ownVelocity), length(historyVelocity)), 1.0f);
+    // Relative term: the difference is a large share of the motion; absolute term: it's over a pixel
+    float disocclusion = saturate((velocityDiff / velocityLength - disocclusionRatio) * disocclusionRatioScale);
+    disocclusion *= saturate(velocityDiff - disocclusionMinPixels);
+#if DEBUG_DISOCCLUSION
+    return disocclusion.xxxx;
+#endif
+    historyBlend = lerp(historyBlend, 0.0f, disocclusion);
+#endif
 
     // Blend current frame with history
     float4 color = lerp(current, history, historyBlend);
