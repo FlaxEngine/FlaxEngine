@@ -161,6 +161,26 @@ int32 Engine::OnInit(const Char* cmdLine)
     if (Application::Init())
         return -10;
 
+#if TRACY_ENABLE
+    // Log Tracy info
+#define TracyAppInfoCustom(txt, arg, ...) { StringAnsi msg = StringAnsi::Format(txt, StringAsANSI<>(*arg, arg.Length()).Get(), ##__VA_ARGS__); TracyAppInfo(*msg, msg.Length()); }
+#if BUILD_DEBUG
+    const Char* mode = TEXT("Debug");
+#elif BUILD_DEVELOPMENT
+    const Char* mode = TEXT("Development");
+#elif BUILD_RELEASE
+    const Char* mode = TEXT("Release");
+#endif
+    StringView modeStr(mode), versionStr(TEXT(FLAXENGINE_VERSION_TEXT)), rendererStr(::ToString(GPUDevice::Instance->GetRendererType()));
+    TracyAppInfoCustom("Configuration: {}", modeStr);
+    TracyAppInfoCustom("Engine version: {}", versionStr);
+    TracyAppInfoCustom("Command line: {}", EngineImpl::CommandLine);
+    TracyAppInfoCustom("Base folder: {}", Globals::StartupFolder);
+    TracyAppInfoCustom("Renderer: {}", rendererStr);
+    TracyAppInfoCustom("GPU: {}, {} MB", GPUDevice::Instance->GetAdapter()->GetDescription(), GPUDevice::Instance->TotalGraphicsMemory / (1024u * 1024u));
+#undef TracyAppInfoCustom
+#endif
+
     // Become ready before run
     Platform::BeforeRun();
     EngineImpl::InitMainWindow();
