@@ -1924,6 +1924,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     modifier->EngineBuild = engineBuild;
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     sceneObjects->Resize(objectsCount);
+    Platform::MemoryClear(sceneObjects->Get(), objectsCount * sizeof(SceneObject*));
     SceneObjectsFactory::Context context(modifier);
 
     // Fix root linkage for prefab instances (eg. when user duplicates a sub-prefab actor but not a root one)
