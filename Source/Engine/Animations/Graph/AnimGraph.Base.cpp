@@ -117,6 +117,13 @@ void InstanceDataBucketInit(AnimGraphInstanceData::Bucket& bucket)
     bucket.InstanceData.Init = true;
 }
 
+void OrientationWarpBucketInit(AnimGraphInstanceData::Bucket& bucket)
+{
+    bucket.OrientationWarp.Angle = 0.0f;
+    bucket.OrientationWarp.Applied = 0.0f;
+    bucket.OrientationWarp.LastUpdateFrame = 0;
+}
+
 void SpringBonePhysicsBucketInit(AnimGraphInstanceData::Bucket& bucket)
 {
     bucket.SpringBonePhysics.LastUpdateFrame = 0;
@@ -378,6 +385,22 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         case 32:
             ADD_BUCKET(SlotBucketInit);
             break;
+        // Orientation Warp
+        case 39:
+        {
+            ADD_BUCKET(OrientationWarpBucketInit);
+            auto& data = n->Data.OrientationWarp;
+            data.BodyRoot = data.IKFootRoot = data.SpineStart = data.SpineEnd = data.KeepNode = -1;
+            if (_graph->BaseModel && !_graph->BaseModel->WaitForLoaded() && n->Values.Count() >= 5)
+            {
+                data.BodyRoot = _graph->BaseModel->FindNode((StringView)n->Values[0]);
+                data.IKFootRoot = _graph->BaseModel->FindNode((StringView)n->Values[1]);
+                data.SpineStart = _graph->BaseModel->FindNode((StringView)n->Values[2]);
+                data.SpineEnd = _graph->BaseModel->FindNode((StringView)n->Values[3]);
+                data.KeepNode = _graph->BaseModel->FindNode((StringView)n->Values[4]);
+            }
+            break;
+        }
         // Animation Instance Data
         case 33:
             ADD_BUCKET(InstanceDataBucketInit);

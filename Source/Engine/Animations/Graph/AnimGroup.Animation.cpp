@@ -6,6 +6,7 @@
 #include "Engine/Content/Assets/SkeletonMask.h"
 #include "Engine/Content/Assets/AnimationGraphFunction.h"
 #include "Engine/Animations/AlphaBlend.h"
+#include "Engine/Animations/OrientationWarp.h"
 #include "Engine/Animations/AnimEvent.h"
 #include "Engine/Animations/InverseKinematics.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
@@ -2712,6 +2713,64 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         auto* actor = ScriptingObject::Cast<Actor>(context.Data->Object);
         value = actor ? actor->GetPerInstanceRandom() : 0.0f;
+        break;
+    }
+    // Orientation Warp
+    case 39:
+    {
+        // The angle it turned the pose by this update (eased, clamped and faded), eg. for a Stride Warp after it to go along
+        if (box->ID == 5)
+        {
+            eatBox(node, node->GetBox(0));
+            value = context.Data->State[node->BucketIndex].OrientationWarp.Applied;
+            break;
+        }
+        auto input = tryGetValue(node->GetBox(1), Value::Null);
+        const auto& data = node->Data.OrientationWarp;
+        const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[6]));
+        const float minSpeed = (float)node->Values[8];
+        const float interpSpeed = node->Values.Count() > 10 ? (float)node->Values[10] : 0.0f;
+        const float maxCorrection = node->Values.Count() > 11 ? (float)node->Values[11] : 0.0f;
+        const bool rootMotionSpeed = node->Values.Count() > 12 && (bool)node->Values[12];
+
+        // The angle, clamped to the largest correction, and eased toward from where it was last update (the short way
+        // round); a node that wasn't updated last frame starts where it's asked to be
+        auto& bucket = context.Data->State[node->BucketIndex].OrientationWarp;
+        const float target = OrientationWarp::ClampAngle(Math::UnwindDegrees((float)tryGetValue(node->GetBox(2), node->Values[5])), maxCorrection);
+        if (bucket.LastUpdateFrame + 1 != context.CurrentFrameIndex && bucket.LastUpdateFrame != context.CurrentFrameIndex)
+            bucket.Angle = target;
+        else if (bucket.LastUpdateFrame != context.CurrentFrameIndex)
+            bucket.Angle = OrientationWarp::InterpAngle(bucket.Angle, target, interpSpeed, context.DeltaTime);
+        bucket.LastUpdateFrame = context.CurrentFrameIndex;
+        const float angle = bucket.Angle;
+
+        // Off below the minimum speed (eg. when standing still), fading in above it: the speed given, or the input pose's
+        // own root motion speed (how fast the clip itself moves)
+        float speed = (float)tryGetValue(node->GetBox(4), node->Values[7]);
+        if (rootMotionSpeed)
+        {
+            const AnimGraphImpulse* inputPose = ANIM_GRAPH_IS_VALID_PTR(input) ? (AnimGraphImpulse*)input.AsPointer : nullptr;
+            speed = inputPose && context.DeltaTime > 0.0f ? (float)inputPose->RootMotion.Translation.Length() / context.DeltaTime : 0.0f;
+        }
+        const float warpAngle = angle * alpha * OrientationWarp::GetSpeedWeight(speed, minSpeed);
+        bucket.Applied = _graph.BaseModel ? warpAngle : 0.0f;
+        if (Math::IsZero(warpAngle) || !_graph.BaseModel)
+        {
+            value = input;
+            break;
+        }
+        const auto nodes = node->GetNodes(this, input);
+        OrientationWarp::Settings settings;
+        settings.BodyRoot = data.BodyRoot;
+        settings.IKFootRoot = data.IKFootRoot;
+        settings.SpineStart = data.SpineStart;
+        settings.SpineEnd = data.SpineEnd;
+        settings.KeepNode = data.KeepNode;
+        settings.Distribution = (float)node->Values[9];
+        const auto& skeletonNodes = _graph.BaseModel->Skeleton.Nodes;
+        const int32 nodesCount = Math::Min(skeletonNodes.Count(), nodes->Nodes.Count());
+        OrientationWarp::Warp(skeletonNodes.Get(), nodesCount, settings, warpAngle, nodes->Nodes.Get());
+        value = nodes;
         break;
     }
     // Instance Transform
