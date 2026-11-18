@@ -48,7 +48,7 @@ namespace
     }
 }
 
-void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, int8 lodDitherFactor, uint32 skinningOffset, int16 skinningPrevOffset)
+void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, int8 lodDitherFactor, uint32 skinningOffset, int16 skinningPrevOffset, uint8 layer)
 {
     Float2 lightmapUVsAreaPackedAliased = *(Float2*)&lightmapUVsArea;
     Raw[0] = Float4(worldMatrix.M11, worldMatrix.M12, worldMatrix.M13, worldMatrix.M41);
@@ -60,9 +60,10 @@ void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldM
     Raw[6] = Float4(geometrySize, perInstanceRandom);
     // 0-7 bits: LOD Dither Factor (0-1 range mapped to 0-255) with separate sign at 7th bit
     // 8 bit: World Determinant Sign (0 for normal or 1 for inversed)
-    // 9-15 bits: unused
+    // 9-13 bits: Actor layer index (0-31, eg. to match the view's foreground layers)
+    // 14-15 bits: unused
     // 16-31 bits: Offset in Skinning Bones buffer for previous frame bones (can be negative)
-    uint32 packed7x = (uint32)Math::Abs(lodDitherFactor) + (lodDitherFactor < 0 ? 128 : 0) + (worldDeterminantSign < 0 ? 256 : 0) + ((skinningPrevOffset + 32760) << 16);
+    uint32 packed7x = (uint32)Math::Abs(lodDitherFactor) + (lodDitherFactor < 0 ? 128 : 0) + (worldDeterminantSign < 0 ? 256 : 0) + ((uint32)(layer & 0x1f) << 9) + ((skinningPrevOffset + 32760) << 16);
     Raw[7] = Float4(*(float*)&packed7x, *(float*)&skinningOffset, lightmapUVsAreaPackedAliased.X, lightmapUVsAreaPackedAliased.Y);
 }
 

@@ -182,6 +182,10 @@ TessalationDSToPS DS(TessalationPatch constantData, float3 barycentricCoords : S
 
 	// Recalculate the clip space position
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+#if USE_PER_DRAW_CONSTANTS && USE_PER_VIEW_CONSTANTS
+	// Draw over the scene on the view's foreground layers
+	output.Position = ApplyForegroundDepth(output.Position, LoadObject(ObjectsBuffer, output.Geometry.ObjectIndex));
+#endif
 
 	return output;
 }
