@@ -22,6 +22,11 @@ namespace FlaxEngine
         public string CheckMethod;
 
         /// <summary>
+        /// If true, allows for types that can be instantiated - excludes any abstract or interface types being referenced.
+        /// </summary>
+        public bool CanSpawn;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TypeReferenceAttribute"/> class.
         /// </summary>
         /// <param name="typeName">The full name of the type to link (includes types inheriting from it). Use null or empty to skip it.</param>

@@ -109,6 +109,11 @@ namespace FlaxEditor.CustomEditors.Editors
         public Func<ScriptType, bool> CheckValid;
 
         /// <summary>
+        /// If true, allows for types that can be instantiated - excludes any abstract or interface types being referenced.
+        /// </summary>
+        public bool CanSpawn;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TypePickerControl"/> class.
         /// </summary>
         public TypePickerControl()
@@ -119,6 +124,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private bool IsValid(ScriptType obj)
         {
+            if (CanSpawn && !obj.CanCreateInstance)
+                return false;
             return _type.IsAssignableFrom(obj) && (CheckValid == null || CheckValid(obj));
         }
 
@@ -361,6 +368,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 var typeReference = (TypeReferenceAttribute)attributes?.FirstOrDefault(x => x is TypeReferenceAttribute);
                 if (typeReference != null)
                 {
+                    _element.CustomControl.CanSpawn = typeReference.CanSpawn;
                     if (!string.IsNullOrEmpty(typeReference.TypeName))
                     {
                         var customType = TypeUtils.GetType(typeReference.TypeName);

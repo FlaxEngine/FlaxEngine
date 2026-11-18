@@ -101,7 +101,7 @@ public:
     /// <summary>
     /// The type of the occlusion culling (implements IOcclusionCulling) that will be used to test visibility of the objects and skip rendering occluded ones. Can be left empty to use frustum-culling only.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(1450), EditorDisplay(\"Culling\"), TypeReference(typeof(IOcclusionCulling)), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.TypeNameEditor\")")
+    API_FIELD(Attributes="EditorOrder(1450), EditorDisplay(\"Culling\"), TypeReference(typeof(IOcclusionCulling), CanSpawn=true), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.TypeNameEditor\")")
     StringAnsi OcclusionCulling;
 
     /// <summary>
