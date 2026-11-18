@@ -313,7 +313,7 @@ namespace FlaxEditor.Options
                 BackgroundNormal = backgroundLight,
                 BorderNormal = backgroundLight.RGBMultiplied(1.1f),
                 TextBoxBackground = backgroundElements,
-                TextBoxBackgroundSelected = backgroundElements,
+                TextBoxBackgroundSelected = backgroundElements.RGBMultiplied(1.1f),
                 CollectionBackgroundColor = backgroundTone,
                 ProgressNormal = Color.FromRGB(0x3ECB4C),
                 ProgressError = new Color(0.79f, 0.146f, 0.0f, 1.0f),

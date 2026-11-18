@@ -252,6 +252,12 @@ namespace FlaxEngine.GUI
         public float CloseAnimationTime { get; set; } = 0.2f;
 
         /// <summary>
+        /// Gets or sets the custom header icon drawn next to the title text.
+        /// </summary>
+        [EditorDisplay("Icon Style"), EditorOrder(2029)]
+        public IBrush Icon { get; set; }
+
+        /// <summary>
         /// Gets or sets the image used to render drop panel drop arrow icon when panel is opened.
         /// </summary>
         [EditorDisplay("Icon Style"), EditorOrder(2030), Tooltip("The image used to render drop panel drop arrow icon when panel is opened."), ExpandGroups]
@@ -414,7 +420,7 @@ namespace FlaxEngine.GUI
                 Render2D.FillRectangle(new Rectangle(0, 0, Width, HeaderHeight), color);
             }
 
-            // Drop down icon
+            // Icons
             float textLeft = 0;
             if (EnableDropDownIcon)
             {
@@ -425,6 +431,12 @@ namespace FlaxEngine.GUI
                     ArrowImageClosed?.Draw(dropDownRect, arrowColor);
                 else
                     ArrowImageOpened?.Draw(dropDownRect, arrowColor);
+            }
+            if (Icon != null)
+            {
+                var iconRect = new Rectangle(textLeft + 2, (HeaderHeight - 12) / 2, 12, 12);
+                textLeft += DropDownIconSize;
+                Icon.Draw(iconRect, enabled ? Color.White : new Color(0.6f));
             }
 
             // Header text

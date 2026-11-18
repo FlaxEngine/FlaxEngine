@@ -1684,7 +1684,7 @@ void Render2D::DrawTexture(TextureBase* t, const Rectangle& rect, const Color& c
 void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index < 0 || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip() || spriteHandle.Index >= spriteHandle.Atlas->Sprites.Count())
         return;
     RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
@@ -1717,7 +1717,7 @@ void Render2D::DrawTexturePoint(GPUTexture* t, const Rectangle& rect, const Colo
 void Render2D::DrawSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index < 0 || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip() || spriteHandle.Index >= spriteHandle.Atlas->Sprites.Count())
         return;
     RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
@@ -1767,7 +1767,7 @@ void Render2D::Draw9SlicingTexturePoint(TextureBase* t, const Rectangle& rect, c
 void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index < 0 || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip() || spriteHandle.Index >= spriteHandle.Atlas->Sprites.Count())
         return;
     RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
@@ -1785,7 +1785,7 @@ void Render2D::Draw9SlicingSprite(const SpriteHandle& spriteHandle, const Rectan
 void Render2D::Draw9SlicingSpritePoint(const SpriteHandle& spriteHandle, const Rectangle& rect, const Float4& border, const Float4& borderUVs, const Color& color)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (spriteHandle.Index == INVALID_INDEX || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip())
+    if (spriteHandle.Index < 0 || !spriteHandle.Atlas || !spriteHandle.Atlas->GetTexture()->HasResidentMip() || spriteHandle.Index >= spriteHandle.Atlas->Sprites.Count())
         return;
     RENDER2D_REMOVE_GAMMA_BEGIN(spriteHandle.Atlas->GetTexture(), Format);
 
