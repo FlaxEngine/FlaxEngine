@@ -1926,10 +1926,33 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     sceneObjects->Resize(objectsCount);
     Platform::MemoryClear(sceneObjects->Get(), objectsCount * sizeof(SceneObject*));
     SceneObjectsFactory::Context context(modifier);
-
-    // Fix root linkage for prefab instances (eg. when user duplicates a sub-prefab actor but not a root one)
     SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, document, modifier);
     SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
+
+    // Include custom object IDs remapping into prefab instances to properly resolve references (eg. when loading multiple instances of the same prefab)
+    for (int32 i = 0; i < objectsCount; i++)
+    {
+        auto& objData = document[i];
+        Guid id = JsonTools::GetGuid(objData, "ID");
+        Guid newId;
+        if (modifier->IdsMapping.TryGet(id, newId))
+        {
+            for (int32 instanceIndex = 0; instanceIndex < context.Instances.Count(); instanceIndex++)
+            {
+                auto& instance = context.Instances[instanceIndex];
+                Guid baseId;
+                if (instance.IdsMapping.KeyOf(id, &baseId))
+                {
+                    // Remap IDs inside this prefab instance into a new object ID provided by modifier
+                    instance.IdsMapping[id] = newId;
+                    instance.IdsMapping[baseId] = newId;
+                    context.ObjectToInstance[newId] = instanceIndex;
+                    break;
+                }
+            }
+        }
+    }
+
     for (auto& instance : context.Instances)
     {
         Guid prefabObjectId;
