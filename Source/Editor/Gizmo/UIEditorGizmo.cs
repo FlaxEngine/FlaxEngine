@@ -137,12 +137,14 @@ namespace FlaxEditor
         /// <summary>
         /// Cached placement of the widget used to size/edit control
         /// </summary>
-        private struct Widget
+        internal struct Widget
         {
-            public UIControl UIControl;
+            public object Target;
             public Rectangle Bounds;
             public Float2 ResizeAxis;
             public CursorType Cursor;
+
+            public UIControl UIControl => Target as UIControl;
         }
 
         private bool _mouseMovesControl, _mouseMovesView, _mouseMovesWidget;
@@ -150,7 +152,6 @@ namespace FlaxEditor
         private float _mouseMoveSum;
         private UndoMultiBlock _undoBlock;
         private View _view;
-        private float[] _gridTickStrengths;
         private List<Widget> _widgets;
         private Widget _activeWidget;
 
@@ -325,21 +326,11 @@ namespace FlaxEditor
             base.OnMouseMove(location);
 
             // Change cursor if mouse is over active control widget
-            bool cursorChanged = false;
             if (_widgets != null && _widgets.Count != 0 && !_mouseMovesControl && !_mouseMovesWidget && !_mouseMovesView)
             {
-                foreach (var widget in _widgets)
-                {
-                    if (widget.Bounds.Contains(ref location))
-                    {
-                        Cursor = widget.Cursor;
-                        cursorChanged = true;
-                    }
-                    else if (Cursor != CursorType.Default && !cursorChanged)
-                    {
-                        Cursor = CursorType.Default;
-                    }
-                }
+                MouseMoveOverWidgets(this, _widgets, ref location, out bool mouseOverWidget);
+                if (!mouseOverWidget && Cursor != CursorType.Default)
+                    Cursor = CursorType.Default;
             }
 
             var transformGizmo = TransformGizmo;
@@ -390,54 +381,20 @@ namespace FlaxEditor
             }
             if (_mouseMovesWidget && _activeWidget.UIControl)
             {
-                // Calculate transform delta
+                // Resize control via widget
                 var delta = location - _mouseMovesPos;
                 // TODO: scale/size snapping?
-
-                // Resize control via widget
                 var moveLocation = _mouseMovesPos + delta;
                 var control = _activeWidget.UIControl.Control;
                 var uiControlDelta = GetControlDelta(control, ref _mouseMovesPos, ref moveLocation);
-
-                // Transform delta to control local space
-                var rotation = GetTotalRotation(control) * Mathf.DegreesToRadians;
-                var cos = Mathf.Cos(rotation);
-                var sin = Mathf.Sin(rotation);
-                var localDeltaX = uiControlDelta.X * cos + uiControlDelta.Y * sin;
-                var localDeltaY = uiControlDelta.Y * cos - uiControlDelta.X * sin;
-                var localDelta = new Float2(localDeltaX, localDeltaY);
-                localDelta *= _activeWidget.ResizeAxis.Absolute;
-
-                // Calculate size change
-                var resizeAxisPos = Float2.Clamp(_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
-                var resizeAxisNeg = Float2.Clamp(-_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
-                var dSizeScaled = localDelta * resizeAxisPos - localDelta * resizeAxisNeg;
-                var scale = control.Scale;
-                var dSize = new Float2(
-                    Mathf.Abs(scale.X) > Mathf.Epsilon ? dSizeScaled.X / scale.X : 0,
-                    Mathf.Abs(scale.Y) > Mathf.Epsilon ? dSizeScaled.Y / scale.Y : 0);
-
-                // Apply size change
-                control.Size += dSize;
-
-                // Calculate location offset to keep the opposite edge stationary
-                // When PivotRelative is false, resizing keeps Top-Left (Location) constant,
-                // so we only need to slide back if we are resizing Left or Top edges.
-                if (!control.PivotRelative)
+                var rotation = GetTotalRotation(control);
+                MouseMoveWidget(_activeWidget, ref uiControlDelta, rotation, control.Scale, sizeDelta =>
                 {
-                    var pivotOffset = Float2.Zero;
-                    if (_activeWidget.ResizeAxis.X < 0 && Mathf.Abs(dSize.X) > Mathf.Epsilon)
-                        pivotOffset.X = -dSize.X * scale.X;
-                    if (_activeWidget.ResizeAxis.Y < 0 && Mathf.Abs(dSize.Y) > Mathf.Epsilon)
-                        pivotOffset.Y = -dSize.Y * scale.Y;
-
-                    // Transform offset back to parent space and apply
-                    var dLocationX = pivotOffset.X * cos - pivotOffset.Y * sin;
-                    var dLocationY = pivotOffset.X * sin + pivotOffset.Y * cos;
-                    var dLocation = new Float2(dLocationX, dLocationY);
-                    
-                    control.LocalLocation += dLocation;
-                }
+                    if (sizeDelta.Size.LengthSquared > 0)
+                        control.Size += sizeDelta.Size;
+                    if (sizeDelta.Location.LengthSquared > 0)
+                        control.LocalLocation += sizeDelta.Location;
+                });
 
                 // Don't move if layout doesn't allow it
                 if (control.Parent != null)
@@ -542,10 +499,10 @@ namespace FlaxEditor
 
             base.Draw();
 
-            if (!_mouseMovesWidget)
+            if (!_mouseMovesWidget && _widgets != null)
             {
                 // Clear widgets to collect them during drawing
-                _widgets?.Clear();
+                _widgets.Clear();
             }
 
             bool drawAnySelectedControl = false;
@@ -638,23 +595,9 @@ namespace FlaxEditor
                 // Draw sizing widgets
                 if (_widgets == null)
                     _widgets = new List<Widget>();
-                var widgetSize = 8.0f;
                 var viewScale = ViewScale;
-                if (viewScale < 0.7f)
-                    widgetSize *= viewScale;
-                var widgetHandleSize = new Float2(widgetSize);
-                DrawControlWidget(uiControl, ref ul, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE);
-                DrawControlWidget(uiControl, ref ur, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref bl, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref br, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 1), CursorType.SizeNWSE);
-                Float2.Lerp(ref ul, ref bl, 0.5f, out var el);
-                Float2.Lerp(ref ur, ref br, 0.5f, out var er);
-                Float2.Lerp(ref ul, ref ur, 0.5f, out var eu);
-                Float2.Lerp(ref bl, ref br, 0.5f, out var eb);
-                DrawControlWidget(uiControl, ref el, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref er, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref eu, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, -1), CursorType.SizeNS);
-                DrawControlWidget(uiControl, ref eb, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, 1), CursorType.SizeNS);
+                var rotation = GetTotalRotation(uiControl.Control);
+                DrawResizeWidgets(uiControl, rotation, viewScale, ref mousePos, _widgets, _mouseMovesWidget, ref ul, ref ur, ref bl, ref br);
 
                 // Draw pivot
                 var pivotSize = 8.0f;
@@ -688,7 +631,7 @@ namespace FlaxEditor
                     if (viewScale < 0.7f)
                         anchorRectSize *= viewScale;
 
-                    // Make anchor rects and rotate if parent is rotated.
+                    // Make anchor rects and rotate if parent is rotated
                     var parentRotation = GetTotalRotation(controlParent) * Mathf.DegreesToRadians;
 
                     var rect1Axis = new Float2(-1, -1);
@@ -728,16 +671,98 @@ namespace FlaxEditor
             return control.Rotation;
         }
 
-        private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size, float scale, Float2 resizeAxis, CursorType cursor)
+        internal static void MouseMoveOverWidgets(Control control, List<Widget> widgets, ref Float2 location, out bool mouseOverWidget)
+        {
+            mouseOverWidget = false;
+            foreach (var widget in widgets)
+            {
+                if (widget.Bounds.Contains(ref location))
+                {
+                    control.Cursor = widget.Cursor;
+                    mouseOverWidget = true;
+                    break;
+                }
+            }
+        }
+
+        internal static void MouseMoveWidget(Widget widget, ref Float2 uiControlDelta, float rotation, Float2 scale, Action<Rectangle> resizeCallback)
+        {
+            // Transform delta to control local space
+            rotation *= Mathf.DegreesToRadians;
+            var cos = Mathf.Cos(rotation);
+            var sin = Mathf.Sin(rotation);
+            var localDeltaX = uiControlDelta.X * cos + uiControlDelta.Y * sin;
+            var localDeltaY = uiControlDelta.Y * cos - uiControlDelta.X * sin;
+            var localDelta = new Float2(localDeltaX, localDeltaY);
+            localDelta *= widget.ResizeAxis.Absolute;
+
+            // Calculate size change
+            var resizeAxisPos = Float2.Clamp(widget.ResizeAxis, Float2.Zero, Float2.One);
+            var resizeAxisNeg = Float2.Clamp(-widget.ResizeAxis, Float2.Zero, Float2.One);
+            var dSizeScaled = localDelta * resizeAxisPos - localDelta * resizeAxisNeg;
+            var dSize = new Float2(
+                Mathf.Abs(scale.X) > Mathf.Epsilon ? dSizeScaled.X / scale.X : 0,
+                Mathf.Abs(scale.Y) > Mathf.Epsilon ? dSizeScaled.Y / scale.Y : 0);
+            var resizeDelta = new Rectangle(Float2.Zero, dSize);
+
+            // Calculate location offset to keep the opposite edge stationary
+            // When PivotRelative is false, resizing keeps Top-Left (Location) constant,
+            // so we only need to slide back if we are resizing Left or Top edges.
+            var control = widget.UIControl?.Control;
+            if (control == null || !control.PivotRelative)
+            {
+                var pivotOffset = Float2.Zero;
+                if (widget.ResizeAxis.X < 0 && Mathf.Abs(dSize.X) > Mathf.Epsilon)
+                    pivotOffset.X = -dSize.X * scale.X;
+                if (widget.ResizeAxis.Y < 0 && Mathf.Abs(dSize.Y) > Mathf.Epsilon)
+                    pivotOffset.Y = -dSize.Y * scale.Y;
+
+                // Transform offset back to parent space and apply
+                var dLocationX = pivotOffset.X * cos - pivotOffset.Y * sin;
+                var dLocationY = pivotOffset.X * sin + pivotOffset.Y * cos;
+                var dLocation = new Float2(dLocationX, dLocationY);
+
+                resizeDelta.Location += dLocation;
+            }
+
+            // Apply size (and lcoation) change
+            resizeCallback(resizeDelta);
+        }
+
+        internal static void DrawResizeWidgets(object target, float rotation, float viewScale, ref Float2 mousePos, List<Widget> widgets, bool mouseMovesWidget, ref Rectangle bounds)
+        {
+            Float2 ul = bounds.UpperLeft, ur = bounds.UpperRight, bl = bounds.BottomLeft, br = bounds.BottomRight;
+            DrawResizeWidgets(target, rotation, viewScale, ref mousePos, widgets, mouseMovesWidget, ref ul, ref ur, ref bl, ref br);
+        }
+
+        internal static void DrawResizeWidgets(object target, float rotation, float viewScale, ref Float2 mousePos, List<Widget> widgets, bool mouseMovesWidget, ref Float2 ul, ref Float2 ur, ref Float2 bl, ref Float2 br)
+        {
+            var widgetSize = 10.0f;
+            if (viewScale < 0.7f)
+                widgetSize *= viewScale;
+            var widgetHandleSize = new Float2(widgetSize);
+            DrawResizeWidget(target, rotation, ref ul, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE, widgets, mouseMovesWidget);
+            DrawResizeWidget(target, rotation, ref ur, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW, widgets, mouseMovesWidget);
+            DrawResizeWidget(target, rotation, ref bl, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 1), CursorType.SizeNESW, widgets, mouseMovesWidget);
+            DrawResizeWidget(target, rotation, ref br, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 1), CursorType.SizeNWSE, widgets, mouseMovesWidget);
+            Float2.Lerp(ref ul, ref bl, 0.5f, out var el);
+            Float2.Lerp(ref ur, ref br, 0.5f, out var er);
+            Float2.Lerp(ref ul, ref ur, 0.5f, out var eu);
+            Float2.Lerp(ref bl, ref br, 0.5f, out var eb);
+            DrawResizeWidget(target, rotation, ref el, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 0), CursorType.SizeWE, widgets, mouseMovesWidget);
+            DrawResizeWidget(target, rotation, ref er, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 0), CursorType.SizeWE, widgets, mouseMovesWidget);
+            DrawResizeWidget(target, rotation, ref eu, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, -1), CursorType.SizeNS, widgets, mouseMovesWidget);
+            DrawResizeWidget(target, rotation, ref eb, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, 1), CursorType.SizeNS, widgets, mouseMovesWidget);
+        }
+
+        internal static void DrawResizeWidget(object target, float rotation, ref Float2 pos, ref Float2 mousePos, ref Float2 size, float scale, Float2 resizeAxis, CursorType cursor, List<Widget> widgets, bool mouseMovesWidget)
         {
             var style = Style.Current;
-            var control = uiControl.Control;
-            var rotation = GetTotalRotation(control);
             var rotationInRadians = rotation * Mathf.DegreesToRadians;
             var position = (pos + new Float2(resizeAxis.X * Mathf.Cos(rotationInRadians) - resizeAxis.Y * Mathf.Sin(rotationInRadians), 
                                              resizeAxis.Y * Mathf.Cos(rotationInRadians) + resizeAxis.X * Mathf.Sin(rotationInRadians)) * 4 * (scale < 0.7f ? scale : 1));
             var halfSize = size * 0.5f;
-            // Keep at 0, 0 rect position until later to correctly render rotation.
+            // Keep at 0, 0 rect position until later to correctly render rotation
             var rect = new Rectangle(0, 0, size);
 
             // Find more correct cursor at different angles
@@ -762,10 +787,12 @@ namespace FlaxEditor
                 }
             }
 
+            // TODO: merge those transformations into a single one (do matrix multiply)
             Render2D.PushTransform(Matrix3x3.Translation2D(position));
             Render2D.PushTransform(Matrix3x3.RotationZ(rotationInRadians));
             Render2D.PushTransform(Matrix3x3.Translation2D(-1 * halfSize));
-            if (rect.Contains(ref mousePos))
+            var widgetBounds = new Rectangle(position - halfSize, rect.Size);
+            if (widgetBounds.Contains(ref mousePos))
             {
                 Render2D.FillRectangle(rect, style.Foreground);
                 Render2D.DrawRectangle(rect, style.SelectionBorder);
@@ -779,14 +806,13 @@ namespace FlaxEditor
             Render2D.PopTransform();
             Render2D.PopTransform();
 
-            if (!_mouseMovesWidget && uiControl != null)
+            if (!mouseMovesWidget)
             {
                 // Collect widget
-                rect.Location = position - halfSize;
-                _widgets.Add(new Widget
+                widgets.Add(new Widget
                 {
-                    UIControl = uiControl,
-                    Bounds = rect,
+                    Target = target,
+                    Bounds = widgetBounds,
                     ResizeAxis = resizeAxis,
                     Cursor = cursor,
                 });
@@ -880,134 +906,6 @@ namespace FlaxEditor
             EndMouseCapture();
             Cursor = CursorType.Default;
             EndUndo();
-        }
-    }
-
-    /// <summary>
-    /// Control that can optionally disable inputs to the children.
-    /// </summary>
-    [HideInEditor]
-    internal class InputsPassThrough : ContainerControl
-    {
-        private bool _isMouseOver;
-
-        /// <summary>
-        /// True if enable input events passing to the UI.
-        /// </summary>
-        public virtual bool EnableInputs => true;
-
-        public override bool RayCast(ref Float2 location, out Control hit)
-        {
-            return RayCastChildren(ref location, out hit);
-        }
-
-        public override bool ContainsPoint(ref Float2 location, bool precise = false)
-        {
-            if (precise)
-                return false;
-            return base.ContainsPoint(ref location, precise);
-        }
-
-        public override bool OnCharInput(char c)
-        {
-            if (!EnableInputs)
-                return false;
-            return base.OnCharInput(c);
-        }
-
-        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
-        {
-            if (!EnableInputs)
-                return DragDropEffect.None;
-            return base.OnDragDrop(ref location, data);
-        }
-
-        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
-        {
-            if (!EnableInputs)
-                return DragDropEffect.None;
-            return base.OnDragEnter(ref location, data);
-        }
-
-        public override void OnDragLeave()
-        {
-            if (!EnableInputs)
-                return;
-            base.OnDragLeave();
-        }
-
-        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
-        {
-            if (!EnableInputs)
-                return DragDropEffect.None;
-            return base.OnDragMove(ref location, data);
-        }
-
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (!EnableInputs)
-                return false;
-            return base.OnKeyDown(key);
-        }
-
-        public override void OnKeyUp(KeyboardKeys key)
-        {
-            if (!EnableInputs)
-                return;
-            base.OnKeyUp(key);
-        }
-
-        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
-        {
-            if (!EnableInputs)
-                return false;
-            return base.OnMouseDoubleClick(location, button);
-        }
-
-        public override bool OnMouseDown(Float2 location, MouseButton button)
-        {
-            if (!EnableInputs)
-                return false;
-            return base.OnMouseDown(location, button);
-        }
-
-        public override bool IsMouseOver => _isMouseOver;
-
-        public override void OnMouseEnter(Float2 location)
-        {
-            _isMouseOver = true;
-            if (!EnableInputs)
-                return;
-            base.OnMouseEnter(location);
-        }
-
-        public override void OnMouseLeave()
-        {
-            _isMouseOver = false;
-            if (!EnableInputs)
-                return;
-            base.OnMouseLeave();
-        }
-
-        public override void OnMouseMove(Float2 location)
-        {
-            if (!EnableInputs)
-                return;
-            base.OnMouseMove(location);
-        }
-
-        public override bool OnMouseUp(Float2 location, MouseButton button)
-        {
-            if (!EnableInputs)
-                return false;
-            return base.OnMouseUp(location, button);
-        }
-
-        public override bool OnMouseWheel(Float2 location, float delta)
-        {
-            if (!EnableInputs)
-                return false;
-            return base.OnMouseWheel(location, delta);
         }
     }
 }

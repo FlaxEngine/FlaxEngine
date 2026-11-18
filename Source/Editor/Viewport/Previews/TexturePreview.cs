@@ -26,6 +26,16 @@ namespace FlaxEditor.Viewport.Previews
         /// </summary>
         public bool EnableBackground = false;
 
+        /// <summary>
+        /// Gets the last mouse position in a control.
+        /// </summary>
+        protected Float2 MouseLocation => _lastMousePos;
+
+        /// <summary>
+        /// The view scale.
+        /// </summary>
+        protected float ViewScale => _viewScale;
+
         /// <inheritdoc />
         protected TexturePreviewBase()
         {
@@ -143,17 +153,14 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            // Check if mouse is down
             if (_isMouseDown)
             {
-                // Calculate mouse delta
-                var delta = location - _lastMousePos;
-
                 // Move view
+                var delta = location - _lastMousePos;
                 _viewPos += delta;
+                Cursor = CursorType.SizeAll;
             }
 
-            // Store mouse position
             _lastMousePos = location;
 
             base.OnMouseMove(location);

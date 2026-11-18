@@ -140,6 +140,16 @@ public sealed class ViewportRubberBandSelector
         }
     }
 
+    internal static void FixRect(ref Rectangle selection)
+    {
+        if (selection.Size.X < 0 || selection.Size.Y < 0)
+        {
+            // Make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
+            selection.Location = Float2.Min(selection.Location, selection.Location + selection.Size);
+            selection.Size = Float2.Abs(selection.Size);
+        }
+    }
+
     private void UpdateRubberBand()
     {
         Profiler.BeginEvent("UpdateRubberBand");
@@ -147,16 +157,7 @@ public sealed class ViewportRubberBandSelector
         // Select rubberbanded rect actor nodes
         var adjustedRect = _rubberBandRect;
         _lastRubberBandRect = _rubberBandRect;
-        if (adjustedRect.Width < 0 || adjustedRect.Height < 0)
-        {
-            // Make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
-            var size = adjustedRect.Size;
-            adjustedRect.X = Mathf.Min(adjustedRect.X, adjustedRect.X + adjustedRect.Width);
-            adjustedRect.Y = Mathf.Min(adjustedRect.Y, adjustedRect.Y + adjustedRect.Height);
-            size.X = Mathf.Abs(size.X);
-            size.Y = Mathf.Abs(size.Y);
-            adjustedRect.Size = size;
-        }
+        FixRect(ref adjustedRect);
 
         // Get hits from graph nodes
         if (_nodesCache == null)

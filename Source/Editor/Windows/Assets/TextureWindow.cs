@@ -176,10 +176,11 @@ namespace FlaxEditor.Windows.Assets
             /// <summary>
             /// Init tab.
             /// </summary>
+            /// <param name="undo">The undo. It's optional.</param>
             /// <param name="text">Tab title.</param>
             /// <param name="window">Parent window handle.</param>
             /// <param name="modifiesAsset">True if editing tab proeprties modifies asset.</param>
-            public Tab(string text, TextureBaseWindow window, bool modifiesAsset = true)
+            public Tab(string text, TextureBaseWindow window, bool modifiesAsset = true, Undo undo = null)
             : base(text)
             {
                 var scrollPanel = new Panel(ScrollBars.Vertical)
@@ -189,7 +190,7 @@ namespace FlaxEditor.Windows.Assets
                     Parent = this
                 };
 
-                Presenter = new CustomEditorPresenter(null);
+                Presenter = new CustomEditorPresenter(undo);
                 Presenter.Panel.Parent = scrollPanel;
                 if (modifiesAsset)
                     Presenter.Modified += window.MarkAsEdited;

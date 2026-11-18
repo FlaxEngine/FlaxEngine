@@ -724,16 +724,7 @@ namespace FlaxEditor.Content.GUI
             {
                 _isRubberBandSpanning = false;
                 EndMouseCapture();
-                if (_rubberBandRectangle.Width < 0 || _rubberBandRectangle.Height < 0)
-                {
-                    // make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
-                    var size = _rubberBandRectangle.Size;
-                    _rubberBandRectangle.X = Mathf.Min(_rubberBandRectangle.X, _rubberBandRectangle.X + _rubberBandRectangle.Width);
-                    _rubberBandRectangle.Y = Mathf.Min(_rubberBandRectangle.Y, _rubberBandRectangle.Y + _rubberBandRectangle.Height);
-                    size.X = Mathf.Abs(size.X);
-                    size.Y = Mathf.Abs(size.Y);
-                    _rubberBandRectangle.Size = size;
-                }
+                FlaxEngine.Gizmo.ViewportRubberBandSelector.FixRect(ref _rubberBandRectangle);
                 var itemsInRectangle = _items.Where(t => _rubberBandRectangle.Intersects(t.Bounds)).ToList();
                 Select(itemsInRectangle, Input.GetKey(KeyboardKeys.Shift) || Input.GetKey(KeyboardKeys.Control));
                 return true;
