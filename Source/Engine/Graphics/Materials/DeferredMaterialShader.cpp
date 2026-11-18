@@ -224,13 +224,23 @@ bool DeferredMaterialShader::Load()
     psDesc.DepthEnable = true;
     psDesc.DepthFunc = ComparisonFunc::Default;
     psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
-    psDesc.HS = nullptr;
-    psDesc.DS = nullptr;
+#if GPU_ALLOW_TESSELLATION_SHADERS
+    // Tessellated materials keep the hull and domain shaders in the depth pass so shadow maps see the displaced surface
+    const bool useTessDepth = useTess;
+#else
+    const bool useTessDepth = false;
+#endif
+    if (!useTessDepth)
+    {
+        psDesc.HS = nullptr;
+        psDesc.DS = nullptr;
+    }
     GPUShaderProgramVS* instancedDepthPassVS;
-    if (EnumHasAnyFlags(_info.UsageFlags, MaterialUsageFlags::UseMask | MaterialUsageFlags::UsePositionOffset))
+    if (useTessDepth || EnumHasAnyFlags(_info.UsageFlags, MaterialUsageFlags::UseMask | MaterialUsageFlags::UsePositionOffset))
     {
         // Materials with masking need full vertex buffer to get texcoord used to sample textures for per pixel masking.
         // Materials with world pos offset need full VB to apply offset using texcoord etc.
+        // Tessellated materials need the full vertex output to feed the hull shader.
         psDesc.VS = vs;
         instancedDepthPassVS = vsInstanced;
         psDesc.PS = _shader->GetPS("PS_Depth");

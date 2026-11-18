@@ -165,8 +165,8 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets a value indicating whether clip text during rendering.
         /// </summary>
-        [EditorOrder(80), DefaultValue(false), Tooltip("If checked, text will be clipped during rendering.")]
-        public bool ClipText { get; set; }
+        [EditorOrder(80), DefaultValue(true), Tooltip("If checked, text will be clipped by during rendering to prevent it from going over the border of this control.")]
+        public bool ClipText { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether set automatic width based on text contents. Control size is modified relative to the Pivot.

@@ -152,6 +152,7 @@ void Foliage::DrawInstance(DrawContext& context, FoliageInstance& instance, int3
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = key.Lightmap != -1 && EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
             e->DrawCall.Surface.GeometrySize = drawCall.Surface.GeometrySize;
+            e->DrawCall.SetStencilValue(_layer);
         }
 
         // Add instance to the draw batch
@@ -1040,6 +1041,13 @@ void Foliage::RebuildClusters()
                     break;
                 }
             }
+            if (i.IsEnd())
+            {
+                // Type has no instances (eg. all were removed) so skip it, its bounds would be left uninitialized
+                type.Root = nullptr;
+                type.Clusters.Clear();
+                continue;
+            }
             ++i;
             // TODO: inline code and use SIMD
             for (; i.IsNotEnd(); ++i)
@@ -1065,7 +1073,11 @@ void Foliage::RebuildClusters()
                 hasTotalBounds = true;
             }
         }
-        ASSERT(hasTotalBounds);
+        if (!hasTotalBounds)
+        {
+            // Only instances of types that aren't ready
+            totalBounds = BoundingBox(_transform.Translation, _transform.Translation);
+        }
 #endif
         ASSERT(!totalBounds.Minimum.IsNanOrInfinity() && !totalBounds.Maximum.IsNanOrInfinity());
         _box = totalBounds;
