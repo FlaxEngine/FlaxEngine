@@ -334,18 +334,20 @@ public:
 public:
     FORCE_INLINE DrawPass GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const
     {
+        // Keeps the custom pass too (not part of All) so objects drawn in it are collected
+        constexpr DrawPass all = DrawPass::All | DrawPass::Custom;
         switch (shadowsMode)
         {
         case ShadowsCastingMode::All:
-            return DrawPass::All;
+            return all;
         case ShadowsCastingMode::DynamicOnly:
-            return IsOfflinePass ? ~DrawPass::Depth : DrawPass::All;
+            return IsOfflinePass ? ~DrawPass::Depth : all;
         case ShadowsCastingMode::StaticOnly:
-            return IsOfflinePass ? DrawPass::All : ~DrawPass::Depth;
+            return IsOfflinePass ? all : ~DrawPass::Depth;
         case ShadowsCastingMode::None:
             return ~DrawPass::Depth;
         default:
-            return DrawPass::All;
+            return all;
         }
     }
 
