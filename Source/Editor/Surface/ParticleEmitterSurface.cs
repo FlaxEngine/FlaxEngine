@@ -46,10 +46,8 @@ namespace FlaxEditor.Surface
         /// </summary>
         public void ArrangeModulesNodes()
         {
-            if (IsLayoutLocked)
+            if (IsLayoutLocked || _rootNode == null)
                 return;
-            if (_rootNode == null)
-                throw new InvalidOperationException("Missing root node.");
 
             IsLayoutLocked = true;
 
