@@ -99,7 +99,7 @@ bool JobSystemService::Init()
     PROFILE_MEM(EngineThreading);
 
     // Initialize job context storage (fixed-size ring buffer for active jobs tracking)
-    JobContextsSize = 256;
+    JobContextsSize = 1024; // Each async drawn actor dispatches a job in draw collection
     JobContextsMask = JobContextsSize - 1;
     JobContexts = (JobContext*)Platform::Allocate(JobContextsSize * sizeof(JobContext), alignof(JobContext));
     Memory::ConstructItems(JobContexts, (int32)JobContextsSize);
@@ -230,8 +230,13 @@ int32 JobSystemThread::Run()
                     for (int64 dependant : jobContext->Dependants)
                     {
                         JobContext& dependantContext = JobContexts[GET_CONTEXT_INDEX(dependant)];
-                        if (dependantContext.JobLabel == dependant)
-                            Platform::InterlockedDecrement(&dependantContext.DependenciesLeft);
+                        if (dependantContext.JobLabel == dependant && Platform::InterlockedDecrement(&dependantContext.DependenciesLeft) == 0 && JobStartingOnDispatch)
+                        {
+                            // Wake workers for the job that just became runnable
+                            int32 wakes = Math::Min(dependantContext.JobsCount, ThreadsCount);
+                            while (wakes-- > 0)
+                                JobsSignal.NotifyOne();
+                        }
                     }
                     JobsLocker.Unlock();
                 }
@@ -240,8 +245,8 @@ int32 JobSystemThread::Run()
                 jobContext->Job.Unbind();
                 jobContext->Dependants.Clear();
                 Platform::AtomicStore(&jobContext->DependantsCount, 0);
-                Platform::AtomicStore(&jobContext->DependenciesLeft, -999); // Mark to indicate deleted context
                 Platform::AtomicStore(&jobContext->JobLabel, -1);
+                Platform::AtomicStore(&jobContext->DependenciesLeft, -999); // Mark to indicate deleted context
                 Platform::InterlockedDecrement(&JobContextsCount);
 
                 // Wakeup any thread waiting for the jobs to complete
@@ -294,6 +299,7 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
         PROFILE_CPU_NAMED("JOB SYSTEM OVERFLOW");
         ZoneColor(TracyWaitZoneColor);
         Platform::InterlockedDecrement(&JobContextsCount);
+        JobsSignal.NotifyAll(); // Jobs queued with starting-on-dispatch off were never signalled
         Platform::Sleep(1);
     }
 
@@ -302,6 +308,9 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
 
     // Build job
     JobContext& context = JobContexts[GET_CONTEXT_INDEX(label)];
+    // Wait for the slot's previous job to be recycled
+    while (Platform::AtomicRead(&context.JobLabel) != 0 && Platform::AtomicRead(&context.DependenciesLeft) != -999)
+        Platform::Sleep(1);
     context.Job = job;
     context.JobIndex = 0;
     context.JobsLeft = jobCount;
@@ -312,14 +321,15 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
     context.Dependants.Clear();
 
     // Move the job queue forward
-    Platform::InterlockedIncrement(&JobEndLabel);
+    while (Platform::InterlockedCompareExchange(&JobEndLabel, label, label - 1) != label - 1)
+        Platform::Yield(); // Publish in order of labels so workers never scan a half-built slot
 
     if (JobStartingOnDispatch)
     {
-        if (jobCount == 1)
+        // Wake only as many workers as there are jobs, to prevent thundering herd
+        int32 wakes = Math::Min(jobCount, ThreadsCount);
+        while (wakes-- > 0)
             JobsSignal.NotifyOne();
-        else
-            JobsSignal.NotifyAll();
     }
 
     return label;
@@ -343,6 +353,7 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, Span<int64> dependen
         PROFILE_CPU_NAMED("JOB SYSTEM OVERFLOW");
         ZoneColor(TracyWaitZoneColor);
         Platform::InterlockedDecrement(&JobContextsCount);
+        JobsSignal.NotifyAll(); // Jobs queued with starting-on-dispatch off were never signalled
         Platform::Sleep(1);
     }
 
@@ -351,6 +362,9 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, Span<int64> dependen
 
     // Build job
     JobContext& context = JobContexts[GET_CONTEXT_INDEX(label)];
+    // Wait for the slot's previous job to be recycled
+    while (Platform::AtomicRead(&context.JobLabel) != 0 && Platform::AtomicRead(&context.DependenciesLeft) != -999)
+        Platform::Sleep(1);
     context.Job = job;
     context.JobIndex = 0;
     context.JobsLeft = jobCount;
@@ -375,14 +389,15 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, Span<int64> dependen
     }
 
     // Move the job queue forward
-    Platform::InterlockedIncrement(&JobEndLabel);
+    while (Platform::InterlockedCompareExchange(&JobEndLabel, label, label - 1) != label - 1)
+        Platform::Yield(); // Publish in order of labels so workers never scan a half-built slot
 
     if (context.DependenciesLeft == 0 && JobStartingOnDispatch)
     {
-        if (jobCount == 1)
+        // Wake only as many workers as there are jobs, to prevent thundering herd
+        int32 wakes = Math::Min(jobCount, ThreadsCount);
+        while (wakes-- > 0)
             JobsSignal.NotifyOne();
-        else
-            JobsSignal.NotifyAll();
     }
 
     return label;
