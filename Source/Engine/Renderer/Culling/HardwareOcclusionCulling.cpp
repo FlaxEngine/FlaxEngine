@@ -191,13 +191,13 @@ void HardwareOcclusionCulling::Submit(const RenderContext& renderContext)
 
     // Issue occlusion queries
     int32 frame = _frameCounter, bufferedFrame = _frameCounter % _framesCount, itemsCount = _items.Count(), itemsUsed = 0;
-    BoundingFrustum frustum;
-    renderContext.View.GetLocalFrustum(frustum);
+    BoundingFrustum frustum = renderContext.View.Frustum;
+    Vector3 boundsOffset = -_origin;
     auto* items = _items.Get();
     for (int32 i = 0; i < itemsCount; i++)
     {
         auto& item = items[i];
-        if (item.LastUsedFrame != frame || frustum.Contains(item.Bounds) == ContainmentType::Disjoint)
+        if (item.LastUsedFrame != frame || frustum.Contains(item.Bounds.MakeOffsetted(boundsOffset)) == ContainmentType::Disjoint)
             continue;
         itemsUsed++;
 
