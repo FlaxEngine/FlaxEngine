@@ -227,6 +227,14 @@ public:
     API_FUNCTION() static bool CreateAsset(const String& tag, String outputPath);
 
     /// <summary>
+    /// Creates a texture asset from Texture Data.
+    /// </summary>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="textureData">The texture data.</param>
+    /// <returns>True if asset could not be created, otherwise false.</returns>
+    API_FUNCTION() static bool CreateTexture(String outputPath, const TextureData& textureData);
+
+    /// <summary>
     /// Gets a list of asset references of a given asset.
     /// </summary>
     /// <param name="assetId">The asset ID.</param>

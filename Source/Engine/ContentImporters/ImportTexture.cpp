@@ -110,6 +110,11 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
 {
     // Check data
     bool isCubeMap = false;
+    if (textureData.Width * textureData.Depth * textureData.Depth * textureData.GetMipLevels() == 0)
+    {
+        LOG(Warning, "Empty texture data.");
+        return CreateAssetResult::Error;
+    }
     if (textureData.GetArraySize() != 1)
     {
         if (options.IsAtlas)

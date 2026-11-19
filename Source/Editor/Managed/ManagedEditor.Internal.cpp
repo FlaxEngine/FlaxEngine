@@ -594,6 +594,12 @@ bool ManagedEditor::CreateAsset(const String& tag, String outputPath)
     return AssetsImportingManager::Create(tag, outputPath);
 }
 
+bool ManagedEditor::CreateTexture(String outputPath, const TextureData& textureData)
+{
+    FileSystem::NormalizePath(outputPath);
+    return AssetsImportingManager::Create(AssetsImportingManager::CreateTextureAsTextureDataTag, outputPath, (void*)&textureData);
+}
+
 Array<Guid> ManagedEditor::GetAssetReferences(const Guid& assetId)
 {
     Array<Guid> result;
