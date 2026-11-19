@@ -24,8 +24,11 @@ public:
     TextureMipData& operator=(const TextureMipData& other);
     TextureMipData& operator=(TextureMipData&& other) noexcept;
 
+    void Init(int32 width, int32 height, PixelFormat format);
     bool GetPixels(Array<Color32>& pixels, int32 width, int32 height, PixelFormat format) const;
     bool GetPixels(Array<Color>& pixels, int32 width, int32 height, PixelFormat format) const;
+    bool SetPixels(const Span<Color32>& pixels, int32 width, int32 height, PixelFormat format);
+    bool SetPixels(const Span<Color>& pixels, int32 width, int32 height, PixelFormat format);
     void Copy(void* data, uint32 dataRowPitch, uint32 dataDepthPitch, uint32 dataDepthSlices, uint32 targetRowPitch);
 
     template<typename T>
@@ -125,6 +128,18 @@ public:
 
 public:
     /// <summary>
+    /// Initializes the texture data container.
+    /// </summary>
+    /// <param name="format">The texture data format.</param>
+    /// <param name="width">The texture width (in pixels).</param>
+    /// <param name="height">The texture height (in pixels).</param>
+    /// <param name="depth">The texture depth (in pixels).</param>
+    /// <param name="arraySize">The texture array size (defaults to 1 for 2D textures).</param>
+    /// <param name="mipLevels">Amount of mip levels for each texture array slice. Value -1 uses automatic mip count based on texture size.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool Init(PixelFormat format, int32 width, int32 height, int32 depth = 1, int32 arraySize = 1, int32 mipLevels = -1);
+
+    /// <summary>
     /// Gets the texture pixels as Color32 array.
     /// </summary>
     /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
@@ -143,4 +158,35 @@ public:
     /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool GetPixels(API_PARAM(Out) Array<Color>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0) const;
+
+    /// <summary>
+    /// Sets the texture pixels as Color32 array.
+    /// </summary>
+    /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
+    /// <param name="pixels">The input texture pixels array.</param>
+    /// <param name="mipIndex">The mip index (zero-based).</param>
+    /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool SetPixels(const Span<Color32>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0);
+
+    /// <summary>
+    /// Sets the texture pixels as Color array.
+    /// </summary>
+    /// <remarks>Supported only for 'basic' texture formats (uncompressed, single plane).</remarks>
+    /// <param name="pixels">The input texture pixels array.</param>
+    /// <param name="mipIndex">The mip index (zero-based).</param>
+    /// <param name="arrayIndex">The array or depth slice index (zero-based).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool SetPixels(const Span<Color>& pixels, int32 mipIndex = 0, int32 arrayIndex = 0);
+
+    /// <summary>
+    /// Generates the mip map data (using the higher level mip as a source data).
+    /// </summary>
+    /// <remarks>
+    /// Compressed formats are not supported. Point filter supports all types and preserves texture edge values.
+    /// </remarks>
+    /// <param name="mipIndex">Index of the mip to generate.</param>
+    /// <param name="linear">True if use linear filer, otherwise point filtering.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool GenerateMip(int32 mipIndex, bool linear = false);
 };

@@ -7,6 +7,8 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/JsonWriter.h"
@@ -397,6 +399,249 @@ bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelF
     LOG(Warning, "Converting textures is not supported on this platform.");
     return true;
 #endif
+}
+
+static void CopyRows(byte* dst, const byte* src, uint32 dstRowPitch, uint32 srcRowPitch, uint32 lines)
+{
+    if (srcRowPitch == dstRowPitch)
+        Platform::MemoryCopy(dst, src, dstRowPitch * lines);
+    else
+    {
+        uint32 rowPitch = Math::Min(dstRowPitch, srcRowPitch);;
+        for (uint32 row = 0; row < lines; row++)
+        {
+            Platform::MemoryCopy(dst, src, rowPitch);
+            dst += dstRowPitch;
+            src += srcRowPitch;
+        }
+    }
+}
+
+bool TextureTool::Convert(int32 width, int32 height, PixelFormat dstFormat, Span<byte> dstData, uint32 dstRowPitch, PixelFormat srcFormat, const Span<byte> srcData, uint32 srcRowPitch)
+{
+    byte* dst = dstData.Get();
+    const byte* src = srcData.Get();
+    uint32 dstLines = dstData.Length() / dstRowPitch;
+    uint32 srcLines = srcData.Length() / srcRowPitch;
+
+    // Color32 source
+    if (srcFormat == PixelFormat::R8G8B8A8_UNorm)
+    {
+        switch (dstFormat)
+        {
+        case PixelFormat::R8G8B8A8_SInt:
+        case PixelFormat::R8G8B8A8_Typeless:
+        case PixelFormat::R8G8B8A8_SNorm:
+        case PixelFormat::R8G8B8A8_UInt:
+        case PixelFormat::R8G8B8A8_UNorm:
+        case PixelFormat::R8G8B8A8_UNorm_sRGB:
+        case PixelFormat::R8G8_B8G8_UNorm:
+        case PixelFormat::B8G8R8A8_Typeless:
+        case PixelFormat::B8G8R8A8_UNorm:
+        case PixelFormat::B8G8R8A8_UNorm_sRGB:
+        case PixelFormat::B8G8R8X8_Typeless:
+        case PixelFormat::B8G8R8X8_UNorm:
+        case PixelFormat::B8G8R8X8_UNorm_sRGB:
+            if (srcLines != dstLines)
+                return true;
+            CopyRows(dst, src, dstRowPitch, srcRowPitch, srcLines);
+            if (PixelFormatExtensions::IsBGRAOrder(dstFormat))
+            {
+                // BGRA -> RGBA
+                for (int32 y = 0; y < height; y++)
+                {
+                    for (int32 x = 0; x < width; x++)
+                    {
+                        auto& color = *((Color32*)(dst + y * dstRowPitch + x * sizeof(Color32)));
+                        color = Color32(color.B, color.G, color.R, color.A);
+                    }
+                }
+            }
+            if (PixelFormatExtensions::IsSRGB(dstFormat))
+            {
+                // sRGB -> Linear
+                for (int32 y = 0; y < height; y++)
+                {
+                    for (int32 x = 0; x < width; x++)
+                    {
+                        auto& color = *((Color32*)(dst + y * dstRowPitch + x * sizeof(Color32)));
+                        color = Color32(Color::SrgbToLinear(Color(color)));
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    // Color source
+    if (srcFormat == PixelFormat::R32G32B32A32_Float)
+    {
+        switch (dstFormat)
+        {
+        case PixelFormat::R32G32B32A32_Typeless:
+        case PixelFormat::R32G32B32A32_Float:
+            if (srcLines != dstLines)
+                return true;
+            CopyRows(dst, src, dstRowPitch, srcRowPitch, srcLines);
+            return false;
+        }
+    }
+
+    // Conversion with an in-built samplers
+    auto srcSampler = PixelFormatSampler::Get(srcFormat);
+    auto dstsampler = PixelFormatSampler::Get(dstFormat);
+    if (srcSampler && dstsampler)
+    {
+        auto tempRowPitch = width * dstsampler->PixelSize;
+        auto tempSlicePitch = tempRowPitch * dstLines;
+        if (dstData.Length() / dstRowPitch < (uint32)height)
+            return true;
+        for (int32 y = 0; y < height; y++)
+        {
+            for (int32 x = 0; x < width; x++)
+            {
+                Color color = srcSampler->SamplePoint(src, x, y, srcRowPitch);
+                dstsampler->Store(dst, x, y, tempRowPitch, color);
+            }
+        }
+        return false;
+    }
+
+    // TODO: this could use Convert with TextureData wrapper to decompress textures (just like TextureTool::UpdateTexture does)
+
+    if (PixelFormatExtensions::IsCompressed(dstFormat))
+        LOG(Error, "Unsupported texture data format {0}. Compressed texture data cannot be accessed directly without decompressing first.", ScriptingEnum::ToString(dstFormat));
+    else
+        LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(dstFormat));
+    return true;
+}
+
+bool TextureTool::GenerateMip(int32 width, int32 height, PixelFormat format, Span<byte> data, uint32 dataRowPitch, Span<byte> mipData, uint32 mipRowPitch, bool linear, int32 arraySize)
+{
+    const int32 mipWidth = Math::Max(1, width >> 1);
+    const int32 mipHeight = Math::Max(1, height >> 1);
+    const int32 pixelStride = PixelFormatExtensions::SizeInBytes(format);
+    const uint32 dataSlicePitch = data.Length() / arraySize;
+    const uint32 mipSlicePitch = mipData.Length() / arraySize;
+    if (linear)
+    {
+        // Linear downscale filter
+        switch (format)
+        {
+        // 4 component, 32 bit with 8 bits per component - use Color32 type
+        case PixelFormat::R8G8B8A8_SInt:
+        case PixelFormat::R8G8B8A8_Typeless:
+        case PixelFormat::R8G8B8A8_SNorm:
+        case PixelFormat::R8G8B8A8_UInt:
+        case PixelFormat::R8G8B8A8_UNorm:
+        case PixelFormat::R8G8B8A8_UNorm_sRGB:
+        case PixelFormat::R8G8_B8G8_UNorm:
+        case PixelFormat::B8G8R8A8_Typeless:
+        case PixelFormat::B8G8R8A8_UNorm:
+        case PixelFormat::B8G8R8A8_UNorm_sRGB:
+        case PixelFormat::B8G8R8X8_Typeless:
+        case PixelFormat::B8G8R8X8_UNorm:
+        case PixelFormat::B8G8R8X8_UNorm_sRGB:
+        {
+            for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+            {
+                const byte* dstData = mipData.Get() + arrayIndex * dataSlicePitch;
+                const byte* srcData = data.Get() + arrayIndex * mipSlicePitch;
+                for (int32 y = 0; y < mipHeight; y++)
+                {
+                    for (int32 x = 0; x < mipWidth; x++)
+                    {
+                        const auto dstIndex = y * mipRowPitch + x * pixelStride;
+#define SAMPLE(var, dx, dy) const auto var = (Color)*(Color32*)(srcData + ((y * 2 + (dy)) * dataRowPitch + x * pixelStride * 2 + (pixelStride * (dx))))
+                        SAMPLE(v00, 0, 0);
+                        SAMPLE(v01, 0, 1);
+                        SAMPLE(v10, 1, 0);
+                        SAMPLE(v11, 1, 1);
+#undef SAMPLE
+                        *(Color32*)(dstData + dstIndex) = Color32((v00 + v01 + v10 + v11) * 0.25f);
+                    }
+                }
+            }
+            break;
+        }
+        // 4 component, 128 bit with 32 bits per component - use Color type
+        case PixelFormat::R32G32B32A32_Float:
+        case PixelFormat::R32G32B32A32_Typeless:
+        {
+            for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+            {
+                const byte* dstData = mipData.Get() + arrayIndex * dataSlicePitch;
+                const byte* srcData = data.Get() + arrayIndex * mipSlicePitch;
+                for (int32 y = 0; y < mipHeight; y++)
+                {
+                    for (int32 x = 0; x < mipWidth; x++)
+                    {
+                        const auto dstIndex = y * mipRowPitch + x * pixelStride;
+#define SAMPLE(var, dx, dy) const auto var = *(Color*)(srcData + ((y * 2 + (dy)) * dataRowPitch + x * pixelStride * 2 + (pixelStride * (dx))))
+                        SAMPLE(v00, 0, 0);
+                        SAMPLE(v01, 0, 1);
+                        SAMPLE(v10, 1, 0);
+                        SAMPLE(v11, 1, 1);
+#undef SAMPLE
+                        *(Color*)(dstData + dstIndex) = (v00 + v01 + v10 + v11) * 0.25f;
+                    }
+                }
+            }
+            break;
+        }
+        default:
+            LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
+            return true;
+        }
+    }
+    else
+    {
+        // Point downscale filter
+        for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+        {
+            byte* dstData = mipData.Get() + arrayIndex * dataSlicePitch;
+            const byte* srcData = data.Get() + arrayIndex * mipSlicePitch;
+            for (int32 y = 0; y < mipHeight; y++)
+            {
+                for (int32 x = 0; x < mipWidth; x++)
+                {
+                    const auto dstIndex = y * mipRowPitch + x * pixelStride;
+                    const auto srcIndex = y * 2 * dataRowPitch + x * pixelStride * 2;
+                    Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
+                }
+            }
+        }
+
+        // Fix right and bottom edges to preserve the original values
+        for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+        {
+            byte* dstData = mipData.Get() + arrayIndex * dataSlicePitch;
+            const byte* srcData = data.Get() + arrayIndex * mipSlicePitch;
+            for (int32 y = 0; y < mipHeight - 1; y++)
+            {
+                const int32 x = mipWidth - 1;
+                const auto dstIndex = y * mipRowPitch + x * pixelStride;
+                const auto srcIndex = y * 2 * dataRowPitch + x * pixelStride * 2 + pixelStride;
+                Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
+            }
+            for (int32 x = 0; x < mipWidth - 1; x++)
+            {
+                const int32 y = mipHeight - 1;
+                const auto dstIndex = y * mipRowPitch + x * pixelStride;
+                const auto srcIndex = (y * 2 + 1) * dataRowPitch + x * pixelStride * 2;
+                Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
+            }
+            {
+                const int32 x = mipWidth - 1;
+                const int32 y = mipHeight - 1;
+                const auto dstIndex = y * mipRowPitch + x * pixelStride;
+                const auto srcIndex = (y * 2 + 1) * dataRowPitch + x * pixelStride * 2 + pixelStride;
+                Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
+            }
+        }
+    }
+
+    return false;
 }
 
 bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight)

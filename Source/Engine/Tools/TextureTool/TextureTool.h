@@ -193,6 +193,38 @@ public:
     static bool Convert(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
 
     /// <summary>
+    /// Converts the specified source texture data into another format.
+    /// </summary>
+    /// <param name="width">The texture width (in pixels).</param>
+    /// <param name="height">The texture height (in pixels).</param>
+    /// <param name="dstFormat">The destination texture pixel format.</param>
+    /// <param name="dstData">The destination texture data.</param>
+    /// <param name="dstRowPitch">The destination texture row pitch (in bytes).</param>
+    /// <param name="srcFormat">The source texture pixel format.</param>
+    /// <param name="srcData">The source texture data.</param>
+    /// <param name="srcRowPitch">The source texture row pitch (in bytes).</param>
+    /// <returns>True if fails, otherwise false.</returns>
+    static bool Convert(int32 width, int32 height, PixelFormat dstFormat, Span<byte> dstData, uint32 dstRowPitch, PixelFormat srcFormat, const Span<byte> srcData, uint32 srcRowPitch);
+
+    /// <summary>
+    /// Generates the mip map data.
+    /// </summary>
+    /// <remarks>
+    /// Compressed formats are not supported. Point filter supports all types and preserves texture edge values.
+    /// </remarks>
+    /// <param name="width">The width (in pixels) of the source texture to generate mip from (mip is half of it but non-zero).</param>
+    /// <param name="height">The height (in pixels) of the source texture to generate mip from (mip is half of it but non-zero).</param>
+    /// <param name="format">Format of the textrue pixels.</param>
+    /// <param name="data">The source texture data.</param>
+    /// <param name="dataRowPitch">The source texture data row pitch (in bytes).</param>
+    /// <param name="mipData">The destination texture mip data (has to be allocated).</param>
+    /// <param name="mipRowPitch">The destination texture mip data row pitch (in bytes).</param>
+    /// <param name="linear">True if use linear filer, otherwise point filtering.</param>
+    /// <param name="arraySize">Texture array size (6 for cubemap, 1 for 2D textures).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    static bool GenerateMip(int32 width, int32 height, PixelFormat format, Span<byte> data, uint32 dataRowPitch, Span<byte> mipData, uint32 mipRowPitch, bool linear = false, int32 arraySize = 1);
+
+    /// <summary>
     /// Resizes the specified source texture data into another dimensions.
     /// </summary>
     /// <param name="dst">The destination data.</param>

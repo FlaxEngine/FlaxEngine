@@ -66,91 +66,26 @@ TextureMipData& TextureMipData::operator=(TextureMipData&& other) noexcept
     return *this;
 }
 
+void TextureMipData::Init(int32 width, int32 height, PixelFormat format)
+{
+    uint32 rowPitch, slicePicth;
+    RenderTools::ComputePitch(format, width, height, rowPitch, slicePicth);
+    uint32 lines = slicePicth / rowPitch;
+    if (RowPitch == rowPitch && DepthPitch == slicePicth && Lines == lines && Data.Length() == slicePicth)
+        return;
+    RowPitch = rowPitch;
+    DepthPitch = slicePicth;
+    Lines = lines;
+    Data.Allocate(slicePicth);
+}
+
 bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height, PixelFormat format) const
 {
     const int32 size = width * height;
     if (Data.IsInvalid() || size < 1)
         return true;
     pixels.Resize(size);
-    byte* dst = (byte*)pixels.Get();
-    const int32 dstRowSize = width * sizeof(Color32);
-    const byte* src = Data.Get();
-    const int32 srcRowSize = RowPitch;
-    switch (format)
-    {
-    case PixelFormat::R8G8B8A8_SInt:
-    case PixelFormat::R8G8B8A8_Typeless:
-    case PixelFormat::R8G8B8A8_SNorm:
-    case PixelFormat::R8G8B8A8_UInt:
-    case PixelFormat::R8G8B8A8_UNorm:
-    case PixelFormat::R8G8B8A8_UNorm_sRGB:
-    case PixelFormat::R8G8_B8G8_UNorm:
-    case PixelFormat::B8G8R8A8_Typeless:
-    case PixelFormat::B8G8R8A8_UNorm:
-    case PixelFormat::B8G8R8A8_UNorm_sRGB:
-    case PixelFormat::B8G8R8X8_Typeless:
-    case PixelFormat::B8G8R8X8_UNorm:
-    case PixelFormat::B8G8R8X8_UNorm_sRGB:
-        if (srcRowSize == dstRowSize)
-            Platform::MemoryCopy(dst, src, RowPitch * Lines);
-        else
-        {
-            for (uint32 row = 0; row < Lines; row++)
-            {
-                Platform::MemoryCopy(dst, src, dstRowSize);
-                dst += dstRowSize;
-                src += srcRowSize;
-            }
-        }
-        if (PixelFormatExtensions::IsBGRAOrder(format))
-        {
-            // BGRA -> RGBA
-            for (int32 y = 0; y < height; y++)
-            {
-                for (int32 x = 0; x < width; x++)
-                {
-                    auto& color = *((Color32*)(dst + y * RowPitch + x * sizeof(Color32)));
-                    color = Color32(color.B, color.G, color.R, color.A);
-                }
-            }
-        }
-        if (PixelFormatExtensions::IsSRGB(format))
-        {
-            // sRGB -> Linear
-            for (int32 y = 0; y < height; y++)
-            {
-                for (int32 x = 0; x < width; x++)
-                {
-                    auto& color = *((Color32*)(dst + y * RowPitch + x * sizeof(Color32)));
-                    color = Color32(Color::SrgbToLinear(Color(color)));
-                }
-            }
-        }
-        break;
-    default:
-    {
-        // Try to use texture sampler utility
-        auto sampler = PixelFormatSampler::Get(format);
-        if (sampler)
-        {
-            for (int32 y = 0; y < height; y++)
-            {
-                for (int32 x = 0; x < width; x++)
-                {
-                    Color c = sampler->SamplePoint(src, x, y, RowPitch);
-                    *(Color32*)(dst + dstRowSize * y + x * sizeof(Color32)) = Color32(c);
-                }
-            }
-            return false;
-        }
-        if (PixelFormatExtensions::IsCompressed(format))
-            LOG(Error, "Unsupported texture data format {0}. Compressed texture data cannot be accessed directly without decompressing first.", ScriptingEnum::ToString(format));
-        else
-            LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
-        return true;
-    }
-    }
-    return false;
+    return TextureTool::Convert(width, height, PixelFormat::R8G8B8A8_UNorm, Span<byte>(ToSpan(pixels)), width * sizeof(Color32), format, Data, RowPitch);
 }
 
 bool TextureMipData::GetPixels(Array<Color>& pixels, int32 width, int32 height, PixelFormat format) const
@@ -159,47 +94,19 @@ bool TextureMipData::GetPixels(Array<Color>& pixels, int32 width, int32 height, 
     if (Data.IsInvalid() || size < 1)
         return true;
     pixels.Resize(size);
-    byte* dst = (byte*)pixels.Get();
-    const int32 dstRowSize = width * sizeof(Color);
-    const byte* src = Data.Get();
-    const int32 srcRowSize = RowPitch;
-    switch (format)
-    {
-    case PixelFormat::R32G32B32A32_Typeless:
-    case PixelFormat::R32G32B32A32_Float:
-        if (srcRowSize == dstRowSize)
-            Platform::MemoryCopy(dst, src, RowPitch * Lines);
-        else
-        {
-            for (uint32 row = 0; row < Lines; row++)
-            {
-                Platform::MemoryCopy(dst, src, dstRowSize);
-                dst += dstRowSize;
-                src += srcRowSize;
-            }
-        }
-        break;
-    default:
-    {
-        // Try to use texture sampler utility
-        auto sampler = PixelFormatSampler::Get(format);
-        if (sampler)
-        {
-            for (int32 y = 0; y < height; y++)
-            {
-                for (int32 x = 0; x < width; x++)
-                {
-                    Color c = sampler->SamplePoint(src, x, y, RowPitch);
-                    *(Color*)(dst + dstRowSize * y + x * sizeof(Color)) = c;
-                }
-            }
-            return false;
-        }
-        LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(format));
-        return true;
-    }
-    }
-    return false;
+    return TextureTool::Convert(width, height, PixelFormat::R32G32B32A32_Float, Span<byte>(ToSpan(pixels)), width * sizeof(Color), format, Data, RowPitch);
+}
+
+bool TextureMipData::SetPixels(const Span<Color32>& pixels, int32 width, int32 height, PixelFormat format)
+{
+    Init(width, height, format);
+    return TextureTool::Convert(width, height, format, Data, RowPitch, PixelFormat::R8G8B8A8_UNorm, Span<byte>(pixels), width * sizeof(Color32));
+}
+
+bool TextureMipData::SetPixels(const Span<Color>& pixels, int32 width, int32 height, PixelFormat format)
+{
+    Init(width, height, format);
+    return TextureTool::Convert(width, height, format, Data, RowPitch, PixelFormat::R32G32B32A32_Float, Span<byte>(pixels), width * sizeof(Color));
 }
 
 void TextureMipData::Copy(void* data, uint32 dataRowPitch, uint32 dataDepthPitch, uint32 dataDepthSlices, uint32 targetRowPitch)
@@ -249,6 +156,38 @@ void TextureData::Clear()
     Items.Resize(0, false);
 }
 
+bool TextureData::Init(PixelFormat format, int32 width, int32 height, int32 depth, int32 arraySize, int32 mipLevels)
+{
+    // Check inputs
+    CHECK_RETURN(Math::IsInRange(width, 1, GPU_MAX_TEXTURE_SIZE), true);
+    CHECK_RETURN(Math::IsInRange(height, 1, GPU_MAX_TEXTURE_SIZE), true);
+    CHECK_RETURN(Math::IsInRange(depth, 1, GPU_MAX_TEXTURE_SIZE), true);
+    CHECK_RETURN(Math::IsInRange(arraySize, 1, GPU_MAX_TEXTURE_ARRAY_SIZE), true);
+
+    // Auto-compute mip levels from dimensions
+    int32 mipLevelsMax = MipLevelsCount(width, height, depth);
+    if (mipLevels == -1)
+        mipLevels = mipLevelsMax;
+    else
+    {
+        CHECK_RETURN(Math::IsInRange(mipLevels, 1, mipLevelsMax), true);
+    }
+
+    // Skip when texture won't change
+    if (format == Format && width == Width && height == Height && depth == Depth && arraySize == GetArraySize() && mipLevels == GetMipLevels())
+        return false;
+
+    // Initialize
+    Format = format;
+    Width = width;
+    Height = height;
+    Depth = depth;
+    Items.Resize(arraySize);
+    for (auto& item : Items)
+        item.Mips.Resize(mipLevels);
+    return false;
+}
+
 bool TextureData::GetPixels(Array<Color32>& pixels, int32 mipIndex, int32 arrayIndex) const
 {
     if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
@@ -269,6 +208,70 @@ bool TextureData::GetPixels(Array<Color>& pixels, int32 mipIndex, int32 arrayInd
         return Items.Get()[arrayIndex].Mips.Get()[mipIndex].GetPixels(pixels, mipWidth, mipHeight, Format);
     }
     return true;
+}
+
+bool TextureData::SetPixels(const Span<Color32>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
+    {
+        const int32 mipWidth = Math::Max(1, Width >> mipIndex);
+        const int32 mipHeight = Math::Max(1, Height >> mipIndex);
+        return Items.Get()[arrayIndex].Mips.Get()[mipIndex].SetPixels(pixels, mipWidth, mipHeight, Format);
+    }
+    return true;
+}
+
+bool TextureData::SetPixels(const Span<Color>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
+    {
+        const int32 mipWidth = Math::Max(1, Width >> mipIndex);
+        const int32 mipHeight = Math::Max(1, Height >> mipIndex);
+        return Items.Get()[arrayIndex].Mips.Get()[mipIndex].SetPixels(pixels, mipWidth, mipHeight, Format);
+    }
+    return true;
+}
+
+bool TextureData::GenerateMip(int32 mipIndex, bool linear)
+{
+    PROFILE_CPU();
+    if (PixelFormatExtensions::IsCompressed(Format))
+    {
+        LOG(Warning, "Cannot generate mip map for compressed format data.");
+        return true;
+    }
+
+    for (auto& item : Items)
+    {
+        if (mipIndex < 1 || mipIndex >= item.Mips.Count())
+        {
+            LOG(Warning, "Invalid mip map to generate.");
+            return true;
+        }
+        const auto& srcMip = item.Mips[mipIndex - 1];
+        auto& dstMip = item.Mips[mipIndex];
+        if (srcMip.RowPitch == 0 || srcMip.DepthPitch == 0 || srcMip.Data.IsInvalid())
+        {
+            LOG(Warning, "Missing data for source mip map.");
+            return true;
+        }
+
+        // Allocate data
+        const int32 dstMipWidth = Math::Max(1, Width >> mipIndex);
+        const int32 dstMipHeight = Math::Max(1, Height >> mipIndex);
+        const int32 pixelStride = PixelFormatExtensions::SizeInBytes(Format);
+        dstMip.RowPitch = dstMipWidth * pixelStride;
+        dstMip.DepthPitch = dstMip.RowPitch * dstMipHeight;
+        dstMip.Data.Allocate(dstMip.DepthPitch);
+
+        // Perform filtering
+        const int32 width = Math::Max(1, Width >> (mipIndex - 1));
+        const int32 height = Math::Max(1, Height >> (mipIndex - 1));
+        if (TextureTool::GenerateMip(width, height, Format, srcMip.Data, srcMip.RowPitch, dstMip.Data, dstMip.RowPitch, linear))
+            return true;
+    }
+
+    return false;
 }
 
 REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
@@ -911,7 +914,6 @@ TextureBase::InitData::InitData(InitData&& other) noexcept
 
 bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
 {
-    // Validate input
     if (mipIndex < 1 || mipIndex >= Mips.Count())
     {
         LOG(Warning, "Invalid mip map to generate.");
@@ -934,7 +936,6 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
         LOG(Warning, "Missing data for source mip map.");
         return true;
     }
-
     PROFILE_CPU_NAMED("Texture.GenerateMip");
 
     // Allocate data
@@ -946,106 +947,9 @@ bool TextureBase::InitData::GenerateMip(int32 mipIndex, bool linear)
     dstMip.Data.Allocate(dstMip.SlicePitch * ArraySize);
 
     // Perform filtering
-    if (linear)
-    {
-        switch (Format)
-        {
-        // 4 component, 32 bit with 8 bits per component - use Color32 type
-        case PixelFormat::R8G8B8A8_SInt:
-        case PixelFormat::R8G8B8A8_Typeless:
-        case PixelFormat::R8G8B8A8_SNorm:
-        case PixelFormat::R8G8B8A8_UInt:
-        case PixelFormat::R8G8B8A8_UNorm:
-        case PixelFormat::R8G8B8A8_UNorm_sRGB:
-        case PixelFormat::R8G8_B8G8_UNorm:
-        case PixelFormat::B8G8R8A8_Typeless:
-        case PixelFormat::B8G8R8A8_UNorm:
-        case PixelFormat::B8G8R8A8_UNorm_sRGB:
-        case PixelFormat::B8G8R8X8_Typeless:
-        case PixelFormat::B8G8R8X8_UNorm:
-        case PixelFormat::B8G8R8X8_UNorm_sRGB:
-        {
-            // Linear downscale filter
-            for (int32 arrayIndex = 0; arrayIndex < ArraySize; arrayIndex++)
-            {
-                const byte* dstData = dstMip.Data.Get() + arrayIndex * dstMip.SlicePitch;
-                const byte* srcData = srcMip.Data.Get() + arrayIndex * srcMip.SlicePitch;
-                for (int32 y = 0; y < dstMipHeight; y++)
-                {
-                    for (int32 x = 0; x < dstMipWidth; x++)
-                    {
-                        const auto dstIndex = y * dstMip.RowPitch + x * pixelStride;
-
-#define SAMPLE(var, dx, dy) const auto var = Color(*(Color32*)(srcData + ((y * 2 + (dy)) * srcMip.RowPitch + x * pixelStride * 2 + (pixelStride * (dx)))))
-                        SAMPLE(v00, 0, 0);
-                        SAMPLE(v01, 0, 1);
-                        SAMPLE(v10, 1, 0);
-                        SAMPLE(v11, 1, 1);
-#undef SAMPLE
-
-                        *(Color32*)(dstData + dstIndex) = Color32((v00 + v01 + v10 + v11) * 0.25f);
-                    }
-                }
-            }
-            break;
-        }
-        default:
-            LOG(Error, "Unsupported texture data format {0}.", ScriptingEnum::ToString(Format));
-            return true;
-        }
-    }
-    else
-    {
-        // Point downscale filter
-        for (int32 arrayIndex = 0; arrayIndex < ArraySize; arrayIndex++)
-        {
-            byte* dstData = dstMip.Data.Get() + arrayIndex * dstMip.SlicePitch;
-            const byte* srcData = srcMip.Data.Get() + arrayIndex * srcMip.SlicePitch;
-            for (int32 y = 0; y < dstMipHeight; y++)
-            {
-                for (int32 x = 0; x < dstMipWidth; x++)
-                {
-                    const auto dstIndex = y * dstMip.RowPitch + x * pixelStride;
-                    const auto srcIndex = y * 2 * srcMip.RowPitch + x * pixelStride * 2;
-
-                    Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
-                }
-            }
-        }
-
-        // Fix right and bottom edges to preserve the original values
-        for (int32 arrayIndex = 0; arrayIndex < ArraySize; arrayIndex++)
-        {
-            byte* dstData = dstMip.Data.Get() + arrayIndex * dstMip.SlicePitch;
-            const byte* srcData = srcMip.Data.Get() + arrayIndex * srcMip.SlicePitch;
-            for (int32 y = 0; y < dstMipHeight - 1; y++)
-            {
-                const int32 x = dstMipWidth - 1;
-                const auto dstIndex = y * dstMip.RowPitch + x * pixelStride;
-                const auto srcIndex = y * 2 * srcMip.RowPitch + x * pixelStride * 2 + pixelStride;
-
-                Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
-            }
-            for (int32 x = 0; x < dstMipWidth - 1; x++)
-            {
-                const int32 y = dstMipHeight - 1;
-                const auto dstIndex = y * dstMip.RowPitch + x * pixelStride;
-                const auto srcIndex = (y * 2 + 1) * srcMip.RowPitch + x * pixelStride * 2;
-
-                Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
-            }
-            {
-                const int32 x = dstMipWidth - 1;
-                const int32 y = dstMipHeight - 1;
-                const auto dstIndex = y * dstMip.RowPitch + x * pixelStride;
-                const auto srcIndex = (y * 2 + 1) * srcMip.RowPitch + x * pixelStride * 2 + pixelStride;
-
-                Platform::MemoryCopy(dstData + dstIndex, srcData + srcIndex, pixelStride);
-            }
-        }
-    }
-
-    return false;
+    const int32 width = Math::Max(1, Width >> (mipIndex - 1));
+    const int32 height = Math::Max(1, Height >> (mipIndex - 1));
+    return TextureTool::GenerateMip(width, height, Format, srcMip.Data, srcMip.RowPitch, dstMip.Data, dstMip.RowPitch, linear, ArraySize);
 }
 
 void TextureBase::InitData::FromTextureData(const TextureData& textureData, bool generateMips)

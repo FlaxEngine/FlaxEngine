@@ -35,6 +35,18 @@ public:
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Span"/> class.
+    /// </summary>
+    /// <param name="other">The other span to link.</param>
+    template<typename Other = T>
+    explicit Span(const Span<Other>& other) noexcept
+        : _data((T*)other.Get())
+        , _length(other.Length() * sizeof(Other) / sizeof(T))
+    {
+        static_assert(sizeof(Other) % sizeof(T) == 0, "Span type conversion can happen only on down into matching size (eg. int32 to byte).");
+    }
+
 public:
     /// <summary>
     /// Returns true if data is valid.
