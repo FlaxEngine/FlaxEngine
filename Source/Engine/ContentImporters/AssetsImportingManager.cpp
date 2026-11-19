@@ -64,6 +64,7 @@ namespace
 // Tags used to detect asset creation mode
 const String AssetsImportingManager::CreateTextureTag(TEXT("Texture"));
 const String AssetsImportingManager::CreateTextureAsTextureDataTag(TEXT("TextureAsTextureData"));
+const String AssetsImportingManager::CreateTextureAsTextureDataWithOptionsTag(TEXT("TextureAsTextureDataWithOptions"));
 const String AssetsImportingManager::CreateTextureAsInitDataTag(TEXT("TextureAsInitData"));
 const String AssetsImportingManager::CreateMaterialTag(TEXT("Material"));
 const String AssetsImportingManager::CreateMaterialInstanceTag(TEXT("MaterialInstance"));
@@ -516,6 +517,7 @@ bool AssetsImportingManagerService::Init()
         // Textures
         { AssetsImportingManager::CreateTextureTag, ImportTexture::Import },
         { AssetsImportingManager::CreateTextureAsTextureDataTag, ImportTexture::ImportAsTextureData },
+        { AssetsImportingManager::CreateTextureAsTextureDataWithOptionsTag, ImportTexture::ImportAsTextureDataWithOptions },
         { AssetsImportingManager::CreateTextureAsInitDataTag, ImportTexture::ImportAsInitData },
         { AssetsImportingManager::CreateCubeTextureTag, ImportTexture::ImportCube },
 

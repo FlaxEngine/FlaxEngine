@@ -134,10 +134,10 @@ public:
     /// <param name="width">The texture width (in pixels).</param>
     /// <param name="height">The texture height (in pixels).</param>
     /// <param name="depth">The texture depth (in pixels).</param>
-    /// <param name="arraySize">The texture array size (defaults to 1 for 2D textures).</param>
     /// <param name="mipLevels">Amount of mip levels for each texture array slice. Value -1 uses automatic mip count based on texture size.</param>
+    /// <param name="arraySize">The texture array size (defaults to 1 for 2D textures).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool Init(PixelFormat format, int32 width, int32 height, int32 depth = 1, int32 arraySize = 1, int32 mipLevels = -1);
+    API_FUNCTION() bool Init(PixelFormat format, int32 width, int32 height, int32 depth = 1, int32 mipLevels = 1, int32 arraySize = 1);
 
     /// <summary>
     /// Gets the texture pixels as Color32 array.

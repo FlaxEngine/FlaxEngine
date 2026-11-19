@@ -15,6 +15,7 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -721,10 +722,11 @@ namespace FlaxEditor.Windows.Assets
 
             // Toolstrip
             var inputOptions = editor.Options.Options.Input;
-            _undoButton = _toolstrip.AddButton(editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo.", ref inputOptions.Undo);
+            _undoButton = _toolstrip.AddButton(editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo..", ref inputOptions.Undo);
             _redoButton = _toolstrip.AddButton(editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo.", ref inputOptions.Redo);
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.AddFile64, AddSprite).LinkTooltip("Add a new sprite");
+            _toolstrip.AddButton(editor.Icons.ShipIt64, ExportSprites).LinkTooltip("Export all sprites into separate textures.");
+            _toolstrip.AddButton(editor.Icons.AddFile64, AddSprite).LinkTooltip("Add a new sprite.");
 
             // Inputs
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
@@ -738,6 +740,88 @@ namespace FlaxEditor.Windows.Assets
         {
             MarkAsEdited();
             UpdateToolstrip();
+        }
+
+        private void ExportSprites()
+        {
+            if (FileSystem.ShowBrowseFolderDialog(
+                Root.RootWindow.Window,
+                Path.GetDirectoryName(Asset.Path),
+                "Select destination folder to export all sprites as separate textures.",
+                out var outputFolder) ||
+                Asset.WaitForLoaded())
+                return;
+            var atlas = (SpriteAtlas)Asset;
+            var sprites = atlas.Sprites;
+            var atlasSize = atlas.Size;
+            Editor.Log($"Exporting {sprites.Length} sprites to '{outputFolder}'");
+
+            // Load atlas texture
+            var textureData = atlas.GetTextureData();
+            if (textureData == null || textureData.GetPixels(out Color32[] texturePixels))
+            {
+                FlaxEngine.Object.Destroy(textureData);
+                Editor.LogError("Failed to load texture data");
+                return;
+            }
+            FlaxEngine.Object.Destroy(textureData);
+            var textureSize = new Int2(atlasSize);
+            if (texturePixels.Length != textureSize.X * textureSize.Y)
+            {
+                Editor.LogError("Invalid texture data");
+                return;
+            }
+
+            // Inherit some atlas options by sprite textures
+            var options = FlaxEngine.Tools.TextureTool.Options.Default;
+            var atlasOptions = options;
+            Editor.TryRestoreImportOptions(ref atlasOptions, Asset.Path);
+            options.Type = atlasOptions.Type;
+            options.sRGB = atlasOptions.sRGB;
+            options.TextureGroup = atlasOptions.TextureGroup;
+            options.NeverStream = atlasOptions.NeverStream;
+
+            // Export all sprites
+            var useMips = atlas.MipLevels > 1;
+            var spriteTexture = new TextureData();
+            foreach (var sprite in sprites)
+            {
+                // Get sprite bounds in texture pixel coordinates
+                var spriteMin = new Int2(sprite.Area.UpperLeft * atlasSize);
+                var spriteMax = new Int2(sprite.Area.BottomRight * atlasSize);
+                var spritePos = Int2.Min(spriteMin, spriteMax);
+                var spriteSize = Int2.Max(spriteMin, spriteMax) - spritePos;
+
+                // Copy sprite pixels
+                var spritePixels = new Color32[spriteSize.X * spriteSize.Y];
+                if (spritePixels.Length == 0)
+                    continue;
+                for (int y = 0; y < spriteSize.Y; y++)
+                {
+                    for (int x = 0; x < spriteSize.X; x++)
+                    {
+                        var xTexture = spritePos.X + x;
+                        var yTexture = spritePos.Y + y;
+                        spritePixels[y * spriteSize.X + x] = texturePixels[yTexture * textureSize.X + xTexture];
+                    }
+                }
+
+                // Setup sprite texture
+                spriteTexture.Init(PixelFormat.R8G8B8A8_UNorm, spriteSize.X, spriteSize.Y, 1, 1, useMips ? -1 : 1);
+                spriteTexture.SetPixels(spritePixels);
+                var spriteMips = spriteTexture.MipLevels;
+                for (int mip = 1; mip < spriteMips; mip++)
+                {
+                    spriteTexture.GenerateMip(mip, true);
+                }
+
+                // Create texture asset
+                var path = Path.Combine(outputFolder, sprite.Name + ".flax");
+                if (Editor.CreateTexture(path, spriteTexture, ref options))
+                {
+                    Editor.LogError($"Failed to export sprite '{sprite.Name}' of size {spriteSize.X}x{spriteSize.Y}");
+                }
+            }
         }
 
         private void AddSprite()

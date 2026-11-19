@@ -561,6 +561,19 @@ bool ManagedEditor::TryRestoreImportOptions(TextureTool::Options& options, Strin
     return ImportTexture::TryGetImportOptions(assetPath, options);
 }
 
+bool ManagedEditor::CreateTexture(String outputPath, const TextureData& textureData)
+{
+    FileSystem::NormalizePath(outputPath);
+    return AssetsImportingManager::Create(AssetsImportingManager::CreateTextureAsTextureDataTag, outputPath, (void*)&textureData);
+}
+
+bool ManagedEditor::CreateTexture(String outputPath, const TextureData& textureData, TextureTool::Options& options)
+{
+    FileSystem::NormalizePath(outputPath);
+    struct Tag { const TextureData* TextureData; TextureTool::Options* Options; } tag = { &textureData, &options };
+    return AssetsImportingManager::Create(AssetsImportingManager::CreateTextureAsTextureDataWithOptionsTag, outputPath, &tag);
+}
+
 bool ManagedEditor::Import(const String& inputPath, const String& outputPath, const ModelTool::Options& options)
 {
     return Import(inputPath, outputPath, (void*)&options);
@@ -592,12 +605,6 @@ bool ManagedEditor::CreateAsset(const String& tag, String outputPath)
 {
     FileSystem::NormalizePath(outputPath);
     return AssetsImportingManager::Create(tag, outputPath);
-}
-
-bool ManagedEditor::CreateTexture(String outputPath, const TextureData& textureData)
-{
-    FileSystem::NormalizePath(outputPath);
-    return AssetsImportingManager::Create(AssetsImportingManager::CreateTextureAsTextureDataTag, outputPath, (void*)&textureData);
 }
 
 Array<Guid> ManagedEditor::GetAssetReferences(const Guid& assetId)

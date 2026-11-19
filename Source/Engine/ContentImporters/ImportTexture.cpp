@@ -106,10 +106,10 @@ void ImportTexture::InitOptions(CreateAssetContext& context, Options& options)
     options.MaxSize = Math::Min(options.MaxSize, GPU_MAX_TEXTURE_SIZE);
 }
 
-CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const TextureData& textureData, Options& options)
+CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const TextureData& textureData, Options* options)
 {
     // Check data
-    bool isCubeMap = false;
+    bool isCubeMap = false, isAtlas = options && options->IsAtlas;
     if (textureData.Width * textureData.Depth * textureData.Depth * textureData.GetMipLevels() == 0)
     {
         LOG(Warning, "Empty texture data.");
@@ -117,7 +117,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     }
     if (textureData.GetArraySize() != 1)
     {
-        if (options.IsAtlas)
+        if (isAtlas)
         {
             LOG(Warning, "Cannot import sprite atlas texture that has more than one array slice.");
             return CreateAssetResult::Error;
@@ -144,7 +144,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     {
         IMPORT_SETUP(CubeTexture, 4);
     }
-    else if (options.IsAtlas)
+    else if (isAtlas)
     {
         IMPORT_SETUP(SpriteAtlas, 4);
     }
@@ -155,31 +155,37 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
 
     // Fill texture header
     TextureHeader textureHeader;
-    textureHeader.NeverStream = options.NeverStream;
+    textureHeader.NeverStream = false;
     textureHeader.Width = textureData.Width;
     textureHeader.Height = textureData.Height;
     textureHeader.Format = textureData.Format;
-    textureHeader.Type = options.Type;
+    textureHeader.Type = TextureFormatType::Unknown;
     textureHeader.MipLevels = textureData.GetMipLevels();
     textureHeader.IsSRGB = PixelFormatExtensions::IsSRGB(textureHeader.Format);
     textureHeader.IsCubeMap = isCubeMap;
-    textureHeader.TextureGroup = options.TextureGroup;
-    if (textureHeader.Format == PixelFormat::Basis)
-        textureHeader.IsSRGB = options.sRGB; // Basis format can be either sRGB or linear, so use option to decide that
+    textureHeader.TextureGroup = -1;
+    if (options)
+    {
+        textureHeader.NeverStream = options->NeverStream;
+        textureHeader.Type = options->Type;
+        textureHeader.TextureGroup = options->TextureGroup;
+        if (textureHeader.Format == PixelFormat::Basis)
+            textureHeader.IsSRGB = options->sRGB; // Basis format can be either sRGB or linear, so use option to decide that
+    }
     ASSERT(textureHeader.MipLevels <= GPU_MAX_TEXTURE_MIP_LEVELS);
 
     // Save header
     context.Data.CustomData.Copy(&textureHeader);
 
     // Save atlas sprites data
-    if (options.IsAtlas)
+    if (isAtlas)
     {
+        auto& sprites = options->Sprites;
         MemoryWriteStream stream(256);
         stream.Write(1); // Version
-        stream.Write(options.Sprites.Count()); // Amount of tiles
-        for (int32 i = 0; i < options.Sprites.Count(); i++)
+        stream.Write(sprites.Count()); // Amount of tiles
+        for (auto& sprite : sprites)
         {
-            auto& sprite = options.Sprites[i];
             stream.Write(sprite.Area);
             stream.Write(sprite.Name, 49);
         }
@@ -198,19 +204,20 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     }
 
 #if IMPORT_TEXTURE_CACHE_OPTIONS
-
-    // Create json with import context
-    rapidjson_flax::StringBuffer importOptionsMetaBuffer;
-    importOptionsMetaBuffer.Reserve(256);
-    CompactJsonWriter importOptionsMeta(importOptionsMetaBuffer);
-    importOptionsMeta.StartObject();
+    if (options)
     {
-        context.AddMeta(importOptionsMeta);
-        options.Serialize(importOptionsMeta, nullptr);
+        // Create json with import context
+        rapidjson_flax::StringBuffer importOptionsMetaBuffer;
+        importOptionsMetaBuffer.Reserve(256);
+        CompactJsonWriter importOptionsMeta(importOptionsMetaBuffer);
+        importOptionsMeta.StartObject();
+        {
+            context.AddMeta(importOptionsMeta);
+            options->Serialize(importOptionsMeta, nullptr);
+        }
+        importOptionsMeta.EndObject();
+        context.Data.Metadata.Copy((const byte*)importOptionsMetaBuffer.GetString(), (uint32)importOptionsMetaBuffer.GetSize());
     }
-    importOptionsMeta.EndObject();
-    context.Data.Metadata.Copy((const byte*)importOptionsMetaBuffer.GetString(), (uint32)importOptionsMetaBuffer.GetSize());
-
 #endif
 
     return CreateAssetResult::Ok;
@@ -364,13 +371,21 @@ CreateAssetResult ImportTexture::Import(CreateAssetContext& context)
         return CreateAssetResult::Error;
     }
 
-    return Create(context, textureData, options);
+    return Create(context, textureData, &options);
 }
 
 CreateAssetResult ImportTexture::ImportAsTextureData(CreateAssetContext& context)
 {
     ASSERT(context.CustomArg != nullptr);
     return Create(context, static_cast<TextureData*>(context.CustomArg));
+}
+
+CreateAssetResult ImportTexture::ImportAsTextureDataWithOptions(CreateAssetContext& context)
+{
+    ASSERT(context.CustomArg != nullptr);
+    struct Tag { const TextureData* TextureData; TextureTool::Options* Options; };
+    auto tag = (Tag*)context.CustomArg;
+    return Create(context, *tag->TextureData, tag->Options);
 }
 
 CreateAssetResult ImportTexture::ImportAsInitData(CreateAssetContext& context)
@@ -381,8 +396,7 @@ CreateAssetResult ImportTexture::ImportAsInitData(CreateAssetContext& context)
 
 CreateAssetResult ImportTexture::Create(CreateAssetContext& context, TextureData* textureData)
 {
-    Options options;
-    return Create(context, *textureData, options);
+    return Create(context, *textureData);
 }
 
 CreateAssetResult ImportTexture::Create(CreateAssetContext& context, TextureBase::InitData* initData)

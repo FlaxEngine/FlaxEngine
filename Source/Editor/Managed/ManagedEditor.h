@@ -179,6 +179,23 @@ public:
     /// <param name="assetPath">The asset path.</param>
     /// <returns>True settings has been restored, otherwise false.</returns>
     API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) TextureTool::Options& options, String assetPath);
+
+    /// <summary>
+    /// Creates a texture asset from Texture Data.
+    /// </summary>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="textureData">The texture data.</param>
+    /// <returns>True if asset could not be created, otherwise false.</returns>
+    API_FUNCTION() static bool CreateTexture(String outputPath, const TextureData& textureData);
+
+    /// <summary>
+    /// Creates a texture asset from Texture Data.
+    /// </summary>
+    /// <param name="outputPath">The result asset file path.</param>
+    /// <param name="textureData">The texture data.</param>
+    /// <param name="options">The import settings. Not all options of them are implemented for runtime-generated textures.</param>
+    /// <returns>True if asset could not be created, otherwise false.</returns>
+    API_FUNCTION() static bool CreateTexture(String outputPath, const TextureData& textureData, API_PARAM(Ref) TextureTool::Options& options);
 #endif
 
 #if COMPILE_WITH_MODEL_TOOL
@@ -225,14 +242,6 @@ public:
     /// <param name="tag">New asset type.</param>
     /// <param name="outputPath">Output asset path.</param>
     API_FUNCTION() static bool CreateAsset(const String& tag, String outputPath);
-
-    /// <summary>
-    /// Creates a texture asset from Texture Data.
-    /// </summary>
-    /// <param name="outputPath">The result asset file path.</param>
-    /// <param name="textureData">The texture data.</param>
-    /// <returns>True if asset could not be created, otherwise false.</returns>
-    API_FUNCTION() static bool CreateTexture(String outputPath, const TextureData& textureData);
 
     /// <summary>
     /// Gets a list of asset references of a given asset.

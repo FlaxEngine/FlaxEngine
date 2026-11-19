@@ -39,6 +39,11 @@ public:
     static const String CreateTextureAsTextureDataTag;
 
     /// <summary>
+    /// The create texture from raw data. Argument must be pair of TextureData* and Options*.
+    /// </summary>
+    static const String CreateTextureAsTextureDataWithOptionsTag;
+
+    /// <summary>
     /// The create texture from raw data. Argument must be TextureBase::InitData*.
     /// </summary>
     static const String CreateTextureAsInitDataTag;

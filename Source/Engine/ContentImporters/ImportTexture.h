@@ -46,6 +46,13 @@ public:
     static CreateAssetResult ImportAsTextureData(CreateAssetContext& context);
 
     /// <summary>
+    /// Creates the Texture. Argument must be pair of TextureData* and Options*.
+    /// </summary>
+    /// <param name="context">The importing context.</param>
+    /// <returns>Result.</returns>
+    static CreateAssetResult ImportAsTextureDataWithOptions(CreateAssetContext& context);
+
+    /// <summary>
     /// Creates the Texture. Argument must be TextureBase::InitData*.
     /// </summary>
     /// <param name="context">The importing context.</param>
@@ -92,7 +99,7 @@ public:
 
 private:
     static void InitOptions(CreateAssetContext& context, Options& options);
-    static CreateAssetResult Create(CreateAssetContext& context, const TextureData& textureData, Options& options);
+    static CreateAssetResult Create(CreateAssetContext& context, const TextureData& textureData, Options* options = nullptr);
     static CreateAssetResult Create(CreateAssetContext& context, const TextureBase::InitData& textureData, Options& options);
 };
 
