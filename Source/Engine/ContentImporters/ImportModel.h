@@ -39,6 +39,13 @@ public:
     /// <returns>Result.</returns>
     static CreateAssetResult Create(CreateAssetContext& context);
 
+    /// <summary>
+    /// Creates the model asset from the ModelData storage (input argument should be pointer to ModelData), keeping its LODs' screen sizes and its minimum screen size (Create computes them).
+    /// </summary>
+    /// <param name="context">The importing context.</param>
+    /// <returns>Result.</returns>
+    static CreateAssetResult CreateWithScreenSizes(CreateAssetContext& context);
+
 private:
     static CreateAssetResult CreateModel(CreateAssetContext& context, const ModelData& data, const Options* options = nullptr);
     static CreateAssetResult CreateSkinnedModel(CreateAssetContext& context, const ModelData& data, const Options* options = nullptr);
