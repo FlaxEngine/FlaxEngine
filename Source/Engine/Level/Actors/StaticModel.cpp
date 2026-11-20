@@ -10,6 +10,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderContext.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Serialization/Serialization.h"
@@ -266,6 +267,20 @@ void StaticModel::RemoveVertexColors()
     _vertexColorsDirty = false;
 }
 
+GPUTexture* StaticModel::GetSDFHeightfield() const
+{
+    return _sdfHeightfield.Get();
+}
+
+void StaticModel::SetSDFHeightfield(GPUTexture* heightfield, const Transform& localTransform, const Float4& localToUV)
+{
+    _sdfHeightfield = heightfield;
+    _sdfHeightfieldTransform = localTransform;
+    _sdfHeightfieldLocalToUV = localToUV;
+    if (_sceneRenderingKey != -1)
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Visual);
+}
+
 void StaticModel::OnAssetChanged(Asset* asset, void* caller)
 {
     if (_residencyChangedModel)
@@ -375,13 +390,18 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSDF) && model->SDF.Texture)
-            GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, model->SDF, _transform, _box);
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSDF))
+        {
+            if (GPUTexture* heightfield = _sdfHeightfield.Get())
+                GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, heightfield, _transform.LocalToWorld(_sdfHeightfieldTransform), _box, _sdfHeightfieldLocalToUV);
+            else if (model->SDF.Texture)
+                GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, model->SDF, _transform, _box);
+        }
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSurfaceAtlas) && model->SDF.Texture)
+        if (EnumHasAnyFlags(_drawModes, DrawPass::GlobalSurfaceAtlas) && (model->SDF.Texture || _sdfHeightfield))
             GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, model->LODs.Last().GetBox());
         return;
     }

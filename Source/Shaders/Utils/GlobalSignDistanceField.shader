@@ -204,9 +204,9 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
         // Transform to world-space
 	    float4x4 localToWorld = ToMatrix4x4(objectData.VolumeToWorld);
 	    heightfieldPosition = mul(float4(heightfieldPosition, 1), localToWorld).xyz;
-	    // TODO: rotate normal vector
-	    //heightfieldNormal = normalize(float3(localToWorld[0].y, localToWorld[1].y, localToWorld[2].y));
-	    //heightfieldNormal = float3(0, 1, 0);
+	    // Rotate the normal into world-space (orientation only: the heightmap's normal is already in unscaled units)
+	    float3x3 localToWorldRotation = float3x3(normalize(localToWorld[0].xyz), normalize(localToWorld[1].xyz), normalize(localToWorld[2].xyz));
+	    heightfieldNormal = normalize(mul(heightfieldNormal, localToWorldRotation));
 
 		// Calculate distance from voxel center to the heightfield
 		float objectDistance = dot(heightfieldNormal, voxelWorldPos - heightfieldPosition);

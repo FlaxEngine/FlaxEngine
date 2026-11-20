@@ -5,6 +5,9 @@
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Renderer/Lightmaps.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
+
+class GPUTexture;
 
 /// <summary>
 /// Renders model on the screen.
@@ -26,6 +29,9 @@ private:
     GPUBuffer* _vertexColorsBuffer[MODEL_MAX_LODS];
     Model* _residencyChangedModel = nullptr;
     mutable MeshDeformation* _deformation = nullptr;
+    ScriptingObjectReference<GPUTexture> _sdfHeightfield;
+    Transform _sdfHeightfieldTransform = Transform::Identity;
+    Float4 _sdfHeightfieldLocalToUV = Float4::Zero;
 
 public:
     /// <summary>
@@ -156,6 +162,19 @@ public:
     /// Removes the vertex colors buffer from this instance.
     /// </summary>
     API_FUNCTION() void RemoveVertexColors();
+
+    /// <summary>
+    /// Gets the heightfield drawn into the Global SDF instead of the model's SDF (null when the model's SDF is used). Not serialized.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") GPUTexture* GetSDFHeightfield() const;
+
+    /// <summary>
+    /// Sets a heightfield to draw into the Global SDF (and to allow the Global Surface Atlas) instead of the model's SDF, for a model whose surface is a height map such as procedural ground. It's cheaper than generating the model's SDF. The texture uses the terrain heightmap encoding: the height in red and green (16-bit, 0-1 over the transform's Y scale) and the normal's X and Z in blue and alpha. Not serialized.
+    /// </summary>
+    /// <param name="heightfield">The heightfield texture, or null to use the model's SDF again.</param>
+    /// <param name="localTransform">The heightfield's space relative to the actor: X and Z across it, Y up, the height scaled by its Y scale.</param>
+    /// <param name="localToUV">The heightfield's space to its UV: XY the scale and ZW the offset (as for terrain patches).</param>
+    API_FUNCTION() void SetSDFHeightfield(GPUTexture* heightfield, const Transform& localTransform, const Float4& localToUV);
 
 private:
     void OnModelResidencyChanged();
