@@ -24,7 +24,7 @@ protected:
     Array<Task*, FixedAllocation<16>> _streamingTasks;
 
 public:
-    StreamingTexture(ITextureOwner* owner, const String& name);
+    StreamingTexture(ITextureOwner* owner, const StringView& name);
     ~StreamingTexture();
 
 public:

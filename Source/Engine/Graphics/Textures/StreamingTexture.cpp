@@ -43,7 +43,7 @@ TextureHeader::TextureHeader(const TextureHeader_Deprecated& old)
 static_assert(sizeof(TextureHeader_Deprecated) == 10 * sizeof(int32), "Invalid TextureHeader size.");
 static_assert(sizeof(TextureHeader) == 36, "Invalid TextureHeader size.");
 
-StreamingTexture::StreamingTexture(ITextureOwner* parent, const String& name)
+StreamingTexture::StreamingTexture(ITextureOwner* parent, const StringView& name)
     : StreamableResource(StreamingGroups::Instance()->Textures())
     , _owner(parent)
     , _texture(nullptr)
@@ -55,8 +55,6 @@ StreamingTexture::StreamingTexture(ITextureOwner* parent, const String& name)
     ASSERT(GPUDevice::Instance);
     _texture = GPUDevice::Instance->CreateTexture(name);
     ASSERT(_texture != nullptr);
-
-    _header.MipLevels = 0;
 }
 
 StreamingTexture::~StreamingTexture()
@@ -88,8 +86,20 @@ bool StreamingTexture::Create(const TextureHeader& header)
     if (header.MipLevels > GPU_MAX_TEXTURE_MIP_LEVELS
         || Math::IsNotInRange(header.Width, 1, GPU_MAX_TEXTURE_SIZE)
         || Math::IsNotInRange(header.Height, 1, GPU_MAX_TEXTURE_SIZE)
-    )
+        )
     {
+        TextureHeader emptyHeader;
+        if (Platform::MemoryCompare(&header, &emptyHeader, sizeof(TextureHeader)) == 0)
+        {
+            // Texture has empty header - not created yet
+            ScopeLock lock(_owner->GetOwnerLocker());
+            if (_texture && IsInitialized())
+                _texture->ReleaseGPU();
+            _header = header;
+            _isBlockCompressed = false;
+            _minMipCountBlockCompressed = 0;
+            return false;
+        }
         LOG(Warning, "Invalid texture header.");
         return true;
     }

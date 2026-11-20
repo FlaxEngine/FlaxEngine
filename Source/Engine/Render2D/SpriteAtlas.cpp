@@ -176,6 +176,18 @@ bool SpriteAtlas::Save(const StringView& path)
 
 #endif
 
+uint64 SpriteAtlas::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = TextureBase::GetMemoryUsage();
+    result += sizeof(SpriteAtlas) - sizeof(TextureBase);
+    result += Sprites.Capacity() * sizeof(Sprite);
+    for (const Sprite& sprite : Sprites)
+        result += (sprite.Name.Length() + 1) * sizeof(Char);
+    Locker.Unlock();
+    return result;
+}
+
 Asset::LoadResult SpriteAtlas::load()
 {
     auto spritesDataChunk = GetChunk(15);

@@ -162,7 +162,7 @@ public:
     API_FUNCTION() DEPRECATED("Use Save method instead.") bool SaveSprites();
 #endif
 
-private:
+protected:
     bool SaveSprites(WriteStream& stream);
     bool LoadSprites(ReadStream& stream);
 
@@ -171,6 +171,7 @@ public:
 #if USE_EDITOR
     bool Save(const StringView& path = StringView::Empty) override;
 #endif
+    uint64 GetMemoryUsage() const override;
 
 protected:
     // [BinaryAsset]
