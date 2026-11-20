@@ -540,7 +540,7 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                     var targetPlatform = Platform.BuildPlatform.Target;
                     var configuration = TargetConfiguration.Development;
-                    var architecture = TargetArchitecture.x64;
+                    var architecture = Platform.BuildTargetArchitecture;
 
                     var compilerPath = string.Empty;
                     var cppVersion = NativeCpp.CppVersion.Cpp14;

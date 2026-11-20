@@ -9,8 +9,17 @@ if [ $testfilesize -le 1000 ]; then
 	exit 1
 fi
 
+case "$(uname -m)" in
+    "x86_64") ARCH=x64;;
+    "aarch64"|"arm64") ARCH=arm64;;
+    *)
+        echo "Unsupported architecture $ARCH"
+        exit 2
+        ;;
+esac
+
 # Compile the build tool.
-dotnet msbuild /nologo /verbosity:quiet "Source/Tools/Flax.Build/Flax.Build.csproj" /property:Configuration=Release /target:Restore,Build /property:RestorePackagesConfig=True /p:RuntimeIdentifiers=linux-x64
+dotnet msbuild /nologo /verbosity:quiet "Source/Tools/Flax.Build/Flax.Build.csproj" /property:Configuration=Release /target:Restore,Build /property:RestorePackagesConfig=True /p:RuntimeIdentifiers=linux-$ARCH
 
 # Run the build tool using the provided arguments.
 Binaries/Tools/Flax.Build "$@"

@@ -336,7 +336,7 @@ namespace Flax.Build
             case TargetPlatform.XboxScarlett: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.XboxOne: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.UWP: return targetArchitecture == TargetArchitecture.x64;
-            case TargetPlatform.Linux: return targetArchitecture == TargetArchitecture.x64;
+            case TargetPlatform.Linux: return targetArchitecture == TargetArchitecture.x64 || targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.PS4: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.PS5: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.Android: return targetArchitecture == TargetArchitecture.ARM64;

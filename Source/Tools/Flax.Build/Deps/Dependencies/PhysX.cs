@@ -138,7 +138,17 @@ namespace Flax.Deps.Dependencies
                 binariesSubDir = string.Format("win.{0}_{1}.vc143.md", arch, bits);
                 break;
             case TargetPlatform.Linux:
-                binariesSubDir = "linux.clang";
+                switch (architecture)
+                {
+                case TargetArchitecture.x64:
+                    binariesSubDir = "linux.x86_64";
+                    break;
+                case TargetArchitecture.ARM64:
+                    binariesSubDir = "linux.aarch64";
+                    break;
+                default: throw new InvalidArchitectureException(architecture);
+                }
+                //binariesSubDir = "linux.clang";
                 binariesPrefix = "lib";
                 break;
             case TargetPlatform.PS4:
@@ -231,10 +241,10 @@ namespace Flax.Deps.Dependencies
             }
 
             // Update packman for old PhysX version (https://github.com/NVIDIA-Omniverse/PhysX/issues/229)
-            if (BuildPlatform == TargetPlatform.Windows)
-                Utilities.Run(Path.Combine(projectGenDir, "buildtools", "packman", "packman.cmd"), "update -y");
-            else
-                Utilities.Run(Path.Combine(projectGenDir, "buildtools", "packman", "packman"), "update -y");
+            Utilities.Run(Path.Combine(projectGenDir, "buildtools", "packman", BuildPlatform == TargetPlatform.Windows ? "packman.cmd" : "packman"), "update -y");
+
+            // Update to latest major version
+            Utilities.Run(Path.Combine(projectGenDir, "buildtools", "packman", BuildPlatform == TargetPlatform.Windows ? "packman.cmd" : "packman"), "update 8 -y");
 
             // Print the PhysX version
             Log.Info("Building PhysX version " + File.ReadAllText(Path.Combine(root, "physx", "version.txt")) + " to " + binariesSubDir);
@@ -291,7 +301,7 @@ namespace Flax.Deps.Dependencies
                 }
                 break;
             case TargetPlatform.Linux:
-                Utilities.Run("make", null, null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.ConsoleLogOutput, envVars);
+                Utilities.Run("cmake", "--build .", null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.DefaultTool, envVars);
                 break;
             case TargetPlatform.Mac:
                 Utilities.Run("xcodebuild", "-project PhysXSDK.xcodeproj -alltargets -configuration " + configuration, null, Path.Combine(projectGenDir, "compiler", preset), Utilities.RunOptions.ConsoleLogOutput, envVars);

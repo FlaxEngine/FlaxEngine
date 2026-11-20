@@ -13,5 +13,14 @@ bash ./Development/Scripts/Linux/CallBuildTool.sh --genproject "$@"
 
 # Build bindings for all editor configurations
 echo Building C# bindings...
-# TODO: Detect the correct architecture here
-Binaries/Tools/Flax.Build -build -BuildBindingsOnly -arch=x64 -platform=Linux --buildTargets=FlaxEditor
+
+case "$(uname -m)" in
+    "x86_64") ARCH=x64;;
+    "aarch64"|"arm64") ARCH=arm64;;
+    *)
+        echo "Unsupported architecture $ARCH"
+        exit 2
+        ;;
+esac
+
+Binaries/Tools/Flax.Build -build -BuildBindingsOnly -arch=$ARCH -platform=Linux --buildTargets=FlaxEditor

@@ -62,7 +62,10 @@ namespace Flax.Deps.Dependencies
                 }
             }
 
-            Utilities.FileCopy("/usr/share/licenses/wayland/COPYING", Path.Combine(dstPath, "LICENSE.txt"));
+            if (File.Exists("/usr/share/licenses/wayland/COPYING"))
+                Utilities.FileCopy("/usr/share/licenses/wayland/COPYING", Path.Combine(dstPath, "LICENSE.txt"));
+            else
+                Utilities.FileCopy("/usr/share/licenses/libwayland-client/COPYING", Path.Combine(dstPath, "LICENSE.txt"));
         }
     }
 }

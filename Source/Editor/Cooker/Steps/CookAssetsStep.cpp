@@ -512,6 +512,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
     }
 #endif
 #if PLATFORM_TOOLS_LINUX
+    case BuildPlatform::LinuxARM64:
     case BuildPlatform::LinuxX64:
     {
         const char* platformDefineName = "PLATFORM_LINUX";

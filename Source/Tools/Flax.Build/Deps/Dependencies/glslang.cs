@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 
@@ -56,7 +57,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetArchitecture.x64,
-                        //TargetArchitecture.ARM64,
+                        TargetArchitecture.ARM64,
                     };
                 case TargetPlatform.Mac:
                     return new[]
@@ -75,7 +76,7 @@ namespace Flax.Deps.Dependencies
             var root = options.IntermediateFolder;
             var installDir = Path.Combine(root, "install");
             var configuration = "Release";
-            var cmakeArgs = $"-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=\"{installDir}\" -DCMAKE_BUILD_TYPE={configuration} -DENABLE_RTTI=ON -DENABLE_CTEST=OFF -DENABLE_HLSL=ON -DENABLE_SPVREMAPPER=ON -DENABLE_GLSLANG_BINARIES=OFF";
+            var cmakeArgs = $"-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=\"{installDir}\" -DCMAKE_BUILD_TYPE={configuration} -DCMAKE_INSTALL_LIBDIR=lib -DENABLE_RTTI=ON -DENABLE_CTEST=OFF -DENABLE_HLSL=ON -DENABLE_SPVREMAPPER=ON -DENABLE_GLSLANG_BINARIES=OFF";
             var libsRoot = Path.Combine(installDir, "lib");
 
             // Get the source
@@ -135,6 +136,14 @@ namespace Flax.Deps.Dependencies
                     }
                     case TargetPlatform.Linux:
                     {
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang-" + LinuxConfiguration.ClangMinVer },
+                            { "CC_FOR_BUILD", "clang-" + LinuxConfiguration.ClangMinVer },
+                            { "CXX", "clang++-" + LinuxConfiguration.ClangMinVer },
+                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                        };
+
                         var outputFiles = new[]
                         {
                             Path.Combine(libsRoot, "libGenericCodeGen.a"),
@@ -149,9 +158,10 @@ namespace Flax.Deps.Dependencies
                         };
 
                         // Build for Linux
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs);
-                        Utilities.Run("make", null, null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
-                        Utilities.Run("cmake", $"--build \"{buildDir}\" --config {configuration} --target install", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, architecture, $"-B\"{buildDir}\" .. " + cmakeArgs, envVars);
+                        BuildCmake(buildDir, configuration, options: Utilities.RunOptions.ConsoleLogOutput, envVars:envVars);
+                        Utilities.Run("cmake", $"--build \"{buildDir}\" --config {configuration} --target install", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in outputFiles)
                         {

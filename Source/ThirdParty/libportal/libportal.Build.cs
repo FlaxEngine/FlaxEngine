@@ -34,7 +34,13 @@ public class libportal : EngineDepsModule
             if (options.Architecture == TargetArchitecture.x64)
             {
                 options.PublicIncludePaths.Add("/usr/lib/x86_64-linux-gnu/glib-2.0/include");
-                options.PublicIncludePaths.Add("/usr/lib64/glib-2.0/include");
+            }
+            else if (options.Architecture == TargetArchitecture.ARM64)
+            {
+                if (Directory.Exists("/usr/lib/aarch64-linux-gnu/glib-2.0/include"))
+                    options.PublicIncludePaths.Add("/usr/lib/aarch64-linux-gnu/glib-2.0/include");
+                else if (Directory.Exists("/usr/lib64/glib-2.0/include"))
+                    options.PublicIncludePaths.Add("/usr/lib64/glib-2.0/include");
             }
 
             //options.SourceFiles.Add(Path.Combine(FolderPath, "portal-enums.c"));

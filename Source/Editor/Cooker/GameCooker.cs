@@ -99,6 +99,7 @@ namespace FlaxEditor
             case BuildPlatform.UWPx64: return PlatformType.UWP;
 #pragma warning restore CS0612
             case BuildPlatform.XboxOne: return PlatformType.XboxOne;
+            case BuildPlatform.LinuxARM64:
             case BuildPlatform.LinuxX64: return PlatformType.Linux;
             case BuildPlatform.PS4: return PlatformType.PS4;
             case BuildPlatform.PS5: return PlatformType.PS5;

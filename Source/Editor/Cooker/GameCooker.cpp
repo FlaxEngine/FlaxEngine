@@ -599,7 +599,7 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
         buildPlatform = BuildPlatform::UWPx64;
         break;
     case PlatformType::Linux:
-        buildPlatform = BuildPlatform::LinuxX64;
+        buildPlatform = PLATFORM_ARCH_ARM64 ? BuildPlatform::LinuxARM64 : BuildPlatform::LinuxX64;
         break;
     case PlatformType::PS4:
         buildPlatform = BuildPlatform::PS4;
