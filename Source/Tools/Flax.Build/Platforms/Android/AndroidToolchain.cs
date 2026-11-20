@@ -92,7 +92,9 @@ namespace Flax.Build.Platforms
             base.SetupCompileCppFilesArgs(graph, options, args, outputPath);
 
             var toolchain = ToolsetRoot.Replace('\\', '/');
-            args.Add(string.Format("--target={0}", ArchitectureName));
+            // Note: NDK 27+ rejects unversioned Android target triples (eg. aarch64-linux-android),
+            // thus always use the API-level-suffixed triple for compilation (same as for linking below).
+            args.Add(string.Format("--target={0}{1}", ArchitectureName, AndroidConfiguration.PlatformApi));
             args.Add(string.Format("--gcc-toolchain=\"{0}\"", toolchain));
             args.Add(string.Format("--sysroot=\"{0}/sysroot\"", toolchain));
 

@@ -1,0 +1,14 @@
+{
+	"ID": "d87cf08f4ec96bfd969a5f886d63bf67",
+	"TypeName": "FlaxEditor.Content.Settings.AudioSettings",
+	"EngineBuild": 7015,
+	"Data": {
+	"MasterVolume": 1.0,
+	"MusicVolume": 1.0,
+	"SFXVolume": 1.0,
+	"AudioQuality": 2,
+	"DisableAudio": false,
+	"EnableAudioOnFocusLost": false,
+	"DeviceIndex": -1
+}
+}
