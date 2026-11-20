@@ -291,7 +291,7 @@ private:
     friend class ImportModel;
     bool SaveHeader(WriteStream& stream) const override;
     static bool SaveHeader(WriteStream& stream, const ModelData& modelData);
-    bool Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const override;
+    bool Save(bool withMeshDataFromGpu, SaveContext& context) const override;
 #endif
 
 public:

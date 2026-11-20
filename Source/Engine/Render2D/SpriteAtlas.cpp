@@ -155,36 +155,23 @@ bool SpriteAtlas::Save(const StringView& path)
 {
     if (OnCheckSave(path))
         return true;
-    ScopeLock lock(Locker);
+    SaveContext context(this);
 
     // Load whole asset
     if (LoadChunks(ALL_ASSET_CHUNKS))
         return true;
 
-    // Prepare asset data
-    AssetInitData data;
-    data.SerializedVersion = 4;
-    data.CustomData.Copy(_texture.GetHeader());
-
     // Write sprites data
     MemoryWriteStream stream(1024);
     if (SaveSprites(stream))
         return true;
+    context.LinkChunk(15, ToSpan(stream));
 
-    // Link sprites data (unlink after safe)
-    auto dataChunk = GetOrCreateChunk(15);
-    dataChunk->Data.Link(stream.GetHandle(), stream.GetLength());
-
-    // Save (use silent mode to prevent asset reloading)
-    const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
-    dataChunk->Data.Unlink();
-    if (saveResult)
-    {
-        LOG(Warning, "Failed to save sprite atlas \'{0}\'.", GetPath());
-        return true;
-    }
-
-    return false;
+    // Save
+    AssetInitData data;
+    data.SerializedVersion = SerializedVersion;
+    data.CustomData.Copy(_texture.GetHeader());
+    return context.Save(path, data);
 }
 
 #endif

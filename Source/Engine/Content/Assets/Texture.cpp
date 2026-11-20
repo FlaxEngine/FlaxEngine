@@ -38,20 +38,11 @@ bool Texture::Save(const StringView& path, const InitData* customData)
 {
     if (OnCheckSave(path))
         return true;
-    ScopeLock lock(Locker);
-
-    AssetInitData data;
+    SaveContext context(this);
     const class StreamingTexture* texture = StreamingTexture();
 
-    // Use a temporary chunks for data storage for virtual assets
-    FlaxChunk* tmpChunks[ASSET_FILE_DATA_CHUNKS];
-    Platform::MemoryClear(tmpChunks, sizeof(tmpChunks));
-    Array<FlaxChunk> chunks;
-    if (IsVirtual())
-        chunks.Resize(ASSET_FILE_DATA_CHUNKS);
-#define GET_CHUNK(index) (IsVirtual() ? tmpChunks[index] = &chunks[index] : GetOrCreateChunk(index))
-
     // Save header
+    AssetInitData data;
     data.CustomData.Copy(texture->GetHeader());
 
     // Validate custom data
@@ -85,7 +76,7 @@ bool Texture::Save(const StringView& path, const InitData* customData)
     {
         for (int32 mipIndex = 0; mipIndex < texture->TotalMipLevels(); mipIndex++)
         {
-            auto chunk = GET_CHUNK(mipIndex);
+            auto chunk = context.GetChunk(mipIndex);
 
             uint32 rowPitch, slicePitch;
             const int32 mipWidth = Math::Max(1, Width() >> mipIndex);
@@ -136,22 +127,9 @@ bool Texture::Save(const StringView& path, const InitData* customData)
             return true;
     }
 
-#undef GET_CHUNK
-
     // Save
     data.SerializedVersion = SerializedVersion;
-    if (IsVirtual())
-        Platform::MemoryCopy(_header.Chunks, tmpChunks, sizeof(_header.Chunks));
-    const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
-    if (IsVirtual())
-        Platform::MemoryClear(_header.Chunks, sizeof(_header.Chunks));
-    if (saveResult)
-    {
-        LOG(Error, "Cannot save \'{0}\'", ToString());
-        return true;
-    }
-
-    return false;
+    return context.Save(path, data);
 }
 
 #endif

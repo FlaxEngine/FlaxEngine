@@ -376,9 +376,9 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
     return stream.HasError();
 }
 
-bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const
+bool Model::Save(bool withMeshDataFromGpu, SaveContext& context) const
 {
-    if (ModelBase::Save(withMeshDataFromGpu, getChunk))
+    if (ModelBase::Save(withMeshDataFromGpu, context))
         return true;
     
     if (withMeshDataFromGpu)
@@ -386,7 +386,7 @@ bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk
         // Download SDF data
         if (SDF.Texture)
         {
-            auto sdfChunk = getChunk(15);
+            auto sdfChunk = context.GetChunk(15);
             if (sdfChunk == nullptr)
                 return true;
             MemoryWriteStream sdfStream;

@@ -271,13 +271,12 @@ void BinaryAsset::GetChunkData(int32 index, BytesContainer& data) const
 
 bool BinaryAsset::LoadChunk(int32 chunkIndex) const
 {
-    ASSERT(Storage);
     const auto chunk = _header.Chunks[chunkIndex];
     if (chunk != nullptr
         && chunk->IsMissing()
         && chunk->ExistsInFile())
     {
-        if (Storage->LoadAssetChunk(chunk))
+        if (!Storage || Storage->LoadAssetChunk(chunk))
             return true;
     }
     return false;
@@ -287,7 +286,6 @@ bool BinaryAsset::LoadChunks(AssetChunksFlag chunks) const
 {
     if (chunks == 0)
         return false;
-    ASSERT(Storage);
     for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
     {
         auto chunk = _header.Chunks[i];
@@ -296,7 +294,7 @@ bool BinaryAsset::LoadChunks(AssetChunksFlag chunks) const
             && chunk->IsMissing()
             && chunk->ExistsInFile())
         {
-            if (Storage->LoadAssetChunk(chunk))
+            if (!Storage || Storage->LoadAssetChunk(chunk))
                 return true;
         }
     }
@@ -640,3 +638,68 @@ void BinaryAsset::onRename(const StringView& newPath)
 }
 
 #endif
+
+BinaryAsset::SaveContext::SaveContext(BinaryAsset* asset)
+    : Asset(asset)
+    , ChunksLock(asset->Storage ? asset->Storage->Lock() : FlaxStorage::LockData())
+    , LinkedChunks(0)
+{
+    Platform::MemoryClear(VirtualChunks, sizeof(VirtualChunks));
+    asset->Locker.Lock();
+}
+
+BinaryAsset::SaveContext::~SaveContext()
+{
+    Asset->Locker.Unlock();
+    for (FlaxChunk* chunk : VirtualChunks)
+    {
+        if (chunk)
+            ::Delete(chunk);
+    }
+}
+
+FlaxChunk* BinaryAsset::SaveContext::GetChunk(int32 index)
+{
+    if (Asset->IsVirtual())
+    {
+        FlaxChunk*& chunk = VirtualChunks[index];
+        if (!chunk)
+            chunk = New<FlaxChunk>();
+        return chunk;
+    }
+    return Asset->GetOrCreateChunk(index);
+}
+
+void BinaryAsset::SaveContext::LinkChunk(int32 index, Span<byte> data)
+{
+    FlaxChunk* chunk = GetChunk(index);
+    if (!chunk)
+        return;
+    LinkedChunks |= 1 << index;
+    chunk->Data.Link(data);
+}
+
+bool BinaryAsset::SaveContext::Save(const StringView& path, AssetInitData& data)
+{
+    // TODO: this could could be simplified
+    if (Asset->IsVirtual())
+        Platform::MemoryCopy(Asset->_header.Chunks, VirtualChunks, sizeof(Asset->_header.Chunks));
+    const bool failed = path.HasChars() ? Asset->SaveAsset(path, data) : Asset->SaveAsset(data, true);
+    if (Asset->IsVirtual())
+        Platform::MemoryClear(Asset->_header.Chunks, sizeof(Asset->_header.Chunks));
+    if (LinkedChunks)
+    {
+        // Unlink data from chunks (it might be on stack)
+        for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
+        {
+            if ((1 << i) & LinkedChunks)
+                GetChunk(i)->Data.Unlink();
+        }
+        LinkedChunks = 0;
+    }
+    if (failed)
+    {
+        LOG(Error, "Cannot save \'{0}\'", Asset->ToString());
+    }
+    return failed;
+}

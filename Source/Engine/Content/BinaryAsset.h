@@ -288,6 +288,26 @@ protected:
     /// <returns>Loading result</returns>
     virtual LoadResult load() = 0;
 
+#if USE_EDITOR
+    /// <summary>
+    /// Utility for saving binary assets data that supports temporary chunks for virtual assets. Automatically locks file and storage for multi-threading safety.
+    /// </summary>
+    struct SaveContext
+    {
+        BinaryAsset* Asset;
+        FlaxChunk* VirtualChunks[ASSET_FILE_DATA_CHUNKS];
+        FlaxStorage::LockData ChunksLock;
+        uint32 LinkedChunks;
+
+        SaveContext(BinaryAsset* asset);
+        ~SaveContext();
+
+        FlaxChunk* GetChunk(int32 index);
+        void LinkChunk(int32 index, Span<byte> data);
+        bool Save(const StringView& path, AssetInitData& data);
+    };
+#endif
+
 private:
 #if USE_EDITOR
     void OnStorageReloaded(FlaxStorage* storage, bool failed);

@@ -70,7 +70,7 @@ bool SkeletonMask::Save(const StringView& path)
 {
     if (OnCheckSave(path))
         return true;
-    ScopeLock lock(Locker);
+    SaveContext context(this);
 
     // Write data
     MemoryWriteStream stream(4096);
@@ -81,36 +81,12 @@ bool SkeletonMask::Save(const StringView& path)
     {
         stream.Write(e, -13);
     }
+    context.LinkChunk(0, ToSpan(stream));
 
     // Save
-    bool result;
-    if (IsVirtual())
-    {
-        FlaxChunk* tmpChunks[ASSET_FILE_DATA_CHUNKS];
-        Platform::MemoryClear(tmpChunks, sizeof(tmpChunks));
-        FlaxChunk chunk;
-        tmpChunks[0] = &chunk;
-        tmpChunks[0]->Data.Link(ToSpan(stream));
-
-        AssetInitData initData;
-        initData.SerializedVersion = SerializedVersion;
-        Platform::MemoryCopy(_header.Chunks, tmpChunks, sizeof(_header.Chunks));
-        result = path.HasChars() ? SaveAsset(path, initData) : SaveAsset(initData, true);
-        Platform::MemoryClear(_header.Chunks, sizeof(_header.Chunks));
-    }
-    else
-    {
-        auto chunk0 = GetChunk(0);
-        chunk0->Data.Copy(ToSpan(stream));
-
-        AssetInitData initData;
-        initData.SerializedVersion = SerializedVersion;
-        result = path.HasChars() ? SaveAsset(path, initData) : SaveAsset(initData, true);
-
-        chunk0->Data.Unlink();
-    }
-
-    return result;
+    AssetInitData data;
+    data.SerializedVersion = SerializedVersion;
+    return context.Save(path, data);
 }
 
 #endif

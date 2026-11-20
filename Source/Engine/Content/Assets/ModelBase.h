@@ -336,7 +336,7 @@ protected:
     bool SaveLOD(WriteStream& stream, int32 lodIndex) const;
     static bool SaveLOD(WriteStream& stream, const ModelData& modelData, int32 lodIndex, bool(saveMesh)(WriteStream& stream, const ModelData& modelData, int32 lodIndex, int32 meshIndex) = nullptr);
     virtual bool SaveMesh(WriteStream& stream, const MeshBase* mesh) const;
-    virtual bool Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const;
+    virtual bool Save(bool withMeshDataFromGpu, SaveContext& context) const;
 #endif
 
 public:

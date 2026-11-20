@@ -234,18 +234,7 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
         LOG(Error, "To save virtual model asset you need to specify 'withMeshDataFromGpu' (it has no other storage container to get data).");
         return true;
     }
-    auto chunkLocks = Storage ? Storage->Lock() : FlaxStorage::LockData();
-    ScopeLock lock(Locker);
-
-    // Use a temporary chunks for data storage for virtual assets
-    FlaxChunk* tmpChunks[ASSET_FILE_DATA_CHUNKS];
-    Platform::MemoryClear(tmpChunks, sizeof(tmpChunks));
-    Array<FlaxChunk> chunks;
-    if (IsVirtual())
-        chunks.Resize(ASSET_FILE_DATA_CHUNKS);
-    Function<FlaxChunk*(int32)> getChunk = [&](int32 index) -> FlaxChunk* {
-        return IsVirtual() ? tmpChunks[index] = &chunks[index] : GetOrCreateChunk(index);
-    };
+    SaveContext context(this);
 
     // Save LODs data
     const int32 lodsCount = GetLODsCount();
@@ -258,7 +247,7 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
             meshesStream.SetPosition(0);
             if (SaveLOD(meshesStream, lodIndex))
                 return true;
-            auto lodChunk = getChunk(MODEL_LOD_TO_CHUNK_INDEX(lodIndex));
+            auto lodChunk = context.GetChunk(MODEL_LOD_TO_CHUNK_INDEX(lodIndex));
             if (lodChunk == nullptr)
                 return true;
             lodChunk->Data.Copy(ToSpan(meshesStream));
@@ -275,7 +264,7 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
     }
 
     // Save custom data
-    if (Save(withMeshDataFromGpu, getChunk))
+    if (Save(withMeshDataFromGpu, context))
         return true;
 
     // Save header data
@@ -283,26 +272,13 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
         MemoryWriteStream headerStream(1024);
         if (SaveHeader(headerStream))
             return true;
-        auto headerChunk = getChunk(0);
-        ASSERT(headerChunk != nullptr);
-        headerChunk->Data.Copy(ToSpan(headerStream));
+        context.GetChunk(0)->Data.Copy(ToSpan(headerStream));
     }
 
     // Save file
     AssetInitData data;
     data.SerializedVersion = GetSerializedVersion();
-    if (IsVirtual())
-        Platform::MemoryCopy(_header.Chunks, tmpChunks, sizeof(_header.Chunks));
-    const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
-    if (IsVirtual())
-        Platform::MemoryClear(_header.Chunks, sizeof(_header.Chunks));
-    if (saveResult)
-    {
-        LOG(Error, "Cannot save \'{0}\'", ToString());
-        return true;
-    }
-
-    return false;
+    return context.Save(path, data);
 }
 
 #endif
@@ -908,7 +884,7 @@ bool ModelBase::SaveMesh(WriteStream& stream, const MeshBase* mesh) const
     return false;
 }
 
-bool ModelBase::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const
+bool ModelBase::Save(bool withMeshDataFromGpu, SaveContext& context) const
 {
     return false;
 }
