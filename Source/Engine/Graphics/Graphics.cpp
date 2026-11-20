@@ -15,6 +15,7 @@
 #endif
 
 bool Graphics::UseVSync = false;
+bool Graphics::UseAsyncPresentation = false;
 Quality Graphics::AAQuality = Quality::Medium;
 Quality Graphics::SSRQuality = Quality::Medium;
 Quality Graphics::SSAOQuality = Quality::Medium;
@@ -106,6 +107,9 @@ void Graphics::DisposeDevice()
 bool GraphicsService::Init()
 {
     ASSERT(GPUDevice::Instance == nullptr);
+    // Startup-only: reapplying/reloading project settings cannot change existing
+    // or newly created swapchains midway through the engine session.
+    Graphics::UseAsyncPresentation = GraphicsSettings::Get()->UseAsyncPresentation || CommandLine::Options.AsyncPresent.IsTrue();
     PROFILE_MEM(Graphics);
 
     // Create and initialize graphics device
@@ -156,6 +160,39 @@ bool GraphicsService::Init()
         LOG(Warning, "DirectX 11 backend not available");
 #endif
     }
+
+#if USE_EDITOR
+    // A saved editor preference never overrides an explicit command-line choice.
+    const bool commandLineBackend = CommandLine::Options.Null.IsTrue() || CommandLine::Options.Vulkan.IsTrue() ||
+        CommandLine::Options.D3D12.IsTrue() || CommandLine::Options.D3D11.IsTrue() || CommandLine::Options.D3D10.IsTrue();
+    if (!device && !commandLineBackend)
+    {
+        const auto preferred = GraphicsSettings::Get()->EditorGraphicsBackend;
+        switch (preferred)
+        {
+        case GraphicsSettings::EditorGraphicsBackends::DirectX11:
+#if GRAPHICS_API_DIRECTX11
+            device = CreateGPUDeviceDX11();
+#endif
+            break;
+        case GraphicsSettings::EditorGraphicsBackends::DirectX12:
+#if GRAPHICS_API_DIRECTX12
+            if (Platform::IsWindows10())
+                device = CreateGPUDeviceDX12();
+#endif
+            break;
+        case GraphicsSettings::EditorGraphicsBackends::Vulkan:
+#if GRAPHICS_API_VULKAN
+            device = CreateGPUDeviceVulkan();
+#endif
+            break;
+        default:
+            break;
+        }
+        if (preferred != GraphicsSettings::EditorGraphicsBackends::Auto && !device)
+            LOG(Warning, "Requested editor graphics backend {} is unavailable or failed to initialize. Trying platform defaults.", (int32)preferred);
+    }
+#endif
 
     // Platform default
     if (!device)

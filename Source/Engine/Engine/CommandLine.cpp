@@ -47,6 +47,7 @@ bool InitCommandLine(const Char* cmdLine)
 #endif
     PARSE_BOOL_SWITCH("d3d12", D3D12);
     PARSE_BOOL_SWITCH("d3d11", D3D11);
+    PARSE_BOOL_SWITCH("asyncPresent", AsyncPresent);
     PARSE_BOOL_SWITCH("d3d10", D3D10);
     PARSE_BOOL_SWITCH("null", Null);
     PARSE_BOOL_SWITCH("vulkan", Vulkan);
