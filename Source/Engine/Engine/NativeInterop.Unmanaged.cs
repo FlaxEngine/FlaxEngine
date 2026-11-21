@@ -1114,8 +1114,12 @@ namespace FlaxEngine.Interop
                 static void InvokeClear(object instance)
                 {
                     Type type = instance.GetType();
-                    Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
-                    type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")?.Invoke(instance, Array.Empty<object>());
+
+                    // Those cache fields are internal runtime collections whose implementation might change with a new .NET runtime
+                    // release (eg. Hashtable -> WeakHashtable, or ConcurrentDictionary`2 -> CollectibleKeyConcurrentHashtable`2),
+                    // so do not assume the container type here - just invoke the Clear operation when the instance supports it.
+                    MethodInfo clearMethod = type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear" && x.GetParameters().Length == 0);
+                    clearMethod?.Invoke(instance, Array.Empty<object>());
                 }
             }
 
