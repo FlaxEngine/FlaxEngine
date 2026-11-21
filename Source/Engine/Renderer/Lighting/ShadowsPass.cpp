@@ -241,6 +241,8 @@ struct ShadowAtlasLight
         float updateRate = Math::Lerp(shadowsUpdateRate, shadowsUpdateRateAtDistance, Math::Saturate(distanceFromView / Distance));
         if (canGlobalScale)
             updateRate *= Graphics::ShadowUpdateRate;
+        if (light.IsDirectionalLight)
+            updateRate = Math::Max(updateRate, 0.1f); // Avoid freezing sun shadows update rate too much (due to artifacts)
         freezeUpdate = updateRate <= ZeroTolerance;
         if (freezeUpdate)
             return 0.0f;
