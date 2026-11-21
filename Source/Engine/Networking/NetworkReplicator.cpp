@@ -52,6 +52,9 @@ bool NetworkReplicator::EnableLog = false;
 #define NETWORK_REPLICATOR_LOG(messageType, format, ...)
 #endif
 
+Delegate<ScriptingObject*, Guid> NetworkReplicator::ObjectNetworkSpawn;
+Delegate<ScriptingObject*> NetworkReplicator::ObjectNetworkDespawn;
+
 #if COMPILE_WITH_PROFILER
 bool NetworkInternal::EnableProfiling = false;
 Dictionary<Pair<ScriptingTypeHandle, StringAnsiView>, NetworkInternal::ProfilerEvent> NetworkInternal::ProfilerEvents;
@@ -1376,6 +1379,8 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const Guid& pre
             NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find object {} as parent to spawned object", msgDataItem.ParentId.ToString());
         }
 
+        NetworkReplicator::ObjectNetworkSpawn(obj, msgDataItem.ParentId);
+
         if (item.AsNetworkObject)
             item.AsNetworkObject->OnNetworkSpawn();
     }
@@ -1677,6 +1682,7 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     DespawnedObjects.Add(item.ObjectId);
     if (item.AsNetworkObject)
         item.AsNetworkObject->OnNetworkDespawn();
+    NetworkReplicator::ObjectNetworkDespawn(obj);
     if (Hierarchy && item.Role == NetworkObjectRole::OwnedAuthoritative)
         Hierarchy->RemoveObject(obj);
     Objects.Remove(it);
@@ -2008,6 +2014,7 @@ void NetworkInternal::NetworkReplicatorClientDisconnected(NetworkClient* client)
                 Hierarchy->RemoveObject(obj);
             if (item.AsNetworkObject)
                 item.AsNetworkObject->OnNetworkDespawn();
+            NetworkReplicator::ObjectNetworkDespawn(obj);
             DeleteNetworkObject(obj);
             Objects.Remove(it);
         }
@@ -2039,6 +2046,7 @@ void NetworkInternal::NetworkReplicatorClear()
             // Cleanup any spawned objects
             if (item.AsNetworkObject)
                 item.AsNetworkObject->OnNetworkDespawn();
+            NetworkReplicator::ObjectNetworkDespawn(obj);
             DeleteNetworkObject(obj);
             Objects.Remove(it);
         }
@@ -2461,6 +2469,7 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
         DespawnedObjects.Add(objectId);
         if (item.AsNetworkObject)
             item.AsNetworkObject->OnNetworkDespawn();
+        NetworkReplicator::ObjectNetworkDespawn(obj);
         Objects.Remove(obj);
         DeleteNetworkObject(obj);
     }
