@@ -475,6 +475,34 @@ namespace FlaxEngine.Json
         }
     }
 
+    /// <summary>
+    /// Serialize <see cref="Tag"/> as inlined text.
+    /// </summary>
+    /// <seealso cref="Newtonsoft.Json.JsonConverter" />
+    internal class ULongConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            writer.WriteValue(((ulong)value).ToString());
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            if (reader.TokenType == JsonToken.String)
+                return ulong.Parse((string)reader.Value);
+            return 0UL;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(ulong);
+        }
+    }
+
+
     internal sealed class JsonAssetReferenceConverter : JsonConverter
     {
         /// <inheritdoc />

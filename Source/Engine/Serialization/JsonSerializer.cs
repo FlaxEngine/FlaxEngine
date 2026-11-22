@@ -205,7 +205,7 @@ namespace FlaxEngine.Json
             settings.Converters.Add(new VersionConverter());
             settings.Converters.Add(new LocalizedStringConverter());
             settings.Converters.Add(new TagConverter());
-            //settings.Converters.Add(new GuidConverter());
+            settings.Converters.Add(new ULongConverter());
             return settings;
         }
 
