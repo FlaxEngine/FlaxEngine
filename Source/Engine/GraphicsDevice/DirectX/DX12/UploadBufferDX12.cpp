@@ -67,8 +67,9 @@ UploadBufferDX12::Allocation UploadBufferDX12::Allocate(uint64 size, uint64 alig
 {
     const uint64 alignmentMask = align - 1;
     ASSERT_LOW_LAYER((alignmentMask & align) == 0);
-    const uint64 pageSize = Math::Max<uint64>(size, DX12_DEFAULT_UPLOAD_PAGE_SIZE);
     const uint64 alignedSize = Math::AlignUpWithMask(size, alignmentMask);
+    // Round the page size up to a multiple of the default page size, so a free page can be reused for an upload of a similar size (otherwise each large upload with a new size creates a new page)
+    const uint64 pageSize = Math::AlignUp<uint64>(Math::Max<uint64>(alignedSize, DX12_DEFAULT_UPLOAD_PAGE_SIZE), DX12_DEFAULT_UPLOAD_PAGE_SIZE);
 
     // Align the allocation
     _currentOffset = Math::AlignUpWithMask(_currentOffset, alignmentMask);
@@ -80,16 +81,18 @@ UploadBufferDX12::Allocation UploadBufferDX12::Allocate(uint64 size, uint64 alig
     // Check if need to get new page
     if (_currentPage == nullptr)
     {
-        // Try reusing existing page
+        // Try reusing existing page (the smallest free page that is large enough)
+        int32 bestIndex = -1;
         for (int32 i = 0; i < _freePages.Count(); i++)
         {
-            UploadBufferPageDX12* page = _freePages.Get()[i];
-            if (page->Size == pageSize)
-            {
-                _freePages.RemoveAt(i);
-                _currentPage = page;
-                break;
-            }
+            const UploadBufferPageDX12* page = _freePages.Get()[i];
+            if (page->Size >= pageSize && (bestIndex == -1 || page->Size < _freePages.Get()[bestIndex]->Size))
+                bestIndex = i;
+        }
+        if (bestIndex != -1)
+        {
+            _currentPage = _freePages.Get()[bestIndex];
+            _freePages.RemoveAt(bestIndex);
         }
         if (_currentPage == nullptr)
             _currentPage = New<UploadBufferPageDX12>(_device, pageSize);
