@@ -57,19 +57,21 @@ UniformBufferUploaderVulkan::Allocation UniformBufferUploaderVulkan::Allocate(ui
     // Check if wrap around ring buffer
     if (offset + size >= _size)
     {
-        auto cmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
-        if (_fenceCmdBuffer && _fenceCounter == cmdBuffer->GetFenceSignaledCounter())
+        // Wait for the GPU to finish the command buffer of the last wrap (no flush: this runs inside a draw call)
+        if (_fenceCmdBuffer && _fenceCmdBuffer->GetFenceSignaledCounter() <= _fenceCounter)
         {
-            LOG(Error, "Wrapped around the ring buffer! Need to wait on the GPU!");
-            context->Flush();
-            cmdBuffer = context->GetCmdBufferManager()->GetActiveCmdBuffer();
+            if (_fenceCmdBuffer->IsSubmitted())
+                _fenceCmdBuffer->Wait();
+            else
+                LOG(Error, "Wrapped around the uniform ring buffer within a single command buffer!");
         }
 
         offset = 0;
         _offset = size;
 
+        CmdBufferVulkan* cmdBuffer = context->GetCmdBufferManager()->GetCmdBuffer();
         _fenceCmdBuffer = cmdBuffer;
-        _fenceCounter = cmdBuffer->GetSubmittedFenceCounter();
+        _fenceCounter = cmdBuffer->GetFenceSignaledCounter();
     }
     else
     {
