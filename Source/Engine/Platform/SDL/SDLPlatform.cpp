@@ -518,6 +518,11 @@ int32 SDLPlatform::CreateProcess(CreateProcessSettings& settings)
         SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER, SDL_PROCESS_STDIO_APP);
         SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDERR_NUMBER, SDL_PROCESS_STDIO_APP);
     }
+    else
+    {
+        SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER, SDL_PROCESS_STDIO_NULL);
+        SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDERR_NUMBER, SDL_PROCESS_STDIO_NULL);
+    }
     SDL_Process* process = SDL_CreateProcessWithProperties(props);
     SDL_DestroyProperties(props);
     SDL_DestroyEnvironment(env);

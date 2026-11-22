@@ -910,5 +910,10 @@ namespace Flax.Build
             }
             return false;
         }
+
+        internal static string ToJsonString(string value)
+        {
+            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        }
     }
 }

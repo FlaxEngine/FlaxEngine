@@ -7,6 +7,7 @@
 #include "CodeEditors/VisualStudioCodeEditor.h"
 #include "CodeEditors/RiderCodeEditor.h"
 #include "CodeEditors/CLionCodeEditor.h"
+#include "CodeEditors/ZedEditor.h"
 #if USE_VISUAL_STUDIO_DTE
 #include "CodeEditors/VisualStudio/VisualStudioEditor.h"
 #endif
@@ -271,6 +272,7 @@ bool CodeEditingManagerService::Init()
     VisualStudioCodeEditor::FindEditors(&CodeEditors);
     RiderCodeEditor::FindEditors(&CodeEditors);
     CLionCodeEditor::FindEditors(&CodeEditors);
+    ZedEditor::FindEditors(&CodeEditors);
     CodeEditors.Add(New<SystemDefaultCodeEditor>());
 
     return false;

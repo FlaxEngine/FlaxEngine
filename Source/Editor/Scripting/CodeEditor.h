@@ -78,6 +78,11 @@ API_ENUM(Namespace="FlaxEditor", Attributes="HideInEditor") enum class CodeEdito
     VSCodeInsiders,
 
     /// <summary>
+    /// Zed
+    /// </summary>
+    Zed,
+
+    /// <summary>
     /// Rider
     /// </summary>
     Rider,
