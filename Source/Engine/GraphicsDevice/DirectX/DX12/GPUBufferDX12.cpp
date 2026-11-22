@@ -56,6 +56,8 @@ void* GPUBufferDX12::Map(GPUResourceMapMode mode)
     }
     _lastMapMode = mode;
     void* mapped = nullptr;
+    if (_desc.Usage == GPUResourceUsage::Default || _desc.Usage == GPUResourceUsage::Dynamic)
+        return nullptr; // In a default heap (GPU memory) that cannot be mapped: GPUBuffer::SetData uploads with the context or a GPU task
     const HRESULT result = _resource->Map(0, readRangePtr, &mapped);
     LOG_DIRECTX_RESULT(result);
     return mapped;
