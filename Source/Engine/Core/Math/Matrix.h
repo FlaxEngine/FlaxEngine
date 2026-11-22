@@ -601,6 +601,9 @@ public:
     // Creates a left-handed, look-at matrix.
     static void LookAt(const Float3& eye, const Float3& target, const Float3& up, Matrix& result);
 
+    // Creates a left-handed, look-to matrix from the eye position and the view direction (LookAt with target = eye + direction, without the rounding of that sum far from the origin).
+    static void LookTo(const Float3& eye, const Float3& direction, const Float3& up, Matrix& result);
+
     // Creates a left-handed, orthographic projection matrix.
     static void Ortho(float width, float height, float zNear, float zFar, Matrix& result)
     {

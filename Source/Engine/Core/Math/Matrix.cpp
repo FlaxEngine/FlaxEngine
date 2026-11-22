@@ -486,8 +486,12 @@ void Matrix::Billboard(const Float3& objectPosition, const Float3& cameraPositio
 
 void Matrix::LookAt(const Float3& eye, const Float3& target, const Float3& up, Matrix& result)
 {
-    Float3 xaxis, yaxis, zaxis;
-    Float3::Subtract(target, eye, zaxis);
+    LookTo(eye, target - eye, up, result);
+}
+
+void Matrix::LookTo(const Float3& eye, const Float3& direction, const Float3& up, Matrix& result)
+{
+    Float3 xaxis, yaxis, zaxis = direction;
     zaxis.Normalize();
     Float3::Cross(up, zaxis, xaxis);
     xaxis.Normalize();
@@ -1021,8 +1025,12 @@ void Double4x4::Invert(const Double4x4& value, Double4x4& result)
 
 void Double4x4::LookAt(const Double3& eye, const Double3& target, const Double3& up, Double4x4& result)
 {
-    Double3 xaxis, yaxis, zaxis;
-    Double3::Subtract(target, eye, zaxis);
+    LookTo(eye, target - eye, up, result);
+}
+
+void Double4x4::LookTo(const Double3& eye, const Double3& direction, const Double3& up, Double4x4& result)
+{
+    Double3 xaxis, yaxis, zaxis = direction;
     zaxis.Normalize();
     Double3::Cross(up, zaxis, xaxis);
     xaxis.Normalize();
