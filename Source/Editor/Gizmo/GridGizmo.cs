@@ -57,7 +57,7 @@ namespace FlaxEditor.Gizmo
 
             public override unsafe void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
             {
-                if (_shader == null)
+                if (_shader == null || !_shader.IsLoaded)
                     return;
                 Profiler.BeginEventGPU("Editor Grid");
 
