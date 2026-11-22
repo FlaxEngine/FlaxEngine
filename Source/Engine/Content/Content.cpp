@@ -519,8 +519,18 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
 #endif
 }
 
-bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
+bool Content::GetAssetInfo(const StringView& inputPath, AssetInfo& info)
 {
+    // Use the path format of the content storage, so one file has one path in the registry (another spelling of the same file, eg. with '\' separators, would register it again with a new asset ID)
+    // A path in that format is used as it is: no copy
+    StringView path = inputPath;
+    String formatted;
+    if (!ContentStorageManager::IsFormattedPath(path))
+    {
+        formatted = inputPath;
+        ContentStorageManager::FormatPath(formatted);
+        path = formatted;
+    }
 #if ENABLE_ASSETS_DISCOVERY
     // Find asset in registry
     if (Cache.FindAsset(path, info))
@@ -763,10 +773,19 @@ Asset* Content::LoadAsync(const Guid& id, const MClass* type)
     return nullptr;
 }
 
-Asset* Content::GetAsset(const StringView& outputPath)
+Asset* Content::GetAsset(const StringView& inputPath)
 {
-    if (outputPath.IsEmpty())
+    if (inputPath.IsEmpty())
         return nullptr;
+    // The path format of the content storage (see GetAssetInfo); a path in that format is used as it is
+    StringView outputPath = inputPath;
+    String formatted;
+    if (!ContentStorageManager::IsFormattedPath(outputPath))
+    {
+        formatted = inputPath;
+        ContentStorageManager::FormatPath(formatted);
+        outputPath = formatted;
+    }
     PROFILE_CPU();
     ScopeLock lock(AssetsLocker);
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
@@ -826,9 +845,11 @@ void Content::DeleteScript(const StringView& path)
 #endif
 }
 
-void Content::DeleteAsset(const StringView& path)
+void Content::DeleteAsset(const StringView& inputPath)
 {
     PROFILE_CPU();
+    String path(inputPath);
+    ContentStorageManager::FormatPath(path);
 
     // Try to delete already loaded asset
     Asset* asset = GetAsset(path);
@@ -913,9 +934,12 @@ void* Content::GetAssetsInternal()
 
 #if USE_EDITOR
 
-bool Content::RenameAsset(const StringView& oldPath, const StringView& newPath)
+bool Content::RenameAsset(const StringView& oldInputPath, const StringView& newInputPath)
 {
     ASSERT(IsInMainThread());
+    String oldPath(oldInputPath), newPath(newInputPath);
+    ContentStorageManager::FormatPath(oldPath);
+    ContentStorageManager::FormatPath(newPath);
 
     // Cache data
     Asset* oldAsset = GetAsset(oldPath);
