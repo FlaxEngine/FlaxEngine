@@ -165,6 +165,7 @@ public:
     static void SetRigidDynamicActorAngularVelocity(void* actor, const Vector3& value, bool wakeUp);
     static Vector3 GetRigidDynamicActorCenterOfMass(void* actor);
     static void AddRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value);
+    static void KeepRigidDynamicActorPose(void* actor, const Vector3& position, const Quaternion& orientation);
     static bool GetRigidDynamicActorIsSleeping(void* actor);
     static void RigidDynamicActorSleep(void* actor);
     static void RigidDynamicActorWakeUp(void* actor);

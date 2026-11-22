@@ -338,6 +338,10 @@ void PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(void* actor, const F
 {
 }
 
+void PhysicsBackend::KeepRigidDynamicActorPose(void* actor, const Vector3& position, const Quaternion& orientation)
+{
+}
+
 bool PhysicsBackend::GetRigidDynamicActorIsSleeping(void* actor)
 {
     return false;
