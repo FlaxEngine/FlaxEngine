@@ -60,6 +60,7 @@ void ToneMappingSettings::BlendWith(ToneMappingSettings& other, float weight)
     BLEND_FLOAT(WhiteTemperature);
     BLEND_FLOAT(WhiteTint);
     BLEND_ENUM(Mode);
+    BLEND_ENUM(Look);
 }
 
 void ColorGradingSettings::BlendWith(ColorGradingSettings& other, float weight)

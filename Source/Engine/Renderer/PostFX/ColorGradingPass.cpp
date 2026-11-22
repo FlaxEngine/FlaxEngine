@@ -36,17 +36,37 @@ GPU_CB_STRUCT(Data {
     float WhiteTemp;
     float WhiteTint;
 
-    Float3 Dummy;
+    Float3 LookSlope;
+    float LookSaturation;
+    Float3 LookPower;
     float LutWeight;
 
     void Init(const PostProcessSettings& settings, GPUTexture*& lut)
     {
-        Dummy = Float2::Zero;
         auto& toneMapping = settings.ToneMapping;
         auto& colorGrading = settings.ColorGrading;
         // White Balance
         WhiteTemp = toneMapping.WhiteTemperature;
         WhiteTint = toneMapping.WhiteTint;
+        // Look (an ASC CDL applied after the tonemapper's curve; only AGX has looks for now)
+        switch (toneMapping.Mode == ToneMappingMode::AGX ? toneMapping.Look : ToneMappingLook::None)
+        {
+        case ToneMappingLook::Punchy:
+            LookSlope = Float3::One;
+            LookPower = Float3(1.35f);
+            LookSaturation = 1.4f;
+            break;
+        case ToneMappingLook::Golden:
+            LookSlope = Float3(1.0f, 0.9f, 0.5f);
+            LookPower = Float3(0.8f);
+            LookSaturation = 0.8f;
+            break;
+        default:
+            LookSlope = Float3::One;
+            LookPower = Float3::One;
+            LookSaturation = 1.0f;
+            break;
+        }
         // Shadows
         ColorSaturationShadows = colorGrading.ColorSaturationShadows * colorGrading.ColorSaturation;
         ColorContrastShadows = colorGrading.ColorContrastShadows * colorGrading.ColorContrast;
