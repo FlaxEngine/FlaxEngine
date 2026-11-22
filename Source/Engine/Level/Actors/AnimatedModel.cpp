@@ -889,7 +889,7 @@ bool AnimatedModel::IsPlayingSlotAnimation(const StringView& slotName, Animation
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName && !slot.Pause)
+        if (slot.Animation && (slot.Animation == anim || anim == nullptr) && slot.Name == slotName && !slot.Pause)
             return true;
     }
     return false;
