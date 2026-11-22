@@ -883,10 +883,14 @@ namespace FlaxEditor.Modules
         {
             var inputOptions = Editor.Options.Options.Input;
 
-            ToolStrip = new ToolStrip(34.0f, MainMenu.Bottom)
+            const float toolstripMargin = Constants.UIMargin * 0.75f;
+            const float toolstripBottomMargin = Constants.UIMargin * 1.5f;
+
+            ToolStrip = new ToolStrip(34.0f + toolstripBottomMargin, MainMenu.Bottom)
             {
                 BackgroundColor = Style.Current.DarkBackground,
                 Parent = mainWindow,
+                ItemsMargin = new Margin(toolstripMargin, toolstripMargin, 0f, toolstripBottomMargin),
             };
 
             _toolStripSaveAll = ToolStrip.AddButton(Editor.Icons.Save64, Editor.SaveAll).LinkTooltip("Save all", ref inputOptions.Save);
