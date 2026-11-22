@@ -357,6 +357,9 @@ void Renderer::DrawActors(RenderContextBatch& renderContextBatch, const Array<Ac
             if (actor && actor->GetIsActive())
                 actor->Draw(renderContextBatch);
         }
+
+        // Wait for async draws (eg. foliage jobs)
+        renderContextBatch.FlushWaitLabels();
     }
     else
     {
