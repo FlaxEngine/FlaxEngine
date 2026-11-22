@@ -951,7 +951,8 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)
 {
-    return pass == DrawPass::GBuffer || pass == DrawPass::Depth || pass == DrawPass::MotionVectors;
+    // Forward instances only the pre-batched draw calls of order-independent materials (IMaterial::IsForwardOrderIndependent); its sorted draw calls aren't batched as no forward material allows instancing there
+    return pass == DrawPass::GBuffer || pass == DrawPass::Depth || pass == DrawPass::MotionVectors || pass == DrawPass::Forward;
 }
 
 FORCE_INLINE bool DrawsEqual(const DrawCall* a, const DrawCall* b)
@@ -980,6 +981,9 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     const auto* batchesData = list.Batches.Get();
     const auto context = GPUDevice::Instance->GetMainContext();
     bool useInstancing = list.CanUseInstancing && CanUseInstancing(renderContext.View.Pass) && GPUDevice::Instance->Limits.HasInstancing;
+
+    // Forward pre-batched draw calls (order-independent, see IMaterial::IsForwardOrderIndependent) go before the depth-sorted ones, over the opaque scene, so the transparency drawn after is blended over them as it would be without them
+    const bool preBatchedFirst = renderContext.View.Pass == DrawPass::Forward;
     TaaJitterRemoveContext taaJitterRemove(renderContext.View);
 
     // Lazy-init objects buffer (if caller didn't do it)
@@ -992,7 +996,8 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     // Clear SR slots to prevent any resources binding issues (leftovers from the previous passes)
     context->ResetSR();
 
-    // Prepare instance buffer
+    // Prepare instance buffer (the batches' instances, then the pre-batched draw calls')
+    int32 batchesInstancesCount = 0;
     if (useInstancing)
     {
         // Estimate the maximum amount of elements for all instanced draws
@@ -1003,6 +1008,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             if (batch.BatchSize > 1)
                 instancesCount += batch.BatchSize;
         }
+        batchesInstancesCount = instancesCount;
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
             const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
@@ -1068,91 +1074,127 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
         uint32 vbOffsets[vbMax + 1];
         vb[3] = _instanceBuffer.GetBuffer(); // Pass object index in a vertex stream at slot 3 (used by VS in Surface.shader)
         vbOffsets[3] = 0;
-        int32 instanceBufferOffset = 0;
-        for (int32 i = 0; i < list.Batches.Count(); i++)
+        auto drawBatches = [&]()
         {
-            const DrawBatch& batch = batchesData[i];
-            uint32 drawCallIndex = listData[batch.StartIndex];
-            const DrawCall& drawCall = drawCallsData[drawCallIndex];
-
-            bindParams.Instanced = batch.BatchSize > 1;
-            bindParams.DrawCall = &drawCall;
-            bindParams.DrawCall->Material->Bind(bindParams);
-
-            if (bindParams.Instanced)
+            int32 instanceBufferOffset = 0;
+            for (int32 i = 0; i < list.Batches.Count(); i++)
             {
-                // One or more draw calls per batch
-                const DrawCall* activeDraw = &drawCall;
-                int32 activeCount = 1;
-                for (int32 j = 1; j <= batch.BatchSize; j++)
+                const DrawBatch& batch = batchesData[i];
+                uint32 drawCallIndex = listData[batch.StartIndex];
+                const DrawCall& drawCall = drawCallsData[drawCallIndex];
+
+                bindParams.Instanced = batch.BatchSize > 1;
+                bindParams.DrawCall = &drawCall;
+                bindParams.DrawCall->Material->Bind(bindParams);
+
+                if (bindParams.Instanced)
                 {
-                    if (j != batch.BatchSize && DrawsEqual(activeDraw, drawCallsData + listData[batch.StartIndex + j]))
+                    // One or more draw calls per batch
+                    const DrawCall* activeDraw = &drawCall;
+                    int32 activeCount = 1;
+                    for (int32 j = 1; j <= batch.BatchSize; j++)
                     {
-                        // Group two draw calls into active draw call
-                        activeCount++;
-                        continue;
+                        if (j != batch.BatchSize && DrawsEqual(activeDraw, drawCallsData + listData[batch.StartIndex + j]))
+                        {
+                            // Group two draw calls into active draw call
+                            activeCount++;
+                            continue;
+                        }
+
+                        // Draw whole active draw (instanced)
+                        Platform::MemoryCopy(vb, activeDraw->Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
+                        Platform::MemoryCopy(vbOffsets, activeDraw->Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
+                        context->BindIB(activeDraw->Geometry.IndexBuffer);
+                        context->BindVB(GetVB(vb, ARRAY_COUNT(vb)), vbOffsets);
+                        context->DrawIndexedInstanced(activeDraw->Draw.IndicesCount, activeCount, instanceBufferOffset, 0, activeDraw->Draw.StartIndex);
+                        instanceBufferOffset += activeCount;
+
+                        // Reset active draw
+                        activeDraw = drawCallsData + listData[batch.StartIndex + j];
+                        activeCount = 1;
                     }
+                }
+                else
+                {
+                    // Pass object index in constant buffer
+                    perDraw.DrawObjectIndex = drawCallIndex;
+                    context->UpdateCB(perDrawCB, &perDraw);
 
-                    // Draw whole active draw (instanced)
-                    Platform::MemoryCopy(vb, activeDraw->Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
-                    Platform::MemoryCopy(vbOffsets, activeDraw->Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
-                    context->BindIB(activeDraw->Geometry.IndexBuffer);
-                    context->BindVB(GetVB(vb, ARRAY_COUNT(vb)), vbOffsets);
-                    context->DrawIndexedInstanced(activeDraw->Draw.IndicesCount, activeCount, instanceBufferOffset, 0, activeDraw->Draw.StartIndex);
-                    instanceBufferOffset += activeCount;
-
-                    // Reset active draw
-                    activeDraw = drawCallsData + listData[batch.StartIndex + j];
-                    activeCount = 1;
+                    // Single-draw call batch
+                    context->BindIB(drawCall.Geometry.IndexBuffer);
+                    context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                    if (drawCall.InstanceCount == 0)
+                    {
+                        context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
+                    }
+                    else
+                    {
+                        context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+                    }
                 }
             }
-            else
+        };
+        auto drawPreBatched = [&]()
+        {
+            int32 instanceBufferOffset = batchesInstancesCount;
+            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
             {
-                // Pass object index in constant buffer
-                perDraw.DrawObjectIndex = drawCallIndex;
-                context->UpdateCB(perDrawCB, &perDraw);
+                const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+                const DrawCall& drawCall = batch.DrawCall;
 
-                // Single-draw call batch
+                bindParams.Instanced = true;
+                bindParams.DrawCall = &drawCall;
+                bindParams.DrawCall->Material->Bind(bindParams);
+
+                Platform::MemoryCopy(vb, drawCall.Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
+                Platform::MemoryCopy(vbOffsets, drawCall.Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(GetVB(vb, vbMax + 1), vbOffsets);
+
                 if (drawCall.InstanceCount == 0)
                 {
                     context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
                 }
                 else
                 {
-                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), instanceBufferOffset, 0, drawCall.Draw.StartIndex);
+                    instanceBufferOffset += batch.Instances.Count();
                 }
             }
-        }
-        for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
-        {
-            const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-            const DrawCall& drawCall = batch.DrawCall;
-
-            bindParams.Instanced = true;
-            bindParams.DrawCall = &drawCall;
-            bindParams.DrawCall->Material->Bind(bindParams);
-
-            Platform::MemoryCopy(vb, drawCall.Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
-            Platform::MemoryCopy(vbOffsets, drawCall.Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
-            context->BindIB(drawCall.Geometry.IndexBuffer);
-            context->BindVB(GetVB(vb, vbMax + 1), vbOffsets);
-
-            if (drawCall.InstanceCount == 0)
-            {
-                context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
-            }
-            else
-            {
-                context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), instanceBufferOffset, 0, drawCall.Draw.StartIndex);
-                instanceBufferOffset += batch.Instances.Count();
-            }
-        }
+        };
+        if (preBatchedFirst)
+            drawPreBatched();
+        drawBatches();
+        if (!preBatchedFirst)
+            drawPreBatched();
         materialBinds += list.PreBatchedDrawCalls.Count();
     }
     else
     {
+        auto drawPreBatched = [&]()
+        {
+            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
+            {
+                const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+                const DrawCall& drawCall = batch.DrawCall;
+
+                bindParams.DrawCall = &drawCall;
+                bindParams.DrawCall->Material->Bind(bindParams);
+
+                context->BindIB(drawCall.Geometry.IndexBuffer);
+                context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+
+                for (int32 j = 0; j < batch.Instances.Count(); j++)
+                {
+                    perDraw.DrawObjectIndex = batch.ObjectsStartIndex + j;
+                    context->UpdateCB(perDrawCB, &perDraw);
+
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+                }
+            }
+        };
+        if (preBatchedFirst)
+            drawPreBatched();
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
             const DrawBatch& batch = batchesData[i];
@@ -1179,25 +1221,8 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
                 }
             }
         }
-        for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
-        {
-            const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-            const DrawCall& drawCall = batch.DrawCall;
-
-            bindParams.DrawCall = &drawCall;
-            bindParams.DrawCall->Material->Bind(bindParams);
-
-            context->BindIB(drawCall.Geometry.IndexBuffer);
-            context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
-
-            for (int32 j = 0; j < batch.Instances.Count(); j++)
-            {
-                perDraw.DrawObjectIndex = batch.ObjectsStartIndex + j;
-                context->UpdateCB(perDrawCB, &perDraw);
-
-                context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
-            }
-        }
+        if (!preBatchedFirst)
+            drawPreBatched();
         materialBinds += list.PreBatchedDrawCalls.Count();
         if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
         {

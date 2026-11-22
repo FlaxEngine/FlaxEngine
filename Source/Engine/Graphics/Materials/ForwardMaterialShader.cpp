@@ -185,8 +185,12 @@ bool ForwardMaterialShader::Load()
         break;
     }
     _cache.Default.Init(psDesc);
-    //psDesc.VS = _shader->GetVS("VS", 1);
-    //_cacheInstanced.Default.Init(psDesc);
+    if (IsForwardOrderIndependent())
+    {
+        // Unlit and order-independent so it can be drawn instanced (eg. by Foliage) without per-draw lighting
+        psDesc.VS = _shader->GetVS("VS", 1);
+        _cacheInstanced.Default.Init(psDesc);
+    }
     psDesc.VS = _shader->GetVS("VS_Skinned");
     _cache.DefaultSkinned.Init(psDesc);
 
