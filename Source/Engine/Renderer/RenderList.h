@@ -265,7 +265,7 @@ struct DrawBatch
 struct FLAXENGINE_API BatchedDrawCall
 {
     DrawCall DrawCall;
-    uint16 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally).
+    int32 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally). 32-bit: the buffer holds the instances of all batched draw calls (eg. foliage), which can be more than 65,535.
     Array<struct ShaderObjectData, ConcurrentArenaAllocation> Instances;
 
     BatchedDrawCall() { CRASH; } // Don't use it
