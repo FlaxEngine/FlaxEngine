@@ -154,6 +154,8 @@ bool GPUTextureDX12::OnInit()
 
     // Create texture
     allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    if ((uint64)calculateMemoryUsage() >= GPUDeviceDX12::CommittedMinBytes)
+        allocationDesc.Flags = (D3D12MA::ALLOCATION_FLAGS)(allocationDesc.Flags | D3D12MA::ALLOCATION_FLAG_COMMITTED);
     HRESULT result = _device->Allocator->CreateResource(&allocationDesc, &resourceDesc, initialState, clearValuePtr, &_allocation, IID_PPV_ARGS(&resource));
     if (FAILED(result))
     {

@@ -129,6 +129,8 @@ bool GPUBufferDX12::OnInit()
         break;
     default:
         allocationDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+        if (_desc.Size >= GPUDeviceDX12::CommittedMinBytes)
+            allocationDesc.Flags = (D3D12MA::ALLOCATION_FLAGS)(allocationDesc.Flags | D3D12MA::ALLOCATION_FLAG_COMMITTED);
     }
     ID3D12Resource* resource;
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
