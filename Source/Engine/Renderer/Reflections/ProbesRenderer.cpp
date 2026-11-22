@@ -43,6 +43,8 @@ struct ProbeEntry
     Types Type = Types::Invalid;
     float Timeout = 0.0f;
     ScriptingObjectReference<Actor> Actor;
+    // True if OnRegisterBake was called for this entry, so OnFinishBake has to be called for it too.
+    bool RegisteredBake = false;
 
     bool UseTextureData() const;
     int32 GetResolution() const;
@@ -432,7 +434,10 @@ void ProbesRendererService::Bake(const ProbeEntry& e)
 
     // Fire event
     if (e.UseTextureData())
+    {
+        _probesToBake.Last().RegisteredBake = true;
         ProbesRenderer::OnRegisterBake(e.Actor);
+    }
 }
 
 static bool FixFarPlane(Actor* actor, const Vector3& position, float& farPlane)
@@ -461,6 +466,10 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
             _task->Enabled = false;
             _updateFrameNumber = 0;
             _current.Type = ProbeEntry::Types::Invalid;
+
+            // End the bake for the listeners of OnRegisterBake (eg. the editor's bake progress)
+            if (_current.RegisteredBake)
+                ProbesRenderer::OnFinishBake(nullptr);
             return;
         }
         break;

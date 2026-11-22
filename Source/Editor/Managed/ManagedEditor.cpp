@@ -15,6 +15,7 @@
 #include "Engine/Content/Assets/VisualScript.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Level/Actor.h"
+#include "Engine/Level/Actors/EnvironmentProbe.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/Reflections/ProbesRenderer.h"
@@ -84,7 +85,8 @@ void OnBakeEvent(bool started, Actor* e)
         ASSERT(Internal_EnvProbeBake);
     }
 
-    MObject* probeObj = e ? e->GetManagedInstance() : nullptr;
+    // The managed event has an EnvironmentProbe parameter, but a SkyLight bakes too (then it gets null)
+    MObject* probeObj = e && e->Is<EnvironmentProbe>() ? e->GetManagedInstance() : nullptr;
 
     MainThreadManagedInvokeAction::ParamsBuilder params;
     params.AddParam(started);
