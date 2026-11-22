@@ -284,7 +284,7 @@ namespace FlaxEditor.GUI.Docking
             else
             {
                 // Draw background
-                Render2D.FillRectangle(headerRect, style.LightBackground);
+                Render2D.FillRectangle(headerRect, style.TextBoxBackground);
 
                 // Render all tabs
                 float x = 0;
