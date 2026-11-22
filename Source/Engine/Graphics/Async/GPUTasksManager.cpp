@@ -45,7 +45,16 @@ String GPUTask::ToString() const
 
 void GPUTask::Enqueue()
 {
+    Platform::AtomicStore(&_listed, 1);
     GPUDevice::Instance->GetTasksManager()->_tasks.Add(this);
+}
+
+void GPUTask::OnDeleteObject()
+{
+    // While the tasks manager lists the task it reads the task, so the manager deletes it when it drops it (see GPUTasksManager::Unlist)
+    if (Platform::InterlockedCompareExchange(&_listed, 2, 1) == 1)
+        return;
+    Task::OnDeleteObject();
 }
 
 void GPUTask::OnCancel()
@@ -87,11 +96,31 @@ void GPUTasksManager::Dispose()
     // Cancel all performed tasks (that are waiting for sync)
     SAFE_DELETE(_executor);
 
-    // Cleanup
+    // Cleanup (the tasks are no longer listed: a task whose deletion came due is deleted, the others are canceled)
+    for (GPUTask* task : _buffers[0])
+        Unlist(task);
+    for (GPUTask* task : _buffers[1])
+        Unlist(task);
     Task::CancelAll(_buffers[0]);
     Task::CancelAll(_buffers[1]);
     _bufferIndex = 0;
-    _tasks.CancelAll();
+    GPUTask* tasks[16];
+    std::size_t count;
+    while ((count = _tasks.try_dequeue_bulk(tasks, ARRAY_COUNT(tasks))) != 0)
+    {
+        for (std::size_t i = 0; i != count; i++)
+        {
+            Unlist(tasks[i]);
+            tasks[i]->Cancel();
+        }
+    }
+}
+
+void GPUTasksManager::Unlist(GPUTask* task)
+{
+    // A task whose deletion came due while listed is deleted now that nothing lists it
+    if (Platform::InterlockedExchange(&task->_listed, 0) == 2)
+        task->DeleteObject();
 }
 
 void GPUTasksManager::FrameBegin()
@@ -131,9 +160,11 @@ int32 GPUTasksManager::RequestWork(GPUTask** buffer, int32 maxCount)
         case TaskState::Canceled:
         case TaskState::Finished:
             // Skip task
+            Unlist(task);
             break;
         case TaskState::Queued:
             // Run queued task
+            Unlist(task);
             buffer[count++] = task;
             break;
         case TaskState::Created:
