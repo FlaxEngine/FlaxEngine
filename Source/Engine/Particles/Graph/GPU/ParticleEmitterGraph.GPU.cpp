@@ -497,7 +497,7 @@ void ParticleEmitterGPUGenerator::PrepareGraph(ParticleEmitterGraphGPU* graph)
                 break;
             }
             if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUTexture") == 0)
-                mp.Type = MaterialParameterType::GPUTexture;
+                mp.Type = ShaderGraphUtilities::GetGPUTextureType(param->Meta);
             else if (StringUtils::Compare(param->Type.TypeName, "FlaxEngine.GPUBuffer") == 0)
                 mp.Type = MaterialParameterType::GPUBuffer;
             else

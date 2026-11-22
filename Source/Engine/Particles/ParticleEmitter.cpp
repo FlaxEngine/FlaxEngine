@@ -184,7 +184,7 @@ Asset::LoadResult ParticleEmitter::load()
         generator.Error.Bind(&OnGeneratorError);
         auto graph = New<ParticleEmitterGraphGPU>();
         surfaceChunkStream.SetPosition(0);
-        if (graph->Load(&surfaceChunkStream, false))
+        if (graph->Load(&surfaceChunkStream, true)) // With metadata, parameters keep their GPU texture type in it
         {
             Delete(graph);
             LOG(Warning, "Cannot load Particle Emitter GPU graph '{0}'.", GetPath());
