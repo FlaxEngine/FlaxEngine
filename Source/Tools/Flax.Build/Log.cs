@@ -26,6 +26,11 @@ namespace Flax.Build
         /// </summary>
         public static bool ApplyConsoleColors = true;
 
+        /// <summary>
+        /// The has fatal error this stops compilation process
+        /// </summary>
+        public static bool HasFatalError = false;
+
         internal static void Init()
         {
             _startTime = DateTime.Now;
@@ -137,7 +142,18 @@ namespace Flax.Build
         /// <param name="message">The message.</param>
         public static void Error(string message)
         {
-            Write(message, ConsoleColor.Red, true);
+            Write(message, ConsoleColor.DarkRed, true);
+        }
+
+        /// <summary>
+        /// Logs the fatal error message. stops compilation process
+        /// </summary>
+        /// <param name="message">The message.</param>
+        public static void Fatal(Bindings.FileInfo info, string message,ulong line = 0)
+        {
+            //formatted for visual studio to show in error list
+            Write($"{info.Name} ({line}): error FLAX: {message}", ConsoleColor.Red, true);
+            HasFatalError = true;
         }
 
         /// <summary>

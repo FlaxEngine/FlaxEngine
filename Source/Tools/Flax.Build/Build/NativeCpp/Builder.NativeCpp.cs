@@ -368,6 +368,11 @@ namespace Flax.Build
 
         private static void LinkNativeBinary(BuildData buildData, BuildOptions buildOptions, string outputPath)
         {
+            //don't try to Link stuff with FatalError
+            //FatalError it is saying the binding generation has failed or has API miss use
+            if (Log.HasFatalError)
+                return;
+
             using (new ProfileEventScope("LinkNativeBinary"))
             {
                 buildData.Toolchain.LinkFiles(buildData.Graph, buildOptions, outputPath);
@@ -530,6 +535,10 @@ namespace Flax.Build
                     moduleOptions.CompileEnv.PrecompiledHeaderUsage = PrecompiledHeaderFileUsage.UseManual;
                     moduleOptions.CompileEnv.PrecompiledHeaderFile =  pch;
                 }
+                //don't try to compile stuff with FatalError
+                //FatalError it is saying the binding generation has failed or has API miss use
+                if (Log.HasFatalError)
+                    return;
 
                 // Compile all source files
                 var compilationOutput = buildData.Toolchain.CompileCppFiles(buildData.Graph, moduleOptions, cppFiles, moduleOptions.OutputFolder);
