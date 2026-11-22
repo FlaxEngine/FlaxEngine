@@ -12,51 +12,37 @@ namespace FlaxEngine
     [HideInEditor]
     public class RandomStream
     {
+        private Seed _currentSeed;
         /// <summary>
         /// Holds the initial seed.
         /// </summary>
-        private int _initialSeed;
-
-        /// <summary>
-        /// Holds the current seed.
-        /// </summary>
-        private int _seed;
+        private Seed _initialSeed;
 
         /// <summary>
         /// Init
         /// </summary>
         public RandomStream()
         {
-            _initialSeed = 0;
-            _seed = 0;
+            _initialSeed = Random.CurrentSeed;
+            _currentSeed = _initialSeed;
         }
 
         /// <summary>
         /// Creates and initializes a new random stream from the specified seed value.
         /// </summary>
         /// <param name="seed">The seed value.</param>
-        public RandomStream(int seed)
-        {
-            _initialSeed = seed;
-            _seed = seed;
-        }
+        public RandomStream(int seed) => Initialize(seed);
 
         /// <summary>
         /// Gets initial seed value
         /// </summary>
-        public int GetInitialSeed()
-        {
-            return _initialSeed;
-        }
+        public int GetInitialSeed() => (int)_initialSeed;
 
 
         /// <summary>
         /// Gets the current seed.
         /// </summary>
-        public int GetCurrentSeed()
-        {
-            return _seed;
-        }
+        public int GetCurrentSeed() => (int)_currentSeed;
 
         /// <summary>
         /// Initializes this random stream with the specified seed value.
@@ -64,56 +50,45 @@ namespace FlaxEngine
         /// <param name="seed">The seed value.</param>
         public void Initialize(int seed)
         {
-            _initialSeed = seed;
-            _seed = seed;
+            _initialSeed = new(seed);
+            _currentSeed = _initialSeed;
         }
 
         /// <summary>
         /// Resets this random stream to the initial seed value.
         /// </summary>
-        public void Reset()
-        {
-            _seed = _initialSeed;
-        }
+        public void Reset() => _currentSeed = _initialSeed;
 
         /// <summary>
         /// Generates a new random seed.
         /// </summary>
-        public void GenerateNewSeed()
-        {
-            Initialize(new System.Random().Next());
-        }
+        public void GenerateNewSeed() => Initialize(Random.Integer());
 
         /// <summary>
         /// Returns a random boolean.
         /// </summary>
-        public unsafe bool GetBool()
+        public bool GetBool()
         {
             MutateSeed();
-            fixed (int* seedPtr = &_seed)
-                return *seedPtr < (uint.MaxValue / 2);
+            return Random.Condition(_currentSeed);
         }
 
         /// <summary>
         /// Returns a random number between 0 and uint.MaxValue.
         /// </summary>
-        public unsafe uint GetUnsignedInt()
+        public uint GetUnsignedInt()
         {
             MutateSeed();
-            fixed (int* seedPtr = &_seed)
-                return (uint)*seedPtr;
+            return unchecked((uint)_currentSeed.Current);
         }
 
         /// <summary>
         /// Returns a random number between 0 and 1.
         /// </summary>
-        public unsafe float GetFraction()
+        public float GetFraction()
         {
             MutateSeed();
-            float temp = 1.0f;
-            float result = 0.0f;
-            *(int*)&result = (int)((*(int*)&temp & 0xff800000) | (_seed & 0x007fffff));
-            return Mathf.Frac(result);
+            return (float)_currentSeed;
         }
 
         /// <summary>
@@ -147,7 +122,7 @@ namespace FlaxEngine
         /// </summary>
         public Vector3 GetVector3()
         {
-            return new Vector3(GetFraction(), GetFraction(), GetFraction());
+            return Random.UnitVector3(ref _currentSeed);
         }
 
         /// <summary>
@@ -170,8 +145,8 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int RandRange(int min, int max)
         {
-            int range = max - min + 1;
-            return min + RandHelper(range);
+            MutateSeed();
+            return Random.UniformRange(_currentSeed, max, min);
         }
 
         /// <summary>
@@ -183,16 +158,13 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float RandRange(float min, float max)
         {
-            return min + (max - min) * Rand();
+            MutateSeed();
+            return Random.UniformRange(_currentSeed, max, min);
         }
 
         /// <summary>
         /// Mutates the current seed into the next seed.
         /// </summary>
-        protected void MutateSeed()
-        {
-            // This can be modified to provide better randomization
-            _seed = _seed * 196314165 + 907633515;
-        }
+        protected void MutateSeed() => _currentSeed++;
     }
 }
