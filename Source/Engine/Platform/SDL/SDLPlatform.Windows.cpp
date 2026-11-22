@@ -92,7 +92,7 @@ bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
     if (event->type == SDL_EVENT_WINDOW_EXPOSED)
     {
         // The internal timer is sending exposed events every ~16ms
-        Engine::OnUpdate(); // For docking updates
+        //Engine::OnUpdate(); // For docking updates
         Engine::OnDraw();
         return false;
     }
@@ -122,8 +122,13 @@ bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
                 WinImpl::DraggedWindowStartPosition = window->GetClientPosition();
                 WinImpl::DraggedWindowSize = windowSize;
             }
+            Float2 globalMousePosition;
+            SDL_GetGlobalMouseState(&globalMousePosition.X, &globalMousePosition.Y);
+            Float2 localMousePosition = WinImpl::DraggedWindow->ScreenToClient(globalMousePosition);
+            WinImpl::DraggedWindowMousePosition = localMousePosition;
+            
             Float2 windowPosition = Float2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2));
-            Float2 mousePosition = WinImpl::DraggedWindowMousePosition;
+            //Float2 mousePosition = WinImpl::DraggedWindowMousePosition;
 
             // Generate mouse movement events while dragging the window around
             SDL_Event mouseMovedEvent{ 0 };
@@ -131,9 +136,12 @@ bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
             mouseMovedEvent.motion.windowID = SDL_GetWindowID(WinImpl::DraggedWindow->GetSDLWindow());
             mouseMovedEvent.motion.timestamp = SDL_GetTicksNS();
             mouseMovedEvent.motion.state = SDL_BUTTON_LEFT;
-            mouseMovedEvent.motion.x = mousePosition.X;
-            mouseMovedEvent.motion.y = mousePosition.Y;
+            mouseMovedEvent.motion.x = localMousePosition.X;
+            mouseMovedEvent.motion.y = localMousePosition.Y;
             window->HandleEvent(mouseMovedEvent);
+            
+            Engine::OnUpdate(); // For docking updates
+            Engine::OnDraw();
         }
         return false;
     }
