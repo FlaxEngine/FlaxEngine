@@ -62,7 +62,13 @@ namespace FlaxEditor.Windows
                 foreach (var e in PerPlatformOptions)
                 {
                     var str = e.Key.ToString();
-                    e.Value.Init("Output/" + str, str);
+                    e.Value.Init("Output/" + str, str, (target) =>
+                    {
+                        GameCookerWin._lastBuilt = new QueueItem() {
+                            Target = target,
+                            Options = BuildOptions.None,
+                        };
+                    });
                 }
             }
 
@@ -89,6 +95,8 @@ namespace FlaxEditor.Windows
 
                 protected abstract BuildPlatform BuildPlatform { get; }
 
+                private Action<BuildTarget> OnBuild = delegate { };
+
                 protected virtual BuildOptions Options
                 {
                     get
@@ -100,7 +108,7 @@ namespace FlaxEditor.Windows
                     }
                 }
 
-                public virtual void Init(string output, string platformDataSubDir)
+                public virtual void Init(string output, string platformDataSubDir, Action<BuildTarget> onBuild)
                 {
                     Output = output;
 
@@ -151,6 +159,8 @@ namespace FlaxEditor.Windows
 
                     // Check if can find installed tools for this platform
                     IsAvailable = Directory.Exists(Path.Combine(Globals.StartupFolder, "Source", "Platforms", platformDataSubDir, "Binaries"));
+
+                    OnBuild = onBuild;
                 }
 
                 public virtual void OnNotAvailableLayout(LayoutElementsContainer layout)
@@ -204,6 +214,12 @@ namespace FlaxEditor.Windows
                 {
                     var output = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectFolder, StringUtils.NormalizePath(Output));
                     GameCooker.Build(BuildPlatform, ConfigurationMode, output, Options, CustomDefines);
+                    OnBuild?.Invoke(new BuildTarget() {
+                        Platform = BuildPlatform,
+                        Mode = ConfigurationMode,
+                        Output = output,
+                        CustomDefines = CustomDefines
+                    });
                 }
             }
 
@@ -832,6 +848,7 @@ namespace FlaxEditor.Windows
         private string _postBuildAction;
         private BuildPreset[] _data;
         private bool _isDataDirty, _exitOnBuildEnd, _lastBuildFailed;
+        private QueueItem? _lastBuilt = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GameCookerWindow"/> class.
@@ -975,14 +992,29 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Builds the target for this platform and runs it on this device.
+        /// Builds the target with last used build settings if exists. Otherwise builds for this platform.
+        /// Runs the build on this device after build completes.
         /// </summary>
         public void BuildAndRun()
         {
             Editor.Log("Building and running");
-            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
+            if (_lastBuilt == null)
+            {
+                GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
+                var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
+
+                _lastBuilt = new QueueItem()
+                {
+                    Target = new BuildTarget()
+                    {
+                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
+                        Platform = buildPlatform,
+                        Mode = buildConfig,
+                    },
+                    Options = BuildOptions.AutoRun,
+                };
+            }
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
-            var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
             {
                 var buildOptions = BuildOptions.AutoRun;
@@ -991,37 +1023,32 @@ namespace FlaxEditor.Windows
 
                 _buildingQueue.Enqueue(new QueueItem
                 {
-                    Target = new BuildTarget
-                    {
-                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                        Platform = buildPlatform,
-                        Mode = buildConfig,
-                    },
+                    Target = _lastBuilt?.Target,
                     Options = buildOptions,
+                    PresetName = _lastBuilt?.PresetName,
                 });
             }
         }
 
         /// <summary>
-        /// Runs the cooked game for this platform on this device.
+        /// Runs the cooked game from the last build.
         /// </summary>
         public void RunCooked()
         {
             Editor.Log("Running cooked build");
-            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
+            if (_lastBuilt == null)
+            {
+                Editor.LogError("No cooked build found");
+                return;
+            }
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
-            var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
             {
                 _buildingQueue.Enqueue(new QueueItem
                 {
-                    Target = new BuildTarget
-                    {
-                        Output = _buildTabProxy.PerPlatformOptions[platform].Output,
-                        Platform = buildPlatform,
-                        Mode = buildConfig,
-                    },
+                    Target = _lastBuilt?.Target,
                     Options = BuildOptions.AutoRun | BuildOptions.NoCook,
+                    PresetName = _lastBuilt?.PresetName,
                 });
             }
         }
@@ -1302,6 +1329,10 @@ namespace FlaxEditor.Windows
                     {
                         _exitOnBuildEnd = false;
                         Engine.RequestExit(1);
+                    }
+                    if (!failed)
+                    {
+                        _lastBuilt = item;
                     }
                 }
                 else if (_exitOnBuildEnd)
