@@ -247,10 +247,7 @@ public:
     /// <summary>
     /// Sets the value override mode.
     /// </summary>
-    API_PROPERTY() void SetIsOverride(bool value)
-    {
-        _override = value;
-    }
+    API_PROPERTY() void SetIsOverride(bool value);
 
     /// <summary>
     /// Gets the parameter resource graphics pipeline binding register index.
@@ -342,8 +339,24 @@ public:
 class FLAXENGINE_API MaterialParams : public Array<MaterialParameter>
 {
     friend MaterialInstance;
+    friend MaterialParameter;
 private:
     int32 _versionHash = 0;
+
+    // Cache of which link level owns each parameter's value, so binding doesn't walk the links per parameter.
+    // Every bind checks it against each level's collection, count and layout version, and the global override version.
+    // The cache is rebuilt without a lock: Bind must only run on one thread at a time (today the rendering thread's ExecuteDrawCalls).
+    static constexpr int32 MaxBindLevels = 8;
+    static volatile int64 OverrideVersion;
+    volatile int64 _layoutVersion = 0;
+    Array<byte> _bindOwners;
+    const MaterialParams* _bindLevels[MaxBindLevels] = {};
+    int32 _bindLevelCounts[MaxBindLevels] = {};
+    int64 _bindLevelVersions[MaxBindLevels] = {};
+    int32 _bindLevelCount = 0;
+    int64 _bindOverrideVersion = -1;
+
+    void BuildBindOwners(const MaterialParams* const* levels, int32 levelCount);
 
 public:
     MaterialParameter* Get(const Guid& id);
@@ -364,6 +377,13 @@ public:
     /// <param name="link">The parameters binding link. Used to support per-parameter override.</param>
     /// <param name="meta">The bind meta.</param>
     static void Bind(MaterialParamsLink* link, MaterialParameter::BindMeta& meta);
+
+    /// <summary>
+    /// Sets a parameter's value override mode. Prefer it over MaterialParameter::SetIsOverride for a parameter of this collection, as it invalidates only this collection's binding cache.
+    /// </summary>
+    /// <param name="param">The parameter (must belong to this collection).</param>
+    /// <param name="value">The override mode.</param>
+    void SetOverride(MaterialParameter& param, bool value);
 
     /// <summary>
     /// Clones the parameters list.
