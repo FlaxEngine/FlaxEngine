@@ -148,6 +148,18 @@ public:
     LayersMask RenderLayersMask;
 
     /// <summary>
+    /// The layers drawn in the foreground of this camera (eg. first-person arms and weapon): their depth is squeezed in between the near plane and Foreground Depth, so they draw over the rest of the scene rather than into walls. They look the same, and their shadows are cast where they really are. Only Surface materials are squeezed (not particles, decals or spline-deformed models). None by default.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(101), EditorDisplay(\"Camera\")")
+    LayersMask ForegroundLayersMask = LayersMask(0);
+
+    /// <summary>
+    /// How far from the camera the foreground layers' depth reaches at most (in world units). The rest of the scene nearer than it can still draw over them. Must be beyond the near plane to have any effect.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(102), DefaultValue(30.0f), Limit(0), EditorDisplay(\"Camera\")")
+    float ForegroundDepth = 30.0f;
+
+    /// <summary>
     /// Frame rendering flags used to switch between graphics features for this camera.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Camera\")")

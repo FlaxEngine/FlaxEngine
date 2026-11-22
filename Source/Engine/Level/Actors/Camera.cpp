@@ -458,6 +458,8 @@ void Camera::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(OrthoSize, _orthoSize);
     SERIALIZE_MEMBER(OrthoScale, _orthoScale);
     SERIALIZE(RenderLayersMask);
+    SERIALIZE(ForegroundLayersMask);
+    SERIALIZE(ForegroundDepth);
     SERIALIZE(RenderFlags);
     SERIALIZE(RenderMode);
     SERIALIZE(ViewportRect);
@@ -476,6 +478,8 @@ void Camera::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
     DESERIALIZE_MEMBER(OrthoSize, _orthoSize);
     DESERIALIZE_MEMBER(OrthoScale, _orthoScale);
     DESERIALIZE(RenderLayersMask);
+    DESERIALIZE(ForegroundLayersMask);
+    DESERIALIZE(ForegroundDepth);
     DESERIALIZE(RenderFlags);
     DESERIALIZE(RenderMode);
     DESERIALIZE(ViewportRect);

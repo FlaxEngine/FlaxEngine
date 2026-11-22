@@ -693,12 +693,12 @@ GPU_CB_STRUCT(ShaderObjectData
     {
     Float4 Raw[8];
 
-    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsAreaPacked, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, int8 lodDitherFactor = 0, uint32 skinningOffset = 0, int16 skinningPrevOffset = 0);
+    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Half4& lightmapUVsAreaPacked, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, int8 lodDitherFactor = 0, uint32 skinningOffset = 0, int16 skinningPrevOffset = 0, uint8 layer = 0);
     void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Half4& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, int8& lodDitherFactor, uint32& skinningOffset, int16& prevBonesOffset) const;
 
     FORCE_INLINE void Store(const DrawCall& drawCall)
     {
-    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor, drawCall.Surface.SkinningBonesOffset, drawCall.Surface.PrevBonesOffset);
+    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor, drawCall.Surface.SkinningBonesOffset, drawCall.Surface.PrevBonesOffset, drawCall.StencilValue);
     }
 
     FORCE_INLINE void Load(DrawCall& drawCall) const
