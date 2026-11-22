@@ -53,6 +53,16 @@ public:
     /// <param name="drawModes">The drawing modes.</param>
     static void DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect, DrawPass drawModes);
 
+    // Index of a ribbon vertex (32-bit: a ribbon of more than 32,767 segments has more than 65,535 vertices).
+    typedef uint32 RibbonIndex;
+
+    /// <summary>
+    /// Writes the indices of the two triangles of a ribbon segment.
+    /// </summary>
+    /// <param name="indices">The output for the 6 indices.</param>
+    /// <param name="firstVertex">The first vertex of the segment: its 4 vertices are firstVertex to firstVertex + 3.</param>
+    static void WriteRibbonSegmentIndices(RibbonIndex* indices, uint32 firstVertex);
+
 #if USE_EDITOR
     /// <summary>
     /// Draws the particles debug shapes.
