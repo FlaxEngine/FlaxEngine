@@ -425,6 +425,19 @@ public:
     API_FUNCTION() void PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed = 1.0f, float blendInTime = 0.2f, float blendOutTime = 0.2f, int32 loopCount = 0);
 
     /// <summary>
+    /// Plays the animation on the slot in Anim Graph, optionally blending it in and out with inertialization instead of cross-fading.
+    /// </summary>
+    /// <remarks>If animation is paused, it will be resumed. If animation is not playing, it will be started. If animation is playing, it will be blended out (call StopSlotAnimation before to do an immediate transition).</remarks>
+    /// <param name="slotName">The name of the slot.</param>
+    /// <param name="anim">The animation to play.</param>
+    /// <param name="speed">The playback speed.</param>
+    /// <param name="blendInTime">The animation blending in time (in seconds). Cam be used to smooth the slot animation playback with the input pose when starting the animation.</param>
+    /// <param name="blendOutTime">The animation blending out time (in seconds). Cam be used to smooth the slot animation playback with the input pose when ending animation.</param>
+    /// <param name="loopCount">The amount of loops to play the animation: 0 to play once, -1 to play infinite, 1 or higher to loop once or more.</param>
+    /// <param name="inertialize">True to blend in and out with inertialization, when the slot is inside an Inertialization node (otherwise it cross-fades as usual). The animation then starts and ends at once and the Inertialization node smooths the change over the blend time. When the animation playing in the slot was also played with inertialize, stopping it lets the next one cut in at once, even mid-blend.</param>
+    API_FUNCTION() void PlaySlotAnimation(const StringView& slotName, Animation* anim, float speed, float blendInTime, float blendOutTime, int32 loopCount, bool inertialize);
+
+    /// <summary>
     /// Stops all the animations playback on the all slots in Anim Graph.
     /// </summary>
     API_FUNCTION() void StopSlotAnimation();
