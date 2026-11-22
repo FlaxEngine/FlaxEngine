@@ -3,6 +3,10 @@
 #pragma once
 
 #include "Engine/Renderer/RendererPass.h"
+#include "Engine/Graphics/Async/GPUSyncPoint.h"
+
+// Amount of staging buffers used to read back culled objects counters without stalling the CPU (read the one copied the most frames ago)
+#define GLOBAL_SURFACE_ATLAS_READBACK_FRAMES (GPU_ASYNC_LATENCY + 1)
 
 /// <summary>
 /// Global Surface Atlas rendering pass. Captures scene geometry into a single atlas texture which contains surface diffuse color, normal vector, emission light, and calculates direct+indirect lighting. Used by Global Illumination and Reflections.
@@ -57,10 +61,14 @@ private:
     GPUShaderProgramCS* _csCullObjects;
 
     // Cache
-    class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
+    class GPUBuffer* _culledObjectsSizeBuffers[GLOBAL_SURFACE_ATLAS_READBACK_FRAMES] = {};
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
     class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
-    uint64 _culledObjectsSizeFrames[8];
+    uint64 _culledObjectsSizeFrames[8]; // Last frame when counter slot was used
+    uint64 _culledObjectsSizeCopyFrames[GLOBAL_SURFACE_ATLAS_READBACK_FRAMES][8]; // Frame when counter slot was copied into the staging buffer
+    uint32 _culledObjectsSizeData[8]; // Last counter values read back from the GPU
+    uint64 _culledObjectsSizeDataFrames[8]; // Frame when the read back counter values were copied on a GPU
+    uint64 _culledObjectsSizeReadFrame = 0;
     void* _currentActorObject;
 
 public:
