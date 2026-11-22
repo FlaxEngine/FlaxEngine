@@ -19,9 +19,8 @@ namespace FlaxEditor.GUI.Docking
         private float _tabHeight, _minimumTabWidth;
         private bool _useMinimumTabWidth;
         private readonly bool _hideTabForSingleTab = Utilities.Utils.HideSingleTabWindowTabBars();
-        private const float _headerTopMargin = 6;
         private const bool FillSingleTab = false;
-        internal static float DefaultHeight => Editor.Instance.Options.Options.Interface.TabHeight + 4 + _headerTopMargin;
+        internal static float DefaultHeight => Editor.Instance.Options.Options.Interface.TabHeight + 4;
 
         /// <summary>
         /// The is mouse down flag (left button).
@@ -69,7 +68,7 @@ namespace FlaxEditor.GUI.Docking
         public DockWindow StartDragAsyncWindow;
 
         internal bool IsUsingDockPanel => MouseOverWindow != null || StartDragAsyncWindow != null || (_panel is FloatWindowDockPanel floatPanel && floatPanel.IsDragging);
-        private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, _tabHeight + _headerTopMargin);
+        private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, _tabHeight);
         private bool IsSingleFloatingWindow => _hideTabForSingleTab && _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
 
         /// <summary>
@@ -124,7 +123,7 @@ namespace FlaxEditor.GUI.Docking
                     if (_useMinimumTabWidth && width < _minimumTabWidth)
                         width = _minimumTabWidth;
 
-                    var tabRect = new Rectangle(x, _headerTopMargin, width, _tabHeight);
+                    var tabRect = new Rectangle(x, 0.0f, width, _tabHeight);
                     if (tabRect.Contains(position))
                     {
                         var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, tabRect.Y + (tabRect.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
@@ -177,7 +176,7 @@ namespace FlaxEditor.GUI.Docking
                     float width = CalculateTabWidth(tab, _closeButtonVisibility);
                     if (tab == win)
                     {
-                        bounds = new Rectangle(x, _headerTopMargin, width, _tabHeight);
+                        bounds = new Rectangle(x, 0.0f, width, _tabHeight);
                         return;
                     }
                     x += width;
@@ -285,7 +284,7 @@ namespace FlaxEditor.GUI.Docking
             else
             {
                 // Draw background
-                Render2D.FillRectangle(headerRect, style.DarkBackground);
+                Render2D.FillRectangle(headerRect, style.LightBackground);
 
                 // Render all tabs
                 float x = 0;
@@ -299,14 +298,14 @@ namespace FlaxEditor.GUI.Docking
                         width = _minimumTabWidth;
 
                     // Draw decorations
-                    var tabRect = new Rectangle(x, _headerTopMargin, width, _tabHeight);
+                    var tabRect = new Rectangle(x, 0.0f, width, _tabHeight);
                     var isMouseOver = tabRect.Contains(ref MousePosition);
                     var isSelected = _panel.SelectedTab == tab;
                     if (isSelected)
                     {
                         Render2D.FillRectangle(tabRect, style.Background);
                         if (containsFocus)
-                            Render2D.FillRectangle(new Rectangle(tabRect.Location, tabRect.Width, 2), style.BackgroundSelected);
+                            Render2D.FillRectangle(new Rectangle(tabRect.Location, tabRect.Width, 3), style.BackgroundSelected);
                     }
                     else if (isMouseOver)
                     {
