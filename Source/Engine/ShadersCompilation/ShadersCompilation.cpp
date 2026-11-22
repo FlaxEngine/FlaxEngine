@@ -523,10 +523,11 @@ bool ShadersCompilation::IsShaderSourceAssetUpToDate(const StringView& sourcePat
     if (!sourceChunk || storage->LoadAssetChunk(sourceChunk) || !sourceChunk->Data.IsValid())
         return false;
 
+    if (sourceChunk->Data.Length() != source.Length() + 1)
+        return false;
+
     BytesContainer embeddedSource;
     embeddedSource.Copy(sourceChunk->Data);
-    if (embeddedSource.Length() != source.Length() + 1)
-        return false;
     Encryption::DecryptBytes(embeddedSource.Get(), embeddedSource.Length());
     embeddedSource.Get()[embeddedSource.Length() - 1] = 0;
     return Platform::MemoryCompare(embeddedSource.Get(), source.Get(), source.Length()) == 0;
@@ -557,7 +558,7 @@ namespace
 
     void OnWatcherShadersEvent(const String& path, FileSystemAction action)
     {
-        if (action == FileSystemAction::Delete || !path.EndsWith(TEXT(".shader")))
+        if (action == FileSystemAction::Rename || action == FileSystemAction::Delete || !path.EndsWith(TEXT(".shader")))
             return;
         PROFILE_CPU();
 
