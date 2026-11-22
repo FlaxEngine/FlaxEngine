@@ -151,7 +151,7 @@ bool UnixNetwork::GetSocketOption(NetworkSocket& socket, NetworkSocketOption opt
     int32 optlvl = 0;
     int32 optnme = 0;
     TranslateSockOptToNative(option, &optlvl, &optnme);
-    socklen_t size;
+    socklen_t size = sizeof(value); // read as the buffer length, written as the option length
     auto& sock = *(UnixSocketData*)&socket.Data;
     if (getsockopt(sock.sockfd, optlvl, optnme, (char*)&value, &size) == -1)
     {
