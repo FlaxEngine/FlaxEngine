@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using FlaxEditor.GUI;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface.Elements
@@ -44,6 +45,7 @@ namespace FlaxEditor.Surface.Elements
         : base(parentNode, archetype)
         {
             _isAutoSelect = true;
+            PopupShowing += OnPopupShowing;
 
             if (Surface == null)
                 return;
@@ -56,6 +58,18 @@ namespace FlaxEditor.Surface.Elements
                 SelectedNodeName = (string)ParentNode.Values[Archetype.ValueIndex];
                 ParentNode.ValuesChanged += OnNodeValuesChanged;
             }
+        }
+
+        private void OnPopupShowing(ComboBox comboBox)
+        {
+            // Reload the nodes in case the base model was set or changed after this node was created
+            if (Surface == null || Archetype.ValueIndex == -1)
+                return;
+            var surfaceParam = Surface.GetParameter(Windows.Assets.AnimationGraphWindow.BaseModelId);
+            var skeleton = surfaceParam != null ? FlaxEngine.Content.LoadAsync<SkinnedModel>((Guid)surfaceParam.Value) : null;
+            if (skeleton == null || skeleton.WaitForLoaded())
+                return;
+            UpdateComboBox();
         }
 
         private void OnNodeValuesChanged()
@@ -72,8 +86,8 @@ namespace FlaxEditor.Surface.Elements
         /// </summary>
         protected void UpdateComboBox()
         {
-            // Prepare
-            var selectedNode = SelectedNodeName;
+            // Prepare (keep the saved node, the current selection may come from an outdated list)
+            var selectedNode = Archetype.ValueIndex != -1 ? (string)ParentNode.Values[Archetype.ValueIndex] : SelectedNodeName;
             _items.Clear();
             _nodeNameToIndex.Clear();
 
@@ -109,7 +123,17 @@ namespace FlaxEditor.Surface.Elements
             }
 
             // Restore the selected node
-            SelectedNodeName = selectedNode;
+            if (Archetype.ValueIndex != -1)
+            {
+                // Select the saved node without editing the node value, so opening the picker after a base model change doesn't erase a node the new model lacks
+                _selectedIndices.Clear();
+                if (!string.IsNullOrEmpty(selectedNode) && _nodeNameToIndex.TryGetValue(selectedNode, out var index))
+                    _selectedIndices.Add(index);
+            }
+            else
+            {
+                SelectedNodeName = selectedNode;
+            }
         }
 
         /// <inheritdoc />
