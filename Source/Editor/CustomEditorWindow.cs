@@ -91,7 +91,6 @@ namespace FlaxEditor
                 Editor.Instance.Windows.AddToRestore(this);
             }
             Window.Close(ClosingReason.ScriptsReload);
-            Window.Dispose();
         }
 
         /// <summary>
