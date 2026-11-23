@@ -336,6 +336,22 @@ namespace FlaxEditor.GUI.Tabs
         }
 
         /// <summary>
+        /// Removes a tab by name.
+        /// </summary>
+        /// <param name="name">Tab title name.</param>
+        public void RemoveTab(string name)
+        {
+            foreach (var c in Children)
+            {
+                if (c is Tab tab && tab.Text == name)
+                {
+                    c.Dispose();
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
         /// Called when selected tab gets changed.
         /// </summary>
         protected virtual void OnSelectedTabChanged()

@@ -860,7 +860,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <param name="value">The value.</param>
         /// <param name="token">The source editor token used by the value setter to support batching Undo actions (eg. for sliders or color pickers).</param>
-        protected void SetValue(object value, object token = null)
+        public void SetValue(object value, object token = null)
         {
             if (_isSetBlocked)
                 return;

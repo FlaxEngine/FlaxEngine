@@ -3,14 +3,16 @@
 #include "PreviewsCache.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUContext.h"
-#include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Content/Upgraders/TextureAssetUpgrader.h"
 #include "Engine/Platform/FileSystem.h"
-#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 // Default asset preview icon size (both width and height since it's a square)
 #define ASSET_ICON_SIZE 64
@@ -36,10 +38,11 @@ bool PreviewsCache::FlushTask::Run()
         LOG(Warning, "Failed to flush asset previews atlas \'{0}\'.", _cache->ToString());
         return true;
     }
+    PROFILE_CPU();
+    PROFILE_MEM(Editor);
+    ScopeLock lock(_cache->Locker);
     auto mipData = _data.GetData(0, 0);
     ASSERT(mipData->DepthPitch == RenderTools::CalculateTextureMemoryUsage(_cache->GetTexture()->Format(), _cache->Width(), _cache->Height(), 1));
-
-    ScopeLock lock(_cache->Locker);
 
     // Link chunks (don't allocate additional memory)
     auto mipChunk = _cache->GetOrCreateChunk(0);
@@ -110,6 +113,7 @@ Asset::LoadResult PreviewsCache::load()
         return LoadResult::MissingDataChunk;
     if (previewsMetaChunk->Size() != ASSETS_ICONS_PER_ATLAS * sizeof(Guid))
         return LoadResult::Failed;
+    PROFILE_MEM(Editor);
     _assets.Set(previewsMetaChunk->Get<Guid>(), ASSETS_ICONS_PER_ATLAS);
 
     // Verify if cached assets still exist (don't store thumbnails for removed files)

@@ -230,7 +230,12 @@ namespace FlaxEditor.Windows.Assets
         }
         private readonly SplitPanel _split;
         private readonly ToolStripButton _saveButton;
-        private bool _isWaitingForLoad, _isWaitingForTexture;
+        private bool _isWaitingForLoad;
+
+        /// <summary>
+        /// Flag set to wait for texture to be allocated and refresh UI tabs then.
+        /// </summary>
+        protected bool _isWaitingForTexture;
 
         /// <summary>
         /// Properties tabs control.

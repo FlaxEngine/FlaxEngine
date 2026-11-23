@@ -99,6 +99,8 @@ void StreamableResource::StartStreaming(bool isDynamic)
         Resources.Add(this);
         ResourcesLock.Unlock();
     }
+    else
+        RequestStreamingUpdate();
 }
 
 void StreamableResource::StopStreaming()

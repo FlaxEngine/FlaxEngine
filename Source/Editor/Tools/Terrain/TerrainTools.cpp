@@ -9,12 +9,11 @@
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
-#include "Engine/Graphics/PixelFormatExtensions.h"
-#include "Engine/Tools/TextureTool/TextureTool.h"
-#include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/Textures/TextureSampler.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Tools/TextureTool/TextureTool.h"
 #include "FlaxEngine.Gen.h"
 
 bool TerrainTools::TryGetPatchCoordToAdd(Terrain* terrain, const Ray& ray, Int2& result)
@@ -65,83 +64,6 @@ bool TerrainTools::TryGetPatchCoordToAdd(Terrain* terrain, const Ray& ray, Int2&
     return false;
 }
 
-struct TextureDataResult
-{
-    FlaxStorage::LockData Lock;
-    BytesContainer Mip0Data;
-    TextureData Tmp;
-    uint32 RowPitch, SlicePitch;
-    PixelFormat Format;
-    Int2 Mip0Size;
-    BytesContainer* Mip0DataPtr;
-};
-
-bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data, bool hdr = false)
-{
-    // Lock asset chunks (if not virtual)
-    data.Lock = texture->LockData();
-
-    // Get the highest mip
-    {
-        PROFILE_CPU_NAMED("GetMipData");
-
-        texture->GetMipDataWithLoading(0, data.Mip0Data);
-        if (data.Mip0Data.IsInvalid())
-        {
-            LOG(Warning, "Failed to get texture data.");
-            return true;
-        }
-        if (!texture->GetMipDataCustomPitch(0, data.RowPitch, data.SlicePitch))
-            texture->GetTexture()->ComputePitch(0, data.RowPitch, data.SlicePitch);
-    }
-    data.Mip0Size = Int2(texture->GetTexture()->Size());
-    data.Format = texture->GetTexture()->Format();
-
-    // Decompress or convert data if need to
-    data.Mip0DataPtr = &data.Mip0Data;
-    if (PixelFormatExtensions::IsCompressed(data.Format) || PixelFormatSampler::Get(data.Format) == nullptr)
-    {
-        PROFILE_CPU_NAMED("Decompress");
-
-        // Prepare source data descriptor (no data copy, just link the mip data)
-        TextureData src;
-        src.Width = data.Mip0Size.X;
-        src.Height = data.Mip0Size.Y;
-        src.Depth = 1;
-        src.Format = data.Format;
-        src.Items.Resize(1);
-        src.Items[0].Mips.Resize(1);
-        auto& srcMip = src.Items[0].Mips[0];
-        srcMip.Data.Link(data.Mip0Data);
-        srcMip.DepthPitch = data.SlicePitch;
-        srcMip.RowPitch = data.RowPitch;
-        srcMip.Lines = src.Height;
-
-        // Decompress texture
-        if (TextureTool::Convert(data.Tmp, src, hdr ? PixelFormat::R16G16B16A16_Float : PixelFormat::R8G8B8A8_UNorm))
-        {
-            LOG(Warning, "Failed to decompress data.");
-            return true;
-        }
-
-        // Override source data and format
-        data.Format = data.Tmp.Format;
-        data.RowPitch = data.Tmp.Items[0].Mips[0].RowPitch;
-        data.SlicePitch = data.Tmp.Items[0].Mips[0].DepthPitch;
-        data.Mip0DataPtr = &data.Tmp.Items[0].Mips[0].Data;
-    }
-
-    // Check if can even sample the given format
-    const auto sampler = PixelFormatSampler::Get(data.Format);
-    if (sampler == nullptr)
-    {
-        LOG(Warning, "Texture format {0} cannot be sampled.", (int32)data.Format);
-        return true;
-    }
-
-    return false;
-}
-
 bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches, Texture* heightmap, float heightmapScale, Texture* splatmap1, Texture* splatmap2)
 {
     PROFILE_CPU_NAMED("Terrain.GenerateTerrain");
@@ -183,10 +105,9 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
     if (heightmap && !Math::IsZero(heightmapScale))
     {
         // Get data
-        TextureDataResult dataHeightmap;
-        if (GetTextureDataForSampling(heightmap, dataHeightmap, true))
+        TextureSampler dataHeightmap;
+        if (dataHeightmap.Init(heightmap, true))
             return true;
-        const auto sampler = PixelFormatSampler::Get(dataHeightmap.Format);
 
         // Initialize with sub-range of the input heightmap
         for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
@@ -200,7 +121,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
                 for (int32 x = 0; x < heightmapSize; x++)
                 {
                     const Float2 uv = uvStart + Float2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
-                    const Color color = sampler->SampleLinear(dataHeightmap.Mip0DataPtr->Get(), uv, dataHeightmap.Mip0Size, dataHeightmap.RowPitch);
+                    const Color color = dataHeightmap.SampleLinear(uv);
                     heightmapData[z * heightmapSize + x] = color.R * heightmapScale;
                 }
             }
@@ -224,7 +145,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
     // Initialize terrain layers weights
     Texture* splatmaps[2] = { splatmap1, splatmap2 };
     Array<Color32> splatmapData;
-    TextureDataResult data1;
+    TextureSampler data1;
     for (int32 index = 0; index < ARRAY_COUNT(splatmaps); index++)
     {
         const auto splatmap = splatmaps[index];
@@ -232,9 +153,8 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
             continue;
 
         // Get splatmap data
-        if (GetTextureDataForSampling(splatmap, data1))
+        if (data1.Init(splatmap))
             return true;
-        const auto sampler = PixelFormatSampler::Get(data1.Format);
 
         // Modify heightmap splatmaps with sub-range of the input splatmaps
         splatmapData.Resize(heightmapSize * heightmapSize);
@@ -249,7 +169,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
                 for (int32 x = 0; x < heightmapSize; x++)
                 {
                     const Float2 uv = uvStart + Float2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
-                    const Color color = sampler->SampleLinear(data1.Mip0DataPtr->Get(), uv, data1.Mip0Size, data1.RowPitch);
+                    const Color color = data1.SampleLinear(uv);
 
                     Color32 layers;
                     layers.R = (byte)(Math::Min(1.0f, color.R) * 255.0f);
