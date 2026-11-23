@@ -1534,7 +1534,7 @@ Color PixelFormatSampler::SampleLinear(const void* data, const Float2& uv, const
     const Int2 end = size - 1;
     const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.X * size.X), end.X), Math::Min(Math::FloorToInt(uv.Y * size.Y), end.Y));
     const Int2 uvNext(Math::Min(uvFloor.X + 1, end.X), Math::Min(uvFloor.Y + 1, end.Y));
-    const Float2 uvFraction(uv.X * size.Y - uvFloor.X, uv.Y * size.Y - uvFloor.Y);
+    const Float2 uvFraction(uv.X * size.X - uvFloor.X, uv.Y * size.Y - uvFloor.Y);
 
     const Float4 v00 = Read((const byte*)data + rowPitch * uvFloor.Y + PixelSize * uvFloor.X);
     const Float4 v01 = Read((const byte*)data + rowPitch * uvFloor.Y + PixelSize * uvNext.X);
