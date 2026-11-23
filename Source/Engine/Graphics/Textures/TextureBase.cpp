@@ -2,6 +2,8 @@
 
 #include "TextureBase.h"
 #include "TextureData.h"
+#include "TextureSampler.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
@@ -10,6 +12,7 @@
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Scripting/Enums.h"
@@ -20,6 +23,75 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Cache/AssetsCache.h"
 #endif
+
+bool TextureSampler::Init(TextureBase* texture, bool hdr, int32 mipIndex)
+{
+    CHECK_RETURN(texture, true);
+    PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
+
+    // Lock asset chunks (if not virtual)
+    Lock = texture->LockData();
+
+    // Get the mip data
+    {
+        PROFILE_CPU_NAMED("GetMipData");
+        texture->GetMipData(mipIndex, MipData, RowPitch, SlicePitch, true);
+        if (MipData.IsInvalid())
+        {
+            LOG(Warning, "Failed to get texture mip{} data '{}'.", mipIndex, texture->GetPath());
+            return true;
+        }
+    }
+    Size.X = Math::Max(1, texture->Width() >> mipIndex);
+    Size.Y = Math::Max(1, texture->Height() >> mipIndex);
+    Format = texture->Format();
+
+    // Decompress or convert data if need to
+    DataPtr = MipData.Get();
+    if (PixelFormatExtensions::IsCompressed(Format) || PixelFormatSampler::Get(Format) == nullptr)
+    {
+        PROFILE_CPU_NAMED("Decompress");
+
+        // Prepare source data descriptor (no data copy, just link the mip data)
+        TextureData src;
+        src.Width = Size.X;
+        src.Height = Size.Y;
+        src.Depth = 1;
+        src.Format = Format;
+        src.Items.Resize(1);
+        src.Items[0].Mips.Resize(1);
+        auto& srcMip = src.Items[0].Mips[0];
+        srcMip.Data.Link(MipData);
+        srcMip.DepthPitch = SlicePitch;
+        srcMip.RowPitch = RowPitch;
+        srcMip.Lines = src.Height;
+
+        // Decompress texture
+        auto dstFormat = hdr ? PixelFormat::R16G16B16A16_Float : PixelFormat::R8G8B8A8_UNorm;
+        if (TextureTool::Convert(Tmp, src, dstFormat))
+        {
+            LOG(Warning, "Failed to decompress data from {} to {}.", ScriptingEnum::ToString(Format), ScriptingEnum::ToString(dstFormat));
+            return true;
+        }
+
+        // Override source data and format
+        Format = Tmp.Format;
+        RowPitch = Tmp.Items[0].Mips[0].RowPitch;
+        SlicePitch = Tmp.Items[0].Mips[0].DepthPitch;
+        DataPtr = Tmp.Items[0].Mips[0].Data.Get();
+    }
+
+    // Check if can even sample the given format
+    Sampler = PixelFormatSampler::Get(Format);
+    if (Sampler == nullptr)
+    {
+        LOG(Warning, "Texture format {0} cannot be sampled.", ScriptingEnum::ToString(Format));
+        return true;
+    }
+
+    return false;
+}
 
 TextureMipData::TextureMipData()
     : RowPitch(0)

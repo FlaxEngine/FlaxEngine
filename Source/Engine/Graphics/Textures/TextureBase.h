@@ -269,9 +269,7 @@ public:
     CriticalSection& GetOwnerLocker() const override;
     Task* RequestMipDataAsync(int32 mipIndex) override;
     FlaxStorage::LockData LockData() override;
-    void GetMipData(int32 mipIndex, BytesContainer& data) const override;
-    void GetMipDataWithLoading(int32 mipIndex, BytesContainer& data) const override;
-    bool GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32& slicePitch) const override;
+    void GetMipData(int32 mipIndex, BytesContainer& data, uint32& rowPitch, uint32& slicePitch, bool canLoad = false) const override;
 
 protected:
     // [BinaryAsset]
