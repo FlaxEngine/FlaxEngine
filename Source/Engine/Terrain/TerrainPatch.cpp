@@ -1268,7 +1268,8 @@ void TerrainPatch::CacheHeightData()
     // Get the LOD0 mip map data and extract the heightmap
     auto lock = Heightmap->LockData();
     BytesContainer mipLOD0;
-    Heightmap->GetMipDataWithLoading(0, mipLOD0);
+    uint32 rowPitchLOD0, slicePicthLOD0;
+    Heightmap->GetMipData(0, mipLOD0, rowPitchLOD0, slicePicthLOD0, true);
     if (mipLOD0.IsInvalid())
     {
         LOG(Error, "Failed to get patch heightmap data.");
@@ -1350,7 +1351,8 @@ void TerrainPatch::CacheSplatData()
         // Get the LOD0 mip map data and extract the splatmap
         auto lock = Splatmap[index]->LockData();
         BytesContainer mipLOD0;
-        Splatmap[index]->GetMipDataWithLoading(0, mipLOD0);
+        uint32 rowPitchLOD0, slicePicthLOD0;
+        Splatmap[index]->GetMipData(0, mipLOD0, rowPitchLOD0, slicePicthLOD0, true);
         if (mipLOD0.IsInvalid())
         {
             LOG(Error, "Failed to get patch splatmap data.");

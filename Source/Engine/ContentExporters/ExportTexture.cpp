@@ -21,16 +21,13 @@ ExportAssetResult AssetExporters::ExportTexture(ExportAssetContext& context)
     if (asset->LoadChunk(chunkIndex))
         return ExportAssetResult::CannotLoadData;
     BytesContainer data;
-    asset->GetMipData(0, data);
+    uint32 rowPitch, slicePitch;
+    asset->GetMipData(0, data, rowPitch, slicePitch);
     if (data.IsInvalid())
         return ExportAssetResult::Error;
-
-    // Peek image description
     const auto format = asset->Format();
     const int32 width = asset->Width();
     const int32 height = asset->Height();
-    uint32 rowPitch, slicePitch;
-    RenderTools::ComputePitch(format, width, height, rowPitch, slicePitch);
 
     // Setup texture data
     TextureData textureData;
@@ -89,21 +86,13 @@ ExportAssetResult AssetExporters::ExportCubeTexture(ExportAssetContext& context)
         {
             auto& mip = item.Mips[mipIndex];
 
-            const int32 mipWidth = Math::Max(1, width >> mipIndex);
-            const int32 mipHeight = Math::Max(1, height >> mipIndex);
-            uint32 rowPitch, slicePitch;
-            RenderTools::ComputePitch(format, mipWidth, mipHeight, rowPitch, slicePitch);
-
-            mip.RowPitch = rowPitch;
-            mip.DepthPitch = slicePitch;
-            mip.Lines = mipHeight;
-
+            mip.Lines = Math::Max(1, height >> mipIndex);
             BytesContainer wholeMipData;
-            asset->GetMipData(mipIndex, wholeMipData);
+            asset->GetMipData(mipIndex, wholeMipData, mip.RowPitch, mip.DepthPitch);
             if (wholeMipData.IsInvalid())
                 return ExportAssetResult::Error;
 
-            mip.Data.Link(wholeMipData.Get() + slicePitch * arrayIndex, slicePitch);
+            mip.Data.Link(wholeMipData.Get() + mip.DepthPitch * arrayIndex, mip.DepthPitch);
         }
     }
 

@@ -61,31 +61,12 @@ public:
     virtual FlaxStorage::LockData LockData() = 0;
 
     /// <summary>
-    /// Gets texture mip map data. May fail if not data requested. See RequestMipDataAsync.
+    /// Gets texture mip map data. May fail if no data requested and canLoad is unset (see RequestMipDataAsync).
     /// </summary>
     /// <param name="mipIndex">Mip map index</param>
     /// <param name="data">Result data</param>
-    virtual void GetMipData(int32 mipIndex, BytesContainer& data) const = 0;
-
-    /// <summary>
-    /// Gets texture mip map data. Performs loading if data is not in memory (may stall the callee thread).
-    /// </summary>
-    /// <param name="mipIndex">Mip map index</param>
-    /// <param name="data">Result data</param>
-    virtual void GetMipDataWithLoading(int32 mipIndex, BytesContainer& data) const
-    {
-        GetMipData(mipIndex, data);
-    }
-
-    /// <summary>
-    /// Gets texture mip map data row and slice pitch. Cna be used to override the default values.
-    /// </summary>
-    /// <param name="mipIndex">Mip map index</param>
     /// <param name="rowPitch">Data row pitch (in bytes).</param>
     /// <param name="slicePitch">Data slice pitch (in bytes).</param>
-    /// <returns>True if has a custom row/slice pitch values, otherwise false (to use default values).</returns>
-    virtual bool GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32& slicePitch) const
-    {
-        return false;
-    }
+    /// <param name="canLoad">True if load data from drive if it's not in memory.</param>
+    virtual void GetMipData(int32 mipIndex, BytesContainer& data, uint32& rowPitch, uint32& slicePitch, bool canLoad = false) const = 0;
 };

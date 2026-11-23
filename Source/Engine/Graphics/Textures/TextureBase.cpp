@@ -342,38 +342,17 @@ void TextureBase::SetStreamingVisible() const
 BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& slicePitch)
 {
     BytesContainer result;
-    if (IsVirtual())
+    if (IsVirtual() && _customData == nullptr)
     {
-        if (_customData == nullptr)
-        {
-            LOG(Error, "Missing virtual texture init data.");
-            return result;
-        }
-
-        // Get description
-        rowPitch = _customData->Mips[mipIndex].RowPitch;
-        slicePitch = _customData->Mips[mipIndex].SlicePitch;
+        LOG(Error, "Missing virtual texture init data.");
+        return result;
     }
-    else
-    {
-        if (WaitForLoaded())
-            return result;
-
-        // Get description
-        uint32 rowPitch1, slicePitch1;
-        const int32 mipWidth = Math::Max(1, Width() >> mipIndex);
-        const int32 mipHeight = Math::Max(1, Height() >> mipIndex);
-        RenderTools::ComputePitch(Format(), mipWidth, mipHeight, rowPitch1, slicePitch1);
-        rowPitch = rowPitch1;
-        slicePitch = slicePitch1;
-
-        // Ensure to have chunk loaded
-        if (LoadChunk(CalculateChunkIndex(mipIndex)))
-            return result;
-    }
-
-    // Get data
-    GetMipData(mipIndex, result);
+    if (WaitForLoaded())
+        return result;
+    uint32 rowPitch1, slicePitch1;
+    GetMipData(mipIndex, result, rowPitch1, slicePitch1, true);
+    rowPitch = rowPitch1;
+    slicePitch = slicePitch1;
     return result;
 }
 
@@ -829,41 +808,30 @@ FlaxStorage::LockData TextureBase::LockData()
     return _parent->Storage ? _parent->Storage->Lock() : FlaxStorage::LockData();
 }
 
-void TextureBase::GetMipData(int32 mipIndex, BytesContainer& data) const
+void TextureBase::GetMipData(int32 mipIndex, BytesContainer& data, uint32& rowPitch, uint32& slicePitch, bool canLoad) const
 {
+    if (Format() == PixelFormat::Unknown)
+    {
+        data.Release();
+        rowPitch = slicePitch = 0;
+        return;
+    }
     if (_customData)
     {
-        data.Link(_customData->Mips[mipIndex].Data);
+        auto& mip = _customData->Mips[mipIndex];
+        data.Link(mip.Data);
+        rowPitch = mip.RowPitch;
+        slicePitch = mip.SlicePitch;
         return;
     }
 
-    auto chunkIndex = CalculateChunkIndex(mipIndex);
+    int32 chunkIndex = CalculateChunkIndex(mipIndex);
+    if (canLoad)
+        _parent->LoadChunk(chunkIndex);
     _parent->GetChunkData(chunkIndex, data);
-}
-
-void TextureBase::GetMipDataWithLoading(int32 mipIndex, BytesContainer& data) const
-{
-    if (_customData)
-    {
-        data.Link(_customData->Mips[mipIndex].Data);
-        return;
-    }
-
-    const auto chunkIndex = CalculateChunkIndex(mipIndex);
-    _parent->LoadChunk(chunkIndex);
-    _parent->GetChunkData(chunkIndex, data);
-}
-
-bool TextureBase::GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32& slicePitch) const
-{
-    bool result = _customData != nullptr;
-    if (result)
-    {
-        rowPitch = _customData->Mips[mipIndex].RowPitch;
-        slicePitch = _customData->Mips[mipIndex].SlicePitch;
-    }
-
-    return result;
+    const int32 mipWidth = Math::Max(1, Width() >> mipIndex);
+    const int32 mipHeight = Math::Max(1, Height() >> mipIndex);
+    RenderTools::ComputePitch(Format(), mipWidth, mipHeight, rowPitch, slicePitch);
 }
 
 bool TextureBase::init(AssetInitData& initData)

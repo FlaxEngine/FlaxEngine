@@ -391,20 +391,12 @@ protected:
         // Get asset data
         BytesContainer data;
         const auto absoluteMipIndex = _streamingTexture->TextureMipIndexToTotalIndex(_mipIndex);
-        _streamingTexture->GetOwner()->GetMipData(absoluteMipIndex, data);
+        uint32 rowPitch, slicePitch;
+        _streamingTexture->GetOwner()->GetMipData(absoluteMipIndex, data, rowPitch, slicePitch);
         if (data.IsInvalid())
             return Result::MissingData;
         PixelFormat dataFormat = _streamingTexture->GetHeader()->Format;
-
-        // Cache data
         const int32 arraySize = texture->ArraySize();
-        uint32 rowPitch, slicePitch;
-        if (!_streamingTexture->GetOwner()->GetMipDataCustomPitch(absoluteMipIndex, rowPitch, slicePitch))
-        {
-            int32 mipWidth, mipHeight;
-            texture->GetMipSize(_mipIndex, mipWidth, mipHeight);
-            RenderTools::ComputePitch(dataFormat, mipWidth, mipHeight, rowPitch, slicePitch);
-        }
         _data.Link(data);
 
         // Update all array slices
