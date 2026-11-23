@@ -343,7 +343,7 @@ namespace FlaxEditor.CustomEditors
                 if (_readOnly != value)
                 {
                     _readOnly = value;
-                    UpdateReadOnly();
+                    UpdateReadOnly(Panel, !_readOnly);
                 }
             }
         }
@@ -447,7 +447,7 @@ namespace FlaxEditor.CustomEditors
             if (parentScrollV > -1)
                 panel.VScrollBar.Value = parentScrollV;
             if (_readOnly)
-                UpdateReadOnly();
+                UpdateReadOnly(Panel, !_readOnly);
         }
 
         /// <summary>
@@ -458,13 +458,15 @@ namespace FlaxEditor.CustomEditors
             _buildOnUpdate = true;
         }
 
-        private void UpdateReadOnly()
+        private static void UpdateReadOnly(ContainerControl root, bool enabled)
         {
-            // Only scrollbars are enabled
-            foreach (var child in Panel.Children)
+            // Disable UI but let some usability active (eg. scroll bars)
+            foreach (var child in root.Children)
             {
-                if (!(child is ScrollBar))
-                    child.Enabled = !_readOnly;
+                if (child is DropPanel dropPanel)
+                    UpdateReadOnly(dropPanel, enabled);
+                else if (!(child is ScrollBar))
+                    child.Enabled = enabled;
             }
         }
 
