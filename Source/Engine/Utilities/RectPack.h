@@ -31,6 +31,10 @@ struct RectPackNode
         , Height(height)
     {
     }
+
+    void OnInsert()
+    {
+    }
 };
 
 /// <summary>
@@ -46,6 +50,8 @@ struct RectPackAtlas
     Size Width = 0;
     // Atlas height (in pixels).
     Size Height = 0;
+    // Atlas nodes padding (in pixels).
+    Size NodesPadding = 0;
     // Atlas borders padding (in pixels).
     Size BordersPadding = 0;
     // List with all allocated nodes (chunked array to ensure node pointers are always valid).
@@ -117,15 +123,17 @@ public:
     /// </summary>
     /// <param name="atlasWidth">The atlas width (in pixels).</param>
     /// <param name="atlasHeight">The atlas height (in pixels).</param>
-    /// <param name="bordersPadding">The nodes padding (in pixels). Distance from node contents to atlas borders or other nodes.</param>
-    void Init(Size atlasWidth, Size atlasHeight, Size bordersPadding = 0)
+    /// <param name="nodesPadding">The nodes padding (in pixels). Distance from node contents to other nodes.</param>
+    /// <param name="bordersPadding">The borders padding (in pixels). Distance from node contents to atlas borders.</param>
+    void Init(Size atlasWidth, Size atlasHeight, Size nodesPadding = 0, Size bordersPadding = 0)
     {
         Width = atlasWidth;
         Height = atlasHeight;
+        NodesPadding = nodesPadding;
         BordersPadding = bordersPadding;
         Nodes.Clear();
         FreeNodes.Clear();
-        Nodes.Add(NodeType(bordersPadding, bordersPadding, atlasWidth - bordersPadding, atlasHeight - bordersPadding));
+        Nodes.Add(NodeType(bordersPadding, bordersPadding, atlasWidth - bordersPadding * 2, atlasHeight - bordersPadding * 2));
         FreeNodes.Add(&Nodes[0]);
     }
 
@@ -136,7 +144,7 @@ public:
     {
         if (Width == 0)
             return;
-        Init(Width, Height, BordersPadding);
+        Init(Width, Height, NodesPadding, BordersPadding);
     }
 
     /// <summary>
@@ -146,6 +154,7 @@ public:
     {
         Width = 0;
         Height = 0;
+        NodesPadding = 0;
         BordersPadding = 0;
         Nodes.Clear();
         FreeNodes.Clear();
@@ -162,8 +171,16 @@ public:
     NodeType* Insert(Size width, Size height, Args&&... args)
     {
         NodeType* result = nullptr;
-        const Size paddedWidth = width + BordersPadding;
-        const Size paddedHeight = height + BordersPadding;
+        if (width == Width && height == Height && FreeNodes.Count() == 1)
+        {
+            // Single item that fills entire atlas
+            result = FreeNodes.First();
+            FreeNodes.Clear();
+            result->OnInsert(Forward<Args>(args)...);
+            return result;
+        }
+        const Size paddedWidth = width + NodesPadding;
+        const Size paddedHeight = height + NodesPadding;
 
         // Search free nodes from back to front and find the one that fits requested item size
         // TODO: FreeNodes are sorted so use Binary Search to quickly find the first tile that might have enough space for insert
@@ -199,9 +216,9 @@ public:
                 }
                 if (smaller.W * smaller.H > bigger.W * bigger.H)
                     Swap(bigger, smaller);
-                if (bigger.W * bigger.H > BordersPadding)
+                if (bigger.W * bigger.H > NodesPadding)
                     AddFreeNode(Nodes.Add(NodeType(bigger.X, bigger.Y, bigger.W, bigger.H)));
-                if (smaller.W * smaller.H > BordersPadding)
+                if (smaller.W * smaller.H > NodesPadding)
                     AddFreeNode(Nodes.Add(NodeType(smaller.X, smaller.Y, smaller.W, smaller.H)));
 
                 // Shrink to the actual area

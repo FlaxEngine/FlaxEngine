@@ -38,7 +38,7 @@ void FontTextureAtlas::Init(uint32 width, uint32 height)
     _width = width;
     _height = height;
     const uint32 padding = GetPaddingAmount() * 2; // Double the padding so each slot has own border around it
-    _atlas.Init(_width, _height, padding);
+    _atlas.Init(_width, _height, padding, padding);
     _isDirty = false;
 
     // Reserve upload data memory
