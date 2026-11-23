@@ -5,12 +5,11 @@ using System;
 namespace FlaxEngine
 {
     /// <summary>
-    /// Shows property/field in the editor only if the specified member has a given value. Can be used to hide properties based on other properties (also private properties). The given member has to be bool type. Multiple VisibleIf attributes can be added for additional conditions to be met.
+    /// Base class for VisibleIf and EditIf attributes that operate on specific object member (field or property).
     /// </summary>
     /// <seealso cref="System.Attribute" />
     [Serializable]
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
-    public sealed class VisibleIfAttribute : Attribute
+    public abstract class PropertyIfAttribute : Attribute
     {
         /// <summary>
         /// The member name.
@@ -18,10 +17,19 @@ namespace FlaxEngine
         public string MemberName;
 
         /// <summary>
-        /// True if invert member value when computing the visibility value.
+        /// True if invert member value when computing the value.
         /// </summary>
         public bool Invert;
+    }
 
+    /// <summary>
+    /// Shows property/field in the editor only if the specified member has a given value. Can be used to hide properties based on other properties (also private properties). The given member has to be bool type. Multiple VisibleIf attributes can be added for additional conditions to be met.
+    /// </summary>
+    /// <seealso cref="System.Attribute" />
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
+    public sealed class VisibleIfAttribute : PropertyIfAttribute
+    {
         private VisibleIfAttribute()
         {
         }

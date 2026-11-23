@@ -37,7 +37,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             }
 
-            EvaluateVisibleIf(itemLayout, item, GetLabelIndex(itemLayout, item));
+            EvaluatePropertyExtensions(itemLayout, item, GetLabelIndex(itemLayout, item));
 
             // Add labels with a check box
             var label = new CheckablePropertyNameLabel(item.DisplayName);

@@ -71,6 +71,11 @@ namespace FlaxEditor.CustomEditors.Editors
             public VisibleIfAttribute[] VisibleIfs;
 
             /// <summary>
+            /// The edit if attributes.
+            /// </summary>
+            public EditIfAttribute[] EditIfs;
+
+            /// <summary>
             /// The read-only attribute usage flag.
             /// </summary>
             public bool IsReadOnly;
@@ -129,6 +134,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Space = (SpaceAttribute)attributes.FirstOrDefault(x => x is SpaceAttribute);
                 Header = (HeaderAttribute)attributes.FirstOrDefault(x => x is HeaderAttribute);
                 VisibleIfs = attributes.OfType<VisibleIfAttribute>().ToArray();
+                EditIfs = attributes.OfType<EditIfAttribute>().ToArray();
                 IsReadOnly = attributes.FirstOrDefault(x => x is ReadOnlyAttribute) != null;
                 ExpandGroups = attributes.FirstOrDefault(x => x is ExpandGroupsAttribute) != null;
 
@@ -217,6 +223,7 @@ namespace FlaxEditor.CustomEditors.Editors
             public GroupElement Group;
             public bool[] InversionList;
             public int LabelIndex;
+            public CheckBox InlinedCheckbox;
 
             public bool GetValue(object instance)
             {
@@ -227,8 +234,21 @@ namespace FlaxEditor.CustomEditors.Editors
                     bool currentValue = (bool)Sources[i].GetValue(instance);
                     if (InversionList[i])
                         currentValue = !currentValue;
-
                     value = value && currentValue;
+                }
+                return value;
+            }
+
+            public bool GetValue(ValueContainer insatnces)
+            {
+                bool value = true;
+                for (int j = 0; j < insatnces.Count; j++)
+                {
+                    if (insatnces[j] != null && !GetValue(insatnces[j]))
+                    {
+                        value = false;
+                        break;
+                    }
                 }
                 return value;
             }
@@ -238,7 +258,8 @@ namespace FlaxEditor.CustomEditors.Editors
         private static Stack<Dictionary<string, GroupElement>> _groups;
         private static List<Dictionary<string, GroupElement>> _groupsPool;
         private VisibleIfCache[] _visibleIfCaches;
-        private bool _isNull;
+        private VisibleIfCache[] _editIfCaches;
+        private bool _isNull, _isUpdatingEditIfs;
 
         /// <summary>
         /// Gets the items for the type
@@ -312,24 +333,26 @@ namespace FlaxEditor.CustomEditors.Editors
             return items;
         }
 
-        private static ScriptMemberInfo[] GetVisibleIfSources(ScriptType type, VisibleIfAttribute[] visibleIfs)
+        private static ScriptMemberInfo[] GetVisibleIfSources(ScriptType type, PropertyIfAttribute[] visibleIfs, string rule)
         {
             ScriptMemberInfo[] members = Array.Empty<ScriptMemberInfo>();
 
             for (int i = 0; i < visibleIfs.Length; i++)
             {
-                var property = type.GetProperty(visibleIfs[i].MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                var memberName = visibleIfs[i].MemberName;
+
+                var property = type.GetProperty(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
                 if (property != ScriptMemberInfo.Null)
                 {
                     if (!property.HasGet)
                     {
-                        Debug.LogError("Invalid VisibleIf rule. Property has missing getter " + visibleIfs[i].MemberName);
+                        Debug.LogError($"Invalid {rule} rule. Property has missing getter {memberName}.");
                         continue;
                     }
 
                     if (property.ValueType.Type != typeof(bool))
                     {
-                        Debug.LogError("Invalid VisibleIf rule. Property has to return bool type " + visibleIfs[i].MemberName);
+                        Debug.LogError($"Invalid {rule} rule. Property has to return bool type {memberName}.");
                         continue;
                     }
 
@@ -337,12 +360,12 @@ namespace FlaxEditor.CustomEditors.Editors
                     continue;
                 }
 
-                var field = type.GetField(visibleIfs[i].MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                var field = type.GetField(memberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
                 if (field != ScriptMemberInfo.Null)
                 {
                     if (field.ValueType.Type != typeof(bool))
                     {
-                        Debug.LogError("Invalid VisibleIf rule. Field has to be bool type " + visibleIfs[i].MemberName);
+                        Debug.LogError($"Invalid {rule} rule. Field has to be bool type {memberName}.");
                         continue;
                     }
 
@@ -350,7 +373,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     continue;
                 }
 
-                Debug.LogError("Invalid VisibleIf rule. Cannot find member " + visibleIfs[i].MemberName);
+                Debug.LogError($"Invalid {rule} rule. Cannot find member {memberName}.");
             }
 
             return members;
@@ -610,14 +633,75 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         /// <summary>
+        /// Evaluate the <see cref="VisibleIfAttribute"/> and <see cref="EditIfAttribute"/> cache for a given property item.
+        /// </summary>
+        /// <param name="itemLayout">The item layout.</param>
+        /// <param name="item">The item.</param>
+        /// <param name="labelIndex">The label index.</param>
+        protected virtual void EvaluatePropertyExtensions(LayoutElementsContainer itemLayout, ItemInfo item, int labelIndex)
+        {
+            EvaluateVisibleIf(itemLayout, item, labelIndex, "VisibleIf", (PropertyIfAttribute[])item.VisibleIfs, ref _visibleIfCaches);
+            EvaluateVisibleIf(itemLayout, item, labelIndex, "EditIf", (PropertyIfAttribute[])item.EditIfs, ref _editIfCaches);
+
+            if (_editIfCaches != null)
+            {
+                for (int i = 0; i < _editIfCaches.Length; i++)
+                {
+                    ref var c = ref _editIfCaches[i];
+                    if (c.Target == ScriptMemberInfo.Null)
+                        break;
+                    if (item.EditIfs.Length == 1 &&
+                        item.EditIfs[0].Inline &&
+                        c.Sources.Length == 1 &&
+                        c.Sources[0].HasSet &&
+                        c.LabelIndex != -1 &&
+                        c.PropertiesList != null &&
+                        c.PropertiesList.Labels.Count > c.LabelIndex)
+                    {
+                        // Inline EditIf condition into the checkbox right next to the label
+                        var label = c.PropertiesList.Labels[c.LabelIndex];
+                        var margin = label.Margin;
+                        margin.Left += 18;
+                        label.Margin = margin;
+                        var checkBox = new CheckBox
+                        {
+                            Checked = c.GetValue(Values),
+                            Parent = label,
+                            Bounds = new Rectangle(new Float2(2, 2), new Float2(14)),
+                            Tag = i,
+                        };
+                        checkBox.StateChanged += OnEditIfInlineCheckboxChanged;
+                        c.InlinedCheckbox = checkBox;
+                    }
+                }
+            }
+        }
+
+        private void OnEditIfInlineCheckboxChanged(CheckBox checkBox)
+        {
+            if (_isUpdatingEditIfs)
+                return;
+            var i = (int)checkBox.Tag;
+            ref var c = ref _editIfCaches[i];
+            var value = checkBox.Checked;
+            if (c.InversionList[i])
+                value = !value;
+            c.Sources[0].SetValue(Values[0], value);
+            SetValue(Values[0]);
+        }
+
+        /// <summary>
         /// Evaluate the <see cref="VisibleIfAttribute"/> cache for a given property item.
         /// </summary>
         /// <param name="itemLayout">The item layout.</param>
         /// <param name="item">The item.</param>
         /// <param name="labelIndex">The label index.</param>
-        protected virtual void EvaluateVisibleIf(LayoutElementsContainer itemLayout, ItemInfo item, int labelIndex)
+        /// <param name="type">The conditional type.</param>
+        /// <param name="attributes">The conditional attributes list.</param>
+        /// <param name="caches">The output list.</param>
+        private void EvaluateVisibleIf(LayoutElementsContainer itemLayout, ItemInfo item, int labelIndex, string type, PropertyIfAttribute[] attributes, ref VisibleIfCache[] caches)
         {
-            if (item.VisibleIfs.Length > 0 && itemLayout.Children.Count > 0)
+            if (attributes.Length > 0 && itemLayout.Children.Count > 0)
             {
                 PropertiesListElement list = null;
                 GroupElement group = null;
@@ -629,28 +713,28 @@ namespace FlaxEditor.CustomEditors.Editors
                     return;
 
                 // Get source member used to check rule
-                var sourceMembers = GetVisibleIfSources(item.Info.DeclaringType, item.VisibleIfs);
+                var sourceMembers = GetVisibleIfSources(item.Info.DeclaringType, attributes, type);
                 if (sourceMembers.Length == 0)
                     return;
 
                 // Resize cache
-                if (_visibleIfCaches == null)
-                    _visibleIfCaches = new VisibleIfCache[8];
+                if (caches == null)
+                    caches = new VisibleIfCache[8];
                 int count = 0;
-                while (count < _visibleIfCaches.Length && _visibleIfCaches[count].Target != ScriptType.Null)
+                while (count < caches.Length && caches[count].Target != ScriptType.Null)
                     count++;
-                if (count >= _visibleIfCaches.Length)
-                    Array.Resize(ref _visibleIfCaches, count * 2);
+                if (count >= caches.Length)
+                    Array.Resize(ref caches, count * 2);
 
                 // Add item
-                _visibleIfCaches[count] = new VisibleIfCache
+                caches[count] = new VisibleIfCache
                 {
                     Target = item.Info,
                     Sources = sourceMembers,
                     PropertiesList = list,
                     Group = group,
                     LabelIndex = labelIndex,
-                    InversionList = item.VisibleIfs.Select((x, i) => x.Invert).ToArray(),
+                    InversionList = attributes.Select((x, i) => x.Invert).ToArray(),
                 };
             }
         }
@@ -691,7 +775,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 OnReadOnlyProperty(itemLayout, labelIndex);
             }
 
-            EvaluateVisibleIf(itemLayout, item, labelIndex);
+            EvaluatePropertyExtensions(itemLayout, item, labelIndex);
         }
 
         /// <inheritdoc />
@@ -706,6 +790,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             _visibleIfCaches = null;
+            _editIfCaches = null;
 
             // Collect items to edit
             List<ItemInfo> items;
@@ -857,6 +942,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             _visibleIfCaches = null;
             _visibleIfPropertiesListsCache = null;
+            _editIfCaches = null;
 
             base.Deinitialize();
         }
@@ -871,97 +957,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
             }
 
+            // Update VisibleIf/EditIf attributes
             if (_visibleIfCaches != null)
             {
-                if (_visibleIfPropertiesListsCache == null)
-                    _visibleIfPropertiesListsCache = new HashSet<PropertiesList>();
-                else
-                    _visibleIfPropertiesListsCache.Clear();
-                try
-                {
-                    // Update VisibleIf rules
-                    for (int i = 0; i < _visibleIfCaches.Length; i++)
-                    {
-                        ref var c = ref _visibleIfCaches[i];
-                        if (c.Target == ScriptMemberInfo.Null)
-                            break;
-
-                        // Check rule (all objects must allow to show this property)
-                        bool visible = true;
-                        for (int j = 0; j < Values.Count; j++)
-                        {
-                            if (Values[j] != null && !c.GetValue(Values[j]))
-                            {
-                                visible = false;
-                                break;
-                            }
-                        }
-
-                        // Apply the visibility (note: there may be no label)
-                        if (c.LabelIndex != -1 && c.PropertiesList != null && c.PropertiesList.Labels.Count > c.LabelIndex)
-                        {
-                            var label = c.PropertiesList.Labels[c.LabelIndex];
-                            if (visible && Presenter != null && !string.IsNullOrEmpty(Presenter.SearchText))
-                            {
-                                bool match = label.Text.ToString().IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0;
-                                if (!match)
-                                {
-                                    var p = label.Parent;
-                                    while (p != null)
-                                    {
-                                        if (p is DropPanel dropPanel)
-                                        {
-                                            var headerText = dropPanel.HeaderText;
-                                            if (headerText != null && headerText.IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0)
-                                            {
-                                                match = true;
-                                                break;
-                                            }
-                                        }
-                                        p = p.Parent;
-                                    }
-                                }
-                                visible = match;
-                            }
-                            label.Visible = visible;
-                            for (int j = label.FirstChildControlIndex; j < c.PropertiesList.Properties.Children.Count; j++)
-                            {
-                                var child = c.PropertiesList.Properties.Children[j];
-                                if (child is PropertyNameLabel)
-                                    break;
-
-                                child.Visible = visible;
-                            }
-                        }
-                        if (c.Group != null)
-                        {
-                            c.Group.Panel.Visible = visible;
-                        }
-                        if (c.PropertiesList != null)
-                            _visibleIfPropertiesListsCache.Add(c.PropertiesList.Properties);
-                    }
-
-                    // Hide properties lists with all labels being hidden
-                    foreach (var propertiesList in _visibleIfPropertiesListsCache)
-                    {
-                        propertiesList.Visible = propertiesList.Children.Any(c => c.Visible);
-                    }
-
-                    // Hide group panels with all properties lists hidden
-                    foreach (var propertiesList in _visibleIfPropertiesListsCache)
-                    {
-                        if (propertiesList.Parent is DropPanel dropPanel)
-                            dropPanel.Visible = propertiesList.Visible || !dropPanel.Children.All(c => c is PropertiesList && !c.Visible);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Editor.LogWarning(ex);
-                    Editor.LogError("Failed to update VisibleIf rules. " + ex.Message);
-
-                    // Remove rules to prevent error in loop
-                    _visibleIfCaches = null;
-                }
+                RefreshVisibleIfs();
+            }
+            if (_editIfCaches != null)
+            {
+                RefreshEditIfs();
             }
             if (Presenter != null && !string.IsNullOrEmpty(Presenter.SearchText))
             {
@@ -969,6 +972,138 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             base.Refresh();
+        }
+
+        private void RefreshVisibleIfs()
+        {
+            if (_visibleIfPropertiesListsCache == null)
+                _visibleIfPropertiesListsCache = new HashSet<PropertiesList>();
+            else
+                _visibleIfPropertiesListsCache.Clear();
+            try
+            {
+                for (int i = 0; i < _visibleIfCaches.Length; i++)
+                {
+                    ref var c = ref _visibleIfCaches[i];
+                    if (c.Target == ScriptMemberInfo.Null)
+                        break;
+
+                    // Check rule (all objects must allow to show this property)
+                    bool visible = c.GetValue(Values);
+
+                    // Apply the visibility (note: there may be no label)
+                    if (c.LabelIndex != -1 && c.PropertiesList != null && c.PropertiesList.Labels.Count > c.LabelIndex)
+                    {
+                        var label = c.PropertiesList.Labels[c.LabelIndex];
+                        if (visible && Presenter != null && !string.IsNullOrEmpty(Presenter.SearchText))
+                        {
+                            bool match = label.Text.ToString().IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0;
+                            if (!match)
+                            {
+                                var p = label.Parent;
+                                while (p != null)
+                                {
+                                    if (p is DropPanel dropPanel)
+                                    {
+                                        var headerText = dropPanel.HeaderText;
+                                        if (headerText != null && headerText.IndexOf(Presenter.SearchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                                        {
+                                            match = true;
+                                            break;
+                                        }
+                                    }
+                                    p = p.Parent;
+                                }
+                            }
+                            visible = match;
+                        }
+                        label.Visible = visible;
+                        for (int j = label.FirstChildControlIndex; j < c.PropertiesList.Properties.Children.Count; j++)
+                        {
+                            var child = c.PropertiesList.Properties.Children[j];
+                            if (child is PropertyNameLabel)
+                                break;
+
+                            child.Visible = visible;
+                        }
+                    }
+                    if (c.Group != null)
+                        c.Group.Panel.Visible = visible;
+                    if (c.PropertiesList != null)
+                        _visibleIfPropertiesListsCache.Add(c.PropertiesList.Properties);
+                }
+
+                // Hide properties lists with all labels being hidden
+                foreach (var propertiesList in _visibleIfPropertiesListsCache)
+                {
+                    propertiesList.Visible = propertiesList.Children.Any(c => c.Visible);
+                }
+
+                // Hide group panels with all properties lists hidden
+                foreach (var propertiesList in _visibleIfPropertiesListsCache)
+                {
+                    if (propertiesList.Parent is DropPanel dropPanel)
+                        dropPanel.Visible = propertiesList.Visible || !dropPanel.Children.All(c => c is PropertiesList && !c.Visible);
+                }
+            }
+            catch (Exception ex)
+            {
+                Editor.LogWarning(ex);
+                Editor.LogError($"Failed to update VisibleIf rules. " + ex.Message);
+
+                // Remove rules to prevent error in loop
+                _visibleIfCaches = null;
+            }
+        }
+
+        private void RefreshEditIfs()
+        {
+            _isUpdatingEditIfs = true;
+            try
+            {
+                for (int i = 0; i < _editIfCaches.Length; i++)
+                {
+                    ref var c = ref _editIfCaches[i];
+                    if (c.Target == ScriptMemberInfo.Null)
+                        break;
+
+                    // Check rule (all objects must allow to show this property)
+                    bool enabled = c.GetValue(Values);
+
+                    // Sync inlined checkbox state (eg. after undo or condition external change)
+                    if (c.InlinedCheckbox != null)
+                    {
+                        c.InlinedCheckbox.Checked = enabled;
+                    }
+
+                    // Apply the condition (note: there may be no label)
+                    if (c.LabelIndex != -1 && c.PropertiesList != null && c.PropertiesList.Labels.Count > c.LabelIndex)
+                    {
+                        var label = c.PropertiesList.Labels[c.LabelIndex];
+                        //label.Enabled = enabled; // This disables inlined checkbox too..
+                        var style = FlaxEngine.GUI.Style.Current;
+                        label.TextColorHighlighted = label.TextColor = enabled ? style.Foreground : style.ForegroundDisabled;
+                        for (int j = label.FirstChildControlIndex; j < c.PropertiesList.Properties.Children.Count; j++)
+                        {
+                            var child = c.PropertiesList.Properties.Children[j];
+                            if (child is PropertyNameLabel)
+                                break;
+                            child.Enabled = enabled;
+                        }
+                    }
+                    if (c.Group != null)
+                        c.Group.Panel.Enabled = enabled;
+                }
+            }
+            catch (Exception ex)
+            {
+                Editor.LogWarning(ex);
+                Editor.LogError($"Failed to update EditIf rules. " + ex.Message);
+
+                // Remove rules to prevent error in loop
+                _editIfCaches = null;
+            }
+            _isUpdatingEditIfs = false;
         }
     }
 }
