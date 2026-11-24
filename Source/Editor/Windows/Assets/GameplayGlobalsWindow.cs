@@ -261,7 +261,7 @@ namespace FlaxEditor.Windows.Assets
                 _proxy = (PropertiesProxy)Values[0];
                 if (_proxy?.DefaultValues == null)
                 {
-                    layout.Label("Loading...", TextAlignment.Center);
+                    layout.LoadingLabel();
                     return;
                 }
 

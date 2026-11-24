@@ -543,7 +543,7 @@ namespace FlaxEditor.Windows.Assets
                     var atlas = (SpriteAtlas)proxy._window?.Asset;
                     if (atlas  == null || !atlas.IsLoaded)
                     {
-                        layout.Label("Loading...", TextAlignment.Center);
+                        layout.LoadingLabel();
                         return;
                     }
                     

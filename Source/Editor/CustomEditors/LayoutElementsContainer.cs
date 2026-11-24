@@ -408,6 +408,11 @@ namespace FlaxEditor.CustomEditors
             return element;
         }
 
+        internal void LoadingLabel()
+        {
+            Label("Loading...", TextAlignment.Center);
+        }
+
         /// <summary>
         /// Adds new label element with name label.
         /// </summary>

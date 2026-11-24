@@ -37,7 +37,7 @@ namespace FlaxEditor.Windows.Assets
                     var window = ((PropertiesProxy)Values[0])._window;
                     if (window == null)
                     {
-                        layout.Label("Loading...", TextAlignment.Center);
+                        layout.LoadingLabel();
                         return;
                     }
 

@@ -139,7 +139,7 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (ImportPropertiesProxy)Values[0];
                     if (proxy._window == null)
                     {
-                        layout.Label("Loading...", TextAlignment.Center);
+                        layout.LoadingLabel();
                         return;
                     }
 
