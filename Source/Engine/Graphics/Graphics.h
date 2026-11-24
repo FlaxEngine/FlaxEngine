@@ -19,6 +19,11 @@ public:
     API_FIELD() static bool UseVSync;
 
     /// <summary>
+    /// Enables HDR output when supported by the active display and platform.
+    /// </summary>
+    API_FIELD() static bool EnableHDR;
+
+    /// <summary>
     /// Anti Aliasing quality setting. Available values are: Low, Medium, High, Ultra (or 0, 1, 2, 3).
     /// </summary>
     API_FIELD() static Quality AAQuality;

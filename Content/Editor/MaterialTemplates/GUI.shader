@@ -269,7 +269,9 @@ float4 PS_GUI(PixelInput input) : SV_Target0
 	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
 #endif
 
-	return float4(material.Emissive, material.Opacity);
+    float4 color = float4(material.Emissive, material.Opacity);
+    color = OutputPixelColorGUI(color, input.CustomData);
+    return color;
 }
 
 @9

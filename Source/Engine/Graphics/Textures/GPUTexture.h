@@ -21,19 +21,29 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUTextureView : public GPUResou
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUTextureView);
 protected:
-    PixelFormat _format = PixelFormat::Unknown;
-    MSAALevel _msaa = MSAALevel::None;
+    union 
+    {
+        struct
+        {
+            int32 _format : 10;
+            int32 _msaa : 4;
+            int32 _hdrOutput : 1;
+        };
+        int32 _flags;
+    };
 
     GPUTextureView()
         : GPUResourceView(SpawnParams(Guid::New(), TypeInitializer))
     {
+        _flags = 0;
     }
 
-    FORCE_INLINE void Init(GPUResource* parent, PixelFormat format, MSAALevel msaa)
+    FORCE_INLINE void Init(GPUResource* parent, PixelFormat format, MSAALevel msaa, bool hdrOutput = false)
     {
         _parent = parent;
-        _format = format;
-        _msaa = msaa;
+        _format = (int32)format;
+        _msaa = (int32)msaa;
+        _hdrOutput = hdrOutput ? 1 : 0;
         if (parent)
             LastRenderTime = &parent->LastRenderTime;
     }
@@ -44,7 +54,7 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE PixelFormat GetFormat() const
     {
-        return _format;
+        return (PixelFormat)_format;
     }
 
     /// <summary>
@@ -52,7 +62,15 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE MSAALevel GetMSAA() const
     {
-        return _msaa;
+        return (MSAALevel)_msaa;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether this texture view outputs HDR data to the window backbuffer (for display).
+    /// </summary>
+    FORCE_INLINE bool GetHDROutput() const
+    {
+        return _hdrOutput != 0;
     }
 };
 

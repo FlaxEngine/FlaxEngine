@@ -178,7 +178,6 @@ void ColorGradingPass::PrecachePSO()
         checkIfSkipPass(true))
         return;
     GPUPipelineState::PrecacheContext context;
-    auto renderBuffers = MainRenderTask::Instance->Buffers;
     auto& toneMapping = Graphics::PostProcessSettings.ToneMapping;
     context.RTCount = 1;
     context.RTFormats[0] = _lutFormat;

@@ -194,7 +194,7 @@ void GPUSwapChainVulkan::Begin(RenderTask* task)
     }
 }
 
-bool GPUSwapChainVulkan::Resize(int32 width, int32 height)
+bool GPUSwapChainVulkan::Resize(int32 width, int32 height, bool hdr)
 {
     // Check if size won't change
     if (width == _width && height == _height)

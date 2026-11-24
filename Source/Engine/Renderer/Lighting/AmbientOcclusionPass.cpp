@@ -205,7 +205,6 @@ void AmbientOcclusionPass::PrecachePSO()
         checkIfSkipPass(true))
         return;
     GPUPipelineState::PrecacheContext context;
-    auto renderBuffers = MainRenderTask::Instance->Buffers;
     context.SetFullscreenTriangleLayout();
     context.RTCount = 2;
     context.RTFormats[0] = SSAO_DEPTH_FORMAT;

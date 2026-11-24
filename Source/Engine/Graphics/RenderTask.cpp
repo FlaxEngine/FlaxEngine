@@ -101,6 +101,8 @@ void RenderTask::OnBegin(GPUContext* context)
     Begin(this, context);
     if (SwapChain && !IsComposite)
         SwapChain->Begin(this);
+    if (SwapChain)
+        IsHDR = SwapChain->IsHDR();
 
     _prevTask = GPUDevice::Instance->CurrentTask;
     GPUDevice::Instance->CurrentTask = this;

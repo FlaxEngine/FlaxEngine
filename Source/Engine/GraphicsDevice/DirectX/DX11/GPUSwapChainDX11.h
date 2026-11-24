@@ -19,11 +19,10 @@ class GPUSwapChainDX11 : public GPUResourceDX11<GPUSwapChain>
     friend GPUDeviceDX11;
 
 private:
-
 #if PLATFORM_WINDOWS
     HWND _windowHandle;
     IDXGISwapChain* _swapChain;
-    bool _allowTearing, _isFullscreen;
+    bool _allowTearing, _isFullscreen, _isHDR;
 #else
 	IUnknown* _windowHandle;
 	IDXGISwapChain1* _swapChain;
@@ -32,29 +31,26 @@ private:
     GPUTextureViewDX11 _backBufferHandle;
 
 public:
-
     GPUSwapChainDX11(GPUDeviceDX11* device, Window* window);
 
 private:
-
     void getBackBuffer();
     void releaseBackBuffer();
 
 public:
-
     // [GPUResourceDX11]
     ID3D11Resource* GetResource() override;
 
     // [GPUSwapChain]
     bool IsFullscreen() override;
     void SetFullscreen(bool isFullscreen) override;
+    bool IsHDR() const override;
     GPUTextureView* GetBackBufferView() override;
     void Present(bool vsync) override;
-    bool Resize(int32 width, int32 height) override;
+    bool Resize(int32 width, int32 height, bool hdr) override;
     void CopyBackbuffer(GPUContext* context, GPUTexture* dst) override;
 
 protected:
-
     // [GPUResourceDX11]
     void OnReleaseGPU() final override;
 };

@@ -31,7 +31,7 @@ public:
     void SetFullscreen(bool isFullscreen) override;
     GPUTextureView* GetBackBufferView() override;
     void Present(bool vsync) override;
-    bool Resize(int32 width, int32 height) override;
+    bool Resize(int32 width, int32 height, bool hdr) override;
 
 protected:
     // [GPUResourceWebGPU]

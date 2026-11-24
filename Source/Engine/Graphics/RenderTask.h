@@ -70,6 +70,11 @@ public:
     API_FIELD() bool IsComposite = false;
 
     /// <summary>
+    /// Gets or sets a value indicating whether task is rendering to HDR output buffer. Automatically, managed when using Swapchain to match the window HDR option. Can be activated when drawing to custom texture that is present directly on HDR display.
+    /// </summary>
+    API_FIELD() bool IsHDR = false;
+
+    /// <summary>
     /// The order of the task. Used for tasks rendering order. Lower first, higher later.
     /// </summary>
     API_FIELD() int32 Order = 0;

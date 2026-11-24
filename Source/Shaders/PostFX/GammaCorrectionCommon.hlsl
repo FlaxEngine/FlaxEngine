@@ -59,6 +59,12 @@ float3 sRGBToLinear(float3 color)
     return select(color > 0.04045, pow(color * (1.0 / 1.055) + 0.0521327, 2.4), color * (1.0 / 12.92));
 }
 
+float3 LinearNitsToScRGB(float3 color)
+{
+    const float scRGBWhiteNits = 80.0f; // 80nits is the D65 white
+    return color / scRGBWhiteNits;
+}
+
 float3 LogToLinear(float3 logColor)
 {
     const float linearRange = 14.0f;

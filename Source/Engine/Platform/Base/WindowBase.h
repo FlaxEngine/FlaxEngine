@@ -102,7 +102,9 @@ public:
     // Returns true if that window is the main Engine window (works in both editor and game mode)
     bool IsMain() const;
 
-    // Gets rendering output swap chain
+    /// <summary>
+    /// Gets the rendering output swap chain (backbuffers).
+    /// </summary>
     FORCE_INLINE GPUSwapChain* GetSwapChain() const
     {
         return _swapChain;
@@ -151,6 +153,11 @@ public:
     {
         return _minimized;
     }
+
+    /// <summary>
+    /// True if running in HDR mode.
+    /// </summary>
+    API_PROPERTY() bool IsHDR() const;
 
     /// <summary>
     /// Gets a value that indicates whether a window is maximized.

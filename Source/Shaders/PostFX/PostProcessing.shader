@@ -29,6 +29,8 @@
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
 #define OUTPUT_LINEAR 0 // Copies scene color directly to the output
 #define OUTPUT_SRGB 1 // Converts scene color from linear to sRGB
+#define OUTPUT_HDR 2 // Converts linear Rec. 709 into scRGB
+#define OUTPUT_HDR_GAMMA 3 // Decodes gamma-space Rec. 709 and converts it into scRGB
 
 #ifndef NO_GRADING_LUT
 #define NO_GRADING_LUT 0
@@ -82,7 +84,7 @@ float LensDirtIntensity;
 float4 ScreenFadeColor;
 
 float3 QuantizationError;
-float Dummy2;
+float HDRScaleNits;
 
 float4x4 LensFlareStarMat;
 
@@ -739,12 +741,22 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 	// Screen fade
 	color.rgb = lerp(color.rgb, ScreenFadeColor.rgb, ScreenFadeColor.a);
 
-	// Saturate color since it will be rendered to the screen
-	color.rgb = saturate(color.rgb);
+    // Convert into output display format
+#if PLATFORM_HAS_HDR
+    if (OutputColorSpace == OUTPUT_HDR || OutputColorSpace == OUTPUT_HDR_GAMMA)
+    {
+        float3 linearColor = OutputColorSpace == OUTPUT_HDR_GAMMA ? sRGBToLinear(color.rgb) : color.rgb;
+        color.rgb = LinearNitsToScRGB(linearColor * HDRScaleNits);
+    }
+    else
+#endif
+    {
+        color.rgb = saturate(color.rgb);
 
-    // Apply quantization error to reduce yellowish artifacts due to R11G11B10 format
-    float noise = rand2dTo1d(input.TexCoord);
-    color.rgb = QuantizeColor(color.rgb, noise, QuantizationError);
+        // Apply quantization error to reduce yellowish artifacts due to R11G11B10 format
+        float noise = rand2dTo1d(input.TexCoord);
+        color.rgb = QuantizeColor(color.rgb, noise, QuantizationError);
+    }
 
 	// Return final pixel color (preserve input alpha)
 	return color;

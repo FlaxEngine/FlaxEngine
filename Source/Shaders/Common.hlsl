@@ -92,6 +92,9 @@
 #else
 #define CAN_USE_TESSELLATION 0
 #endif
+#ifndef PLATFORM_HAS_HDR
+#define PLATFORM_HAS_HDR (defined(PLATFORM_WINDOWS) && DIRECTX)
+#endif
 
 #if defined(WGSL)
 // Alias read-only Buffer binded as shader resource into StructuredBuffer to be used as storage on WebGPU (not supported)

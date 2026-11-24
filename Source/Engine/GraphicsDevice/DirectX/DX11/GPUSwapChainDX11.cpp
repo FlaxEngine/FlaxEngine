@@ -21,6 +21,7 @@ GPUSwapChainDX11::GPUSwapChainDX11(GPUDeviceDX11* device, Window* window)
 #if PLATFORM_WINDOWS
     , _allowTearing(false)
     , _isFullscreen(false)
+    , _isHDR(false)
 #endif
     , _backBuffer(nullptr)
 {
@@ -38,10 +39,10 @@ void GPUSwapChainDX11::getBackBuffer()
 #if GPU_ENABLE_WINDOW_SRV
     VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateShaderResourceView(_backBuffer, nullptr, &srv));
 #else
-	srv = nullptr;
+    srv = nullptr;
 #endif
 
-    _backBufferHandle.Init(this, rtv, srv, nullptr, nullptr, _format, MSAALevel::None);
+    _backBufferHandle.Init(this, rtv, srv, nullptr, nullptr, _format, MSAALevel::None, _isHDR);
 }
 
 void GPUSwapChainDX11::releaseBackBuffer()
@@ -126,12 +127,17 @@ void GPUSwapChainDX11::SetFullscreen(bool isFullscreen)
             const int32 width = _width;
             const int32 height = _height;
             _width = _height = 0;
-            Resize(width, height);
+            Resize(width, height, IsHDR());
         }
     }
 #else
     LOG(Info, "Cannot change fullscreen mode on this platform");
 #endif
+}
+
+bool GPUSwapChainDX11::IsHDR() const
+{
+    return _isHDR;
 }
 
 GPUTextureView* GPUSwapChainDX11::GetBackBufferView()
@@ -160,17 +166,21 @@ void GPUSwapChainDX11::Present(bool vsync)
     GPUSwapChain::Present(vsync);
 }
 
-bool GPUSwapChainDX11::Resize(int32 width, int32 height)
+bool GPUSwapChainDX11::Resize(int32 width, int32 height, bool hdr)
 {
-    if (width == _width && height == _height)
+    if (width == _width && height == _height && hdr == _isHDR)
         return false;
 
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
 #if PLATFORM_WINDOWS
+    bool wasHDR = _isHDR;
     _allowTearing = _device->_allowTearing;
-#endif
+    _format = hdr ? PixelFormat::R16G16B16A16_Float : GPU_BACK_BUFFER_PIXEL_FORMAT;
+    _isHDR = hdr;
+#else
     _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
+#endif
     if (_memoryUsage != 0)
     {
         PROFILE_MEM_DEC(Graphics, _memoryUsage);
@@ -203,13 +213,15 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
         }
         swapChainDesc.BufferDesc.Width = width;
         swapChainDesc.BufferDesc.Height = height;
+        if (hdr)
+            swapChainDesc.BufferDesc.Format = RenderToolsDX::ToDxgiFormat(_format);
         swapChainDesc.SampleDesc.Count = 1;
         swapChainDesc.SampleDesc.Quality = 0;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.BufferCount = 2;
         swapChainDesc.OutputWindow = _windowHandle;
         swapChainDesc.Windowed = TRUE;
-        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+        swapChainDesc.SwapEffect = hdr ? DXGI_SWAP_EFFECT_FLIP_DISCARD : DXGI_SWAP_EFFECT_DISCARD; // HDR color spaces require a flip-model
         swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
         if (_allowTearing)
         {
@@ -257,15 +269,48 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
     else
     {
         releaseBackBuffer();
-
 #if PLATFORM_WINDOWS
         _swapChain->GetDesc(&swapChainDesc);
-        VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
+        VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, RenderToolsDX::ToDxgiFormat(_format), swapChainDesc.Flags));
 #else
         _swapChain->GetDesc1(&swapChainDesc);
         VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, swapChainDesc.Format, swapChainDesc.Flags));
 #endif
     }
+
+#if PLATFORM_HAS_HDR
+    // Update color space
+    if (_isHDR)
+    {
+        UINT colorSpaceSupport = 0;
+        DXGI_COLOR_SPACE_TYPE colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+        IDXGISwapChain3* swapChain3 = nullptr;
+        const HRESULT queryResult = _swapChain->QueryInterface(IID_PPV_ARGS(&swapChain3));
+        if (FAILED(queryResult) || swapChain3 == nullptr ||
+            FAILED(swapChain3->CheckColorSpaceSupport(colorSpace, &colorSpaceSupport)) ||
+            (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) == 0 ||
+            FAILED(swapChain3->SetColorSpace1(colorSpace)))
+        {
+            LOG(Warning, "HDR output is not supported by the DirectX 11 swapchain. Falling back to SDR.");
+            _isHDR = false;
+            _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
+            VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, RenderToolsDX::ToDxgiFormat(_format), swapChainDesc.Flags));
+            if (swapChain3)
+                swapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
+        }
+        if (swapChain3)
+            swapChain3->Release();
+    }
+    else if (wasHDR)
+    {
+        IDXGISwapChain3* swapChain3 = nullptr;
+        if (SUCCEEDED(_swapChain->QueryInterface(IID_PPV_ARGS(&swapChain3))))
+        {
+            VALIDATE_DIRECTX_CALL(swapChain3->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709));
+            swapChain3->Release();
+        }
+    }
+#endif
 
     _width = width;
     _height = height;

@@ -108,7 +108,7 @@ void GPUSwapChainWebGPU::Present(bool vsync)
     GPUSwapChain::Present(vsync);
 }
 
-bool GPUSwapChainWebGPU::Resize(int32 width, int32 height)
+bool GPUSwapChainWebGPU::Resize(int32 width, int32 height, bool hdr)
 {
     if (width == _width && height == _height)
         return false;

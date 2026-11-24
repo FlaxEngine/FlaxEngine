@@ -6,6 +6,8 @@
 #include "GPUContextDX12.h"
 #include "../IncludeDirectXHeaders.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 
@@ -14,12 +16,12 @@ void BackBufferDX12::Setup(GPUSwapChainDX12* window, ID3D12Resource* backbuffer)
     // Cache handle and set default initial state for the backbuffers
     initResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT, 1);
 
-    Handle.Init(window, window->GetDevice(), this, GPU_BACK_BUFFER_PIXEL_FORMAT, MSAALevel::None);
+    Handle.Init(window, window->GetDevice(), this, window->GetFormat(), MSAALevel::None, -1, window->IsHDR());
 
     // Create RTV
     {
         D3D12_RENDER_TARGET_VIEW_DESC rtDesc;
-        rtDesc.Format = (DXGI_FORMAT)GPU_BACK_BUFFER_PIXEL_FORMAT;
+        rtDesc.Format = RenderToolsDX::ToDxgiFormat(window->GetFormat());
         rtDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
         rtDesc.Texture2D.MipSlice = 0;
         rtDesc.Texture2D.PlaneSlice = 0;
@@ -30,7 +32,7 @@ void BackBufferDX12::Setup(GPUSwapChainDX12* window, ID3D12Resource* backbuffer)
     // Create SRV
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srDesc;
-        srDesc.Format = (DXGI_FORMAT)GPU_BACK_BUFFER_PIXEL_FORMAT;
+        srDesc.Format = RenderToolsDX::ToDxgiFormat(window->GetFormat());
         srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         srDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         srDesc.Texture2D.MostDetailedMip = 0;
@@ -52,6 +54,7 @@ GPUSwapChainDX12::GPUSwapChainDX12(GPUDeviceDX12* device, Window* window)
     : GPUResourceDX12(device, StringView::Empty)
     , _allowTearing(false)
     , _isFullscreen(false)
+    , _isHDR(false)
     , _windowHandle(static_cast<HWND>(window->GetNativePtr()))
     , _swapChain(nullptr)
     , _currentFrameIndex(0)
@@ -149,7 +152,7 @@ void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
             const int32 width = _width;
             const int32 height = _height;
             _width = _height = 0;
-            Resize(width, height);
+            Resize(width, height, IsHDR());
         }
     }
 #else
@@ -157,28 +160,31 @@ void GPUSwapChainDX12::SetFullscreen(bool isFullscreen)
 #endif
 }
 
-bool GPUSwapChainDX12::Resize(int32 width, int32 height)
+bool GPUSwapChainDX12::IsHDR() const
 {
-    // Check if window state won't change
-    if (width == _width && height == _height)
-    {
+    return _isHDR;
+}
+
+bool GPUSwapChainDX12::Resize(int32 width, int32 height, bool hdr)
+{
+    if (width == _width && height == _height && hdr == _isHDR)
         return false;
-    }
 
     _device->WaitForGPU();
     GPUDeviceLock lock(_device);
+    bool wasHDR = _isHDR;
     _allowTearing = _device->AllowTearing;
-    _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
+    _format = hdr ? PixelFormat::R16G16B16A16_Float : GPU_BACK_BUFFER_PIXEL_FORMAT;
+    _isHDR = hdr;
+    if (_memoryUsage != 0)
+    {
+        PROFILE_MEM_DEC(Graphics, _memoryUsage);
+    }
 
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     ReleaseGPU();
 
     _currentFrameIndex = 0;
-    _width = width;
-    _height = height;
-    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * DX12_BACK_BUFFER_COUNT;
-
-    getBackBuffer();
 #else
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc;
     if (_swapChain == nullptr)
@@ -238,20 +244,42 @@ bool GPUSwapChainDX12::Resize(int32 width, int32 height)
     else
     {
         releaseBackBuffer();
-
         _swapChain->GetDesc1(&swapChainDesc);
-
-        VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, swapChainDesc.Format, swapChainDesc.Flags));
+        VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, RenderToolsDX::ToDxgiFormat(_format), swapChainDesc.Flags));
     }
 
+#if PLATFORM_HAS_HDR
+    // Update color space
+    if (_isHDR)
+    {
+        UINT colorSpaceSupport = 0;
+        DXGI_COLOR_SPACE_TYPE colorSpace = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+        if (FAILED(_swapChain->CheckColorSpaceSupport(colorSpace, &colorSpaceSupport)) || 
+            (colorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) == 0 ||
+            FAILED(_swapChain->SetColorSpace1(colorSpace)))
+        {
+            LOG(Warning, "HDR output is not supported by the DirectX 12 swapchain. Falling back to SDR.");
+            _isHDR = false;
+            _format = GPU_BACK_BUFFER_PIXEL_FORMAT;
+            VALIDATE_DIRECTX_CALL(_swapChain->ResizeBuffers(swapChainDesc.BufferCount, width, height, RenderToolsDX::ToDxgiFormat(_format), swapChainDesc.Flags));
+            VALIDATE_DIRECTX_CALL(_swapChain->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709));
+        }
+    }
+    else if (_swapChain && wasHDR)
+    {
+        VALIDATE_DIRECTX_CALL(_swapChain->SetColorSpace1(DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709));
+    }
+#endif
+
     _currentFrameIndex = _swapChain->GetCurrentBackBufferIndex();
+#endif
+
     _width = width;
     _height = height;
-    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * swapChainDesc.BufferCount;
+    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * DX12_BACK_BUFFER_COUNT;
     PROFILE_MEM_INC(Graphics, _memoryUsage);
 
     getBackBuffer();
-#endif
 
     return false;
 }

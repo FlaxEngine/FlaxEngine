@@ -45,21 +45,23 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Image(VS2PS input) : SV_Target0
 {
 	PerformClipping(input);
-	return GetImageColor(Image.Sample(SamplerLinearClamp, input.TexCoord), input.CustomData) * input.Color;
+    float4 color = GetImageColor(Image.Sample(SamplerLinearClamp, input.TexCoord), input.CustomData) * input.Color;
+    return OutputPixelColorGUI(color, input.CustomData);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_ImagePoint(VS2PS input) : SV_Target0
 {
 	PerformClipping(input);
-	return GetImageColor(Image.Sample(SamplerPointClamp, input.TexCoord), input.CustomData) * input.Color;
+    float4 color = GetImageColor(Image.Sample(SamplerPointClamp, input.TexCoord), input.CustomData) * input.Color;
+    return OutputPixelColorGUI(color, input.CustomData);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Color(VS2PS input) : SV_Target0
 {
 	PerformClipping(input);
-	return input.Color;
+    return OutputPixelColorGUI(input.Color, input.CustomData);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -80,7 +82,7 @@ float4 PS_LineAA(VS2PS input) : SV_Target0
 		discard;
 	input.Color.a *= lineCoverage;
 
-	return input.Color;
+    return OutputPixelColorGUI(input.Color, input.CustomData);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -90,7 +92,7 @@ float4 PS_Font(VS2PS input) : SV_Target0
 
 	float4 color = input.Color;
     color.a *= SampleFont(Image, input.TexCoord);
-	return color;
+    return OutputPixelColorGUI(color, input.CustomData);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -100,7 +102,7 @@ float4 PS_FontMSDF(VS2PS input) : SV_Target0
 
 	float4 color = input.Color;
     color.a *= SampleFontMSDF(Image, input.TexCoord);
-	return color;
+    return OutputPixelColorGUI(color, input.CustomData);
 }
 
 float4 GetSample(float weight, float offset, float2 uv)

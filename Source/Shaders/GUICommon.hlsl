@@ -12,6 +12,7 @@
 #define RENDER2D_FEATURE_VERTEX_SNAPPING 1
 #define RENDER2D_FEATURE_FALLBACK_FONTS 2
 #define RENDER2D_FEATURE_REMOVE_GAMMA 4
+#define RENDER2D_FEATURE_HDR_OUTPUT 8
 
 struct Render2DVertex
 {
@@ -66,6 +67,20 @@ float4 GetImageColor(float4 color, float2 customData)
     {
         color.rgb = LinearToSrgb(color.rgb);
     }
+    return color;
+}
+
+float4 OutputPixelColorGUI(float4 color, float2 customData)
+{
+#if PLATFORM_HAS_HDR
+    int features = (int)customData.y;
+    if (features & RENDER2D_FEATURE_HDR_OUTPUT)
+    {
+        float3 linearColor = sRGBToLinear(color.rgb);
+        const float hdrReferenceWhiteNits = 203.0f; // HDR Reference White per BT.2408
+        color.rgb = LinearNitsToScRGB(linearColor * hdrReferenceWhiteNits);
+    }
+#endif
     return color;
 }
 

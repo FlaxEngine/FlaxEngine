@@ -96,6 +96,17 @@ public:
     virtual void SetFullscreen(bool isFullscreen) = 0;
 
     /// <summary>
+    /// True if running in HDR mode.
+    /// </summary>
+    virtual bool IsHDR() const;
+
+    /// <summary>
+    /// Sets the HDR mode. Ignored when High-Dynamic-Range display is not available or system doesn't support it.
+    /// </summary>
+    /// <param name="hdr">HDR mode to apply</param>
+    void SetHDR(bool hdr);
+
+    /// <summary>
     /// Gets the view for the output back buffer texture (for the current frame rendering).
     /// </summary>
     /// <returns>The output texture view to use.</returns>
@@ -153,7 +164,19 @@ public:
     /// <param name="width">New output width (in pixels).</param>
     /// <param name="height">New output height (in pixels).</param>
     /// <returns>True if cannot resize the buffers, otherwise false.</returns>
-    virtual bool Resize(int32 width, int32 height) = 0;
+    bool Resize(int32 width, int32 height)
+    {
+        return Resize(width, height, IsHDR());
+    }
+
+    /// <summary>
+    /// Resize output back buffer.
+    /// </summary>
+    /// <param name="width">New output width (in pixels).</param>
+    /// <param name="height">New output height (in pixels).</param>
+    /// <param name="hdr">True if enable High-Dynamic-Range (HDR) color format.</param>
+    /// <returns>True if cannot resize the buffers, otherwise false.</returns>
+    virtual bool Resize(int32 width, int32 height, bool hdr) = 0;
 
 public:
     // [GPUResource]

@@ -126,7 +126,7 @@ public:
     GPUTextureView* GetBackBufferView() override;
     void Begin(RenderTask* task) override;
     void Present(bool vsync) override;
-    bool Resize(int32 width, int32 height) override;
+    bool Resize(int32 width, int32 height, bool hdr) override;
     void CopyBackbuffer(GPUContext* context, GPUTexture* dst) override;
 
     // [ResourceOwnerVulkan]

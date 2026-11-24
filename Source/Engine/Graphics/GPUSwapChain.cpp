@@ -43,6 +43,18 @@ GPUSwapChain::GPUSwapChain()
 #endif
 }
 
+bool GPUSwapChain::IsHDR() const
+{
+    return false;
+}
+
+void GPUSwapChain::SetHDR(bool hdr)
+{
+#if PLATFORM_HAS_HDR
+    Resize(GetWidth(), GetHeight(), hdr);
+#endif
+}
+
 void GPUSwapChain::CopyBackbuffer(GPUContext* context, GPUTexture* dst)
 {
     context->Draw(dst, GetBackBufferView());

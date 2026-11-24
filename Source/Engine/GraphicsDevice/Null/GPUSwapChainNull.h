@@ -40,7 +40,7 @@ public:
     {
     }
 
-    bool Resize(int32 width, int32 height) override
+    bool Resize(int32 width, int32 height, bool hdr) override
     {
         return false;
     }

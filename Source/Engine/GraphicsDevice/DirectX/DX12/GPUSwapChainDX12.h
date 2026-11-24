@@ -57,8 +57,7 @@ class GPUSwapChainDX12 : public GPUResourceDX12<GPUSwapChain>
     friend GPUDeviceDX12;
 
 private:
-
-    bool _allowTearing, _isFullscreen;
+    bool _allowTearing, _isFullscreen, _isHDR;
     HWND _windowHandle;
     IDXGISwapChain3* _swapChain;
     int32 _currentFrameIndex;
@@ -68,15 +67,12 @@ private:
     Array<BackBufferDX12, FixedAllocation<4>> _backBuffers;
 
 public:
-
     GPUSwapChainDX12(GPUDeviceDX12* device, Window* window);
 
 public:
-
     /// <summary>
     /// Gets current backbuffer resource.
     /// </summary>
-    /// <returns>The backbuffer resource.</returns>
     ID3D12Resource* GetBackBuffer() const
     {
         return _backBuffers[_currentFrameIndex].GetResource();
@@ -85,33 +81,30 @@ public:
     /// <summary>
     /// Gets render target handle for DirectX 12 backend.
     /// </summary>
-    /// <returns>The render target handle.</returns>
     const GPUTextureViewDX12* GetBackBufferHandleDX12() const
     {
         return &_backBuffers[_currentFrameIndex].Handle;
     }
 
 private:
-
     void getBackBuffer();
     void releaseBackBuffer();
 
 public:
-
     // [GPUSwapChain]
     bool IsFullscreen() override;
     void SetFullscreen(bool isFullscreen) override;
+    bool IsHDR() const override;
     GPUTextureView* GetBackBufferView() override;
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     void Begin(RenderTask* task) override;
 #endif
     void End(RenderTask* task) override;
     void Present(bool vsync) override;
-    bool Resize(int32 width, int32 height) override;
+    bool Resize(int32 width, int32 height, bool hdr) override;
     void CopyBackbuffer(GPUContext* context, GPUTexture* dst) override;
 
 protected:
-
     // [GPUResourceDX12]
     void OnReleaseGPU() override;
 };

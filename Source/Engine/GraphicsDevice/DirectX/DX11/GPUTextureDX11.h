@@ -45,9 +45,10 @@ public:
     /// <param name="uav">Unordered Access View</param>
     /// <param name="format">Parent texture format</param>
     /// <param name="msaa">Parent texture multi-sample level</param>
-    void Init(GPUResource* parent, ID3D11RenderTargetView* rtv, ID3D11ShaderResourceView* srv, ID3D11DepthStencilView* dsv, ID3D11UnorderedAccessView* uav, PixelFormat format, MSAALevel msaa)
+    /// <param name="hdrOutput">HDR output flag</param>
+    void Init(GPUResource* parent, ID3D11RenderTargetView* rtv, ID3D11ShaderResourceView* srv, ID3D11DepthStencilView* dsv, ID3D11UnorderedAccessView* uav, PixelFormat format, MSAALevel msaa, bool hdrOutput = false)
     {
-        GPUTextureView::Init(parent, format, msaa);
+        GPUTextureView::Init(parent, format, msaa, hdrOutput);
         _rtv = rtv;
         _srv = srv;
         _dsv = dsv;

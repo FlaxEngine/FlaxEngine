@@ -8,6 +8,9 @@
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
+#if PLATFORM_HAS_HDR
+#include "Engine/Platform/WindowsManager.h"
+#endif
 #include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #if PLATFORM_DESKTOP
@@ -26,6 +29,7 @@
 #endif
 
 bool Graphics::UseVSync = false;
+bool Graphics::EnableHDR = false;
 Quality Graphics::AAQuality = Quality::Medium;
 Quality Graphics::SSRQuality = Quality::Medium;
 Quality Graphics::SSAOQuality = Quality::Medium;
@@ -95,6 +99,17 @@ void GraphicsSettings::Apply()
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
     Graphics::GammaColorSpace = GammaColorSpace;
+#if PLATFORM_HAS_HDR
+    if (Graphics::EnableHDR != EnableHDR)
+    {
+        // When HDR output changes, update all window's swap chains
+        Graphics::EnableHDR = EnableHDR;
+        WindowsManager::WindowsLocker.Lock();
+        for (Window* e : WindowsManager::Windows)
+            e->InitSwapChain();
+        WindowsManager::WindowsLocker.Unlock();
+    }
+#endif
 #if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
     Font::FallbackFonts = FallbackFonts;
 #endif

@@ -54,6 +54,11 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
         /// Enables additional sRGB to linear color space conversion when drawing sRGB textures. This ensures that images imported with sRGB enabled in Linear workflow will be properly rendered into screen.
         /// </summary>
         RemoveGamma = 4,
+
+        /// <summary>
+        /// Converts GUI colors to the linear HDR output color space.
+        /// </summary>
+        HDROutput = 8,
     };
 
     struct CustomData

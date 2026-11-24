@@ -520,7 +520,13 @@ bool GPUDevice::Init()
     _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
     for (const auto& videoOutput : VideoOutputs)
+    {
         LOG(Info, "Video output '{0}' {1}x{2} {3} Hz", videoOutput.Name, videoOutput.Width, videoOutput.Height, videoOutput.RefreshRate);
+        if (videoOutput.HDR)
+        {
+            LOG(Info, "   HDR luminance range: {} - {}", videoOutput.MinLuminance, videoOutput.MaxLuminance);
+        }
+    }
     Engine::RequestingExit.Bind<GPUDevice, &GPUDevice::OnRequestingExit>(this);
     return false;
 }

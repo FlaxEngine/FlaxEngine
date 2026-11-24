@@ -712,6 +712,12 @@ void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView
     ViewProjection = viewProjection;
     DrawCalls.Clear();
     IsRemoveGammaEnabled = Graphics::GammaColorSpace == false;
+#if  PLATFORM_HAS_HDR
+    if (output->GetHDROutput())
+        Features |= RenderingFeatures::HDROutput;
+    else
+#endif
+        Features &= ~RenderingFeatures::HDROutput;
 
     // Initialize default transform
     const Matrix3x3 defaultTransform = Matrix3x3::Identity;

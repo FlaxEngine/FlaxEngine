@@ -8,6 +8,9 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/GPUDevice.h"
+#if PLATFORM_HAS_HDR
+#include "Engine/Graphics/Graphics.h"
+#endif
 #include "Engine/Input/Input.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -164,6 +167,11 @@ void WindowBase::SetIsVisible(bool isVisible)
         else
             Hide();
     }
+}
+
+bool WindowBase::IsHDR() const
+{
+    return _swapChain && _swapChain->IsHDR();
 }
 
 bool WindowBase::IsAlwaysOnTop() const
@@ -508,7 +516,25 @@ bool WindowBase::InitSwapChain()
         if (!_swapChain)
             return true;
     }
-    if (_swapChain->Resize(static_cast<int32>(_clientSize.X), static_cast<int32>(_clientSize.Y)))
+    bool hdr = false;
+#if PLATFORM_HAS_HDR
+    // If platform supports HDR, and it is enabled in the engine settings then check if any connected display is HDR-compatible
+    if (Graphics::EnableHDR)
+    {
+        for (auto& output : GPUDevice::Instance->VideoOutputs)
+        {
+            if (output.HDR)
+            {
+                hdr = true;
+                break;
+            }
+        }
+    }
+#endif
+#if !PLATFORM_DESKTOP
+    LOG(Info, "Creating swap chain of size: {}x{} (HDR: {})", (int32)_clientSize.X, (int32)_clientSize.Y, hdr);
+#endif
+    if (_swapChain->Resize((int32)_clientSize.X, (int32)_clientSize.Y, hdr))
         return true;
     if (_settings.Fullscreen)
         _swapChain->SetFullscreen(true);
@@ -531,6 +557,7 @@ bool WindowBase::InitSwapChain()
             RenderTask = New<::RenderTask>();
         }
         RenderTask->SwapChain = _swapChain;
+        RenderTask->IsHDR = _swapChain->IsHDR();
         RenderTask->Enabled = false;
         RenderTask->Order = 100;
     }

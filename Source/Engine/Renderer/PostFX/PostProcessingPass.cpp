@@ -16,6 +16,8 @@
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
 #define OUTPUT_LINEAR 0 // Copies scene color directly to the output
 #define OUTPUT_SRGB 1 // Converts scene color from linear to sRGB
+#define OUTPUT_HDR 2 // Converts linear Rec. 709 into scRGB
+#define OUTPUT_HDR_GAMMA 3 // Decodes gamma-space Rec. 709 and converts it into scRGB
 
 GPU_CB_STRUCT(Data{
     float BloomIntensity; // Overall bloom strength multiplier
@@ -61,7 +63,7 @@ GPU_CB_STRUCT(Data{
     Color ScreenFadeColor;
 
     Float3 QuantizationError;
-    float Dummy2;
+    float HDRScaleNits;
 
     Matrix LensFlareStarMat;
     });
@@ -300,6 +302,12 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     bool useToneMapping = EnumHasAnyFlags(view.Flags, ViewFlags::ToneMapping) && settings.ToneMapping.Mode != ToneMappingMode::None;
     bool useCameraArtifacts = EnumHasAnyFlags(view.Flags, ViewFlags::CameraArtifacts) && (settings.CameraArtifacts.VignetteIntensity > 0.0f || settings.CameraArtifacts.GrainAmount > 0.0f || settings.CameraArtifacts.ChromaticDistortion > 0.0f || settings.CameraArtifacts.ScreenFadeColor.A > 0.0f);
     bool useLensFlares = EnumHasAnyFlags(view.Flags, ViewFlags::LensFlares) && settings.LensFlares.Intensity > 0.0f && useBloom;
+#if PLATFORM_HAS_HDR
+    bool useHDR = renderContext.Task->IsHDR;
+#else
+    constexpr bool useHDR = false;
+#endif
+    bool useColorReformat = Math::Abs(settings.EyeAdaptation.PostExposure) > ZeroTolerance || !Graphics::GammaColorSpace || useHDR;
 
     // Cache viewport sizes
     int32 w1 = input->Width();
@@ -314,7 +322,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     useLensFlares &= bloomMipCount > 1;
 
     // Ensure to have valid data and if at least one effect should be applied
-    if (!(useBloom || useToneMapping || useCameraArtifacts || colorGradingLUT) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
+    if (!(useBloom || useToneMapping || useCameraArtifacts || colorGradingLUT || useColorReformat) || checkIfSkipPass() || w8 <= 1 || h8 <= 1)
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
         context->SetViewportAndScissors(outputViewport);
@@ -406,7 +414,19 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     data.InputSize = Float2(static_cast<float>(w1), static_cast<float>(h1));
     data.InvInputSize = Float2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));
     data.InputAspect = static_cast<float>(w1) / h1;
-    if (Graphics::GammaColorSpace)
+    data.HDRScaleNits = 80.0f;
+    if (useHDR)
+    {
+        data.OutputColorSpace = Graphics::GammaColorSpace ? OUTPUT_HDR_GAMMA : OUTPUT_HDR;
+        for (auto& e : device->VideoOutputs)
+        {
+            if (e.HDR)
+            {
+                data.HDRScaleNits = Math::Max(e.MaxLuminance, data.HDRScaleNits);
+            }
+        }
+    }
+    else if (Graphics::GammaColorSpace)
     {
         // Gamma-space colors always present image 'as-is'
         data.OutputColorSpace = OUTPUT_LINEAR;

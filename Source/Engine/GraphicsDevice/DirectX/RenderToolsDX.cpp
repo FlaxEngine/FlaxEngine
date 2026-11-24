@@ -756,6 +756,8 @@ void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
             DXGI_OUTPUT_DESC1 outputDesc;
             output6->GetDesc1(&outputDesc);
             videoOutput.HDR = outputDesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+            videoOutput.MinLuminance = outputDesc.MinLuminance;
+            videoOutput.MaxLuminance = outputDesc.MaxLuminance;
         }
 #endif
 

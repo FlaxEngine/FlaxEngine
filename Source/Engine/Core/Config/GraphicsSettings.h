@@ -200,6 +200,12 @@ public:
     API_FIELD(Attributes="EditorOrder(3010), EditorDisplay(\"Colors\")")
     RenderColorFormats RenderColorFormat = RenderColorFormats::R11G11B10;
 
+    /// <summary>
+    /// Enables HDR output when supported by the active display and platform.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(3020), EditorDisplay(\"Colors\")")
+    bool EnableHDR = false;
+
 public:
     /// <summary>
     /// The default Post Process settings. Can be overridden by PostFxVolume on a level locally, per camera or for a whole map.

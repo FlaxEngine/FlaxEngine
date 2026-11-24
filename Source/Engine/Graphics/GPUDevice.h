@@ -112,6 +112,16 @@ public:
         /// Flag that indicates that monitor supports displaying High Dynamic Range colors.
         /// </summary>
         API_FIELD() bool HDR = false;
+
+        /// <summary>
+        /// The minimum luminance (in nits) this output is capable of rendering.
+        /// </summary>
+        API_FIELD() float MinLuminance = 0;
+
+        /// <summary>
+        /// The maximum luminance (in nits) this output is capable of rendering (likely only valid for a small area of the display).
+        /// </summary>
+        API_FIELD() float MaxLuminance = 0;
     };
 
     /// <summary>

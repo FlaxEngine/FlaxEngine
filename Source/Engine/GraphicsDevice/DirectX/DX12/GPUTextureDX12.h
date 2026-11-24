@@ -39,9 +39,10 @@ public:
     /// <param name="format">Parent texture format</param>
     /// <param name="msaa">Parent texture multi-sample level</param>
     /// <param name="subresourceIndex">Used subresource index or -1 to cover whole resource.</param>
-    void Init(GPUResource* parent, GPUDeviceDX12* device, ResourceOwnerDX12* owner, PixelFormat format, MSAALevel msaa, int32 subresourceIndex = -1)
+    /// <param name="hdrOutput">HDR output flag</param>
+    void Init(GPUResource* parent, GPUDeviceDX12* device, ResourceOwnerDX12* owner, PixelFormat format, MSAALevel msaa, int32 subresourceIndex = -1, bool hdrOutput = false)
     {
-        GPUTextureView::Init(parent, format, msaa);
+        GPUTextureView::Init(parent, format, msaa, hdrOutput);
         SubresourceIndex = subresourceIndex;
         _device = device;
         _owner = owner;

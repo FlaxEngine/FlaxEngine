@@ -33,6 +33,7 @@ namespace FlaxEngine.GUI
 
         private GPUTexture _backBufferOld;
         private int _oldBackbufferLiveTimeLeft;
+        private bool _hdrOutput;
         private float _resizeTime;
         private Int2? _customResolution;
 
@@ -202,7 +203,14 @@ namespace FlaxEngine.GUI
                 bounds = new Rectangle((bounds.Width - buffer.Width * ratio) / 2, (bounds.Height - buffer.Height * ratio) / 2, buffer.Width * ratio, buffer.Height * ratio);
             }
             if (buffer)
+            {
+                var features = Render2D.Features;
+                if (_hdrOutput)
+                    Render2D.Features = features & ~Render2D.RenderingFeatures.HDROutput; // Copy HDR buffer as-is
                 Render2D.DrawTexture(buffer, bounds, color);
+                if (_hdrOutput)
+                    Render2D.Features = features;
+            }
             else
                 Render2D.FillRectangle(bounds, Color.Black);
         }
@@ -215,12 +223,13 @@ namespace FlaxEngine.GUI
             float scale = ResolutionScale * DpiScale;
             int width = Mathf.CeilToInt(Width * scale);
             int height = Mathf.CeilToInt(Height * scale);
+            bool hdr = RootWindow?.Window.IsHDR ?? false;
             if (_customResolution.HasValue)
             {
                 width = _customResolution.Value.X;
                 height = _customResolution.Value.Y;
             }
-            if (_backBuffer == null || (_backBuffer.Width == width && _backBuffer.Height == height))
+            if (_backBuffer == null || (_backBuffer.Width == width && _backBuffer.Height == height && _hdrOutput == hdr))
                 return;
             if (GPUDevice.Instance.RendererType == RendererType.Null)
                 return;
@@ -243,7 +252,11 @@ namespace FlaxEngine.GUI
 
             // Resize backbuffer
             var desc = GPUTextureDescription.New2D(width, height, BackBufferFormat);
+            _hdrOutput = hdr;
+            if (_hdrOutput)
+                desc.Format = PixelFormat.R16G16B16A16_Float;
             _backBuffer.Init(ref desc);
+            _task.IsHDR = _hdrOutput;
             _task.Output = _backBuffer;
         }
 
@@ -257,6 +270,7 @@ namespace FlaxEngine.GUI
             Scripting.Update -= OnUpdate;
             if (_task != null)
             {
+                _task.IsHDR = false;
                 _task.Enabled = false;
                 _task.ClearCustomActors();
                 //_task.CustomPostFx.Clear();
