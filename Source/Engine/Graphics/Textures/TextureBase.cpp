@@ -228,7 +228,7 @@ void TextureData::Clear()
     Items.Resize(0, false);
 }
 
-bool TextureData::Init(PixelFormat format, int32 width, int32 height, int32 depth, int32 arraySize, int32 mipLevels)
+bool TextureData::Init(PixelFormat format, int32 width, int32 height, int32 depth, int32 mipLevels, int32 arraySize)
 {
     // Check inputs
     CHECK_RETURN(Math::IsInRange(width, 1, GPU_MAX_TEXTURE_SIZE), true);

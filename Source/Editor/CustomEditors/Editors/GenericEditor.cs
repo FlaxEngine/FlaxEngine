@@ -1049,7 +1049,7 @@ namespace FlaxEditor.CustomEditors.Editors
             catch (Exception ex)
             {
                 Editor.LogWarning(ex);
-                Editor.LogError($"Failed to update VisibleIf rules. " + ex.Message);
+                Editor.LogError("Failed to update VisibleIf rules. " + ex.Message);
 
                 // Remove rules to prevent error in loop
                 _visibleIfCaches = null;
@@ -1098,7 +1098,7 @@ namespace FlaxEditor.CustomEditors.Editors
             catch (Exception ex)
             {
                 Editor.LogWarning(ex);
-                Editor.LogError($"Failed to update EditIf rules. " + ex.Message);
+                Editor.LogError("Failed to update EditIf rules. " + ex.Message);
 
                 // Remove rules to prevent error in loop
                 _editIfCaches = null;

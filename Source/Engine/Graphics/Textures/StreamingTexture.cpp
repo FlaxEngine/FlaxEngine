@@ -105,12 +105,23 @@ bool StreamingTexture::Create(const TextureHeader& header)
     }
 
     ASSERT(_texture);
-
     ScopeLock lock(_owner->GetOwnerLocker());
 
     if (IsInitialized())
     {
-        _texture->ReleaseGPU();
+        // Avoid de-allocating texture if it doesn't change
+        if (_texture->Width() == header.Width &&
+            _texture->Height() == header.Height &&
+            _texture->Depth() == header.Depth &&
+            _texture->MipLevels() == header.MipLevels &&
+            _texture->Format() == header.Format)
+        {
+            _texture->SetResidentMipLevels(0);
+        }
+        else
+        {
+            _texture->ReleaseGPU();
+        }
     }
 
     // Cache header
