@@ -578,10 +578,9 @@ public:
 
     SceneResult Do(Context& context) override
     {
-        auto scene = Level::FindScene(TargetScene);
-        if (!scene)
-            return SceneResult::Failed;
-        return unloadScene(scene) ? SceneResult::Failed : SceneResult::Success;
+        if (!Level::UnloadScene(TargetScene))
+            return SceneResult::Success;
+        return SceneResult::Failed;
     }
 };
 
@@ -956,7 +955,7 @@ void LevelImpl::flushActions()
         context.TimeBudget -= time.GetTotalSeconds();
         if (result != SceneResult::Wait)
         {
-            _sceneActions.RemoveAtKeepOrder(i--);
+            _sceneActions.RemoveKeepOrder(action);
             Delete(action);
         }
     }
