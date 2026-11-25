@@ -205,13 +205,13 @@ public:
                 if (remainingHeight <= remainingWidth)
                 {
                     // Split vertically
-                    smaller = SizeRect(freeNode->X, freeNode->Y + paddedHeight, width, remainingHeight);
+                    smaller = SizeRect(freeNode->X, freeNode->Y + paddedHeight, paddedWidth, remainingHeight);
                     bigger = SizeRect(freeNode->X + paddedWidth, freeNode->Y, remainingWidth, freeNode->Height);
                 }
                 else
                 {
                     // Split horizontally
-                    smaller = SizeRect(freeNode->X + paddedWidth, freeNode->Y, remainingWidth, height);
+                    smaller = SizeRect(freeNode->X + paddedWidth, freeNode->Y, remainingWidth, paddedHeight);
                     bigger = SizeRect(freeNode->X, freeNode->Y + paddedHeight, freeNode->Width, remainingHeight);
                 }
                 if (smaller.W * smaller.H > bigger.W * bigger.H)
