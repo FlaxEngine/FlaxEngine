@@ -257,16 +257,16 @@ bool ViewportIconsRendererService::Init()
     InstanceBuffers[static_cast<int32>(IconTypes::type)][0].ReceiveDecals = false; \
     InstanceBuffers[static_cast<int32>(IconTypes::type)][0].ShadowsMode = ShadowsCastingMode::None; \
     InstanceBuffers[static_cast<int32>(IconTypes::type)][0].Material = Content::LoadAsyncInternal<MaterialInstance>(TEXT(path))
-    INIT(PointLight, "Editor/Icons/PointLight");
-    INIT(DirectionalLight, "Editor/Icons/DirectionalLight");
-    INIT(EnvironmentProbe, "Editor/Icons/EnvironmentProbe");
-    INIT(Skybox, "Editor/Icons/Skybox");
-    INIT(SkyLight, "Editor/Icons/SkyLight");
-    INIT(AudioListener, "Editor/Icons/AudioListener");
-    INIT(AudioSource, "Editor/Icons/AudioSource");
-    INIT(Decal, "Editor/Icons/Decal");
-    INIT(ParticleEffect, "Editor/Icons/ParticleEffect");
-    INIT(SceneAnimationPlayer, "Editor/Icons/SceneAnimationPlayer");
+    INIT(PointLight, "Editor/ViewportIcons/PointLight");
+    INIT(DirectionalLight, "Editor/ViewportIcons/DirectionalLight");
+    INIT(EnvironmentProbe, "Editor/ViewportIcons/EnvironmentProbe");
+    INIT(Skybox, "Editor/ViewportIcons/Skybox");
+    INIT(SkyLight, "Editor/ViewportIcons/SkyLight");
+    INIT(AudioListener, "Editor/ViewportIcons/AudioListener");
+    INIT(AudioSource, "Editor/ViewportIcons/AudioSource");
+    INIT(Decal, "Editor/ViewportIcons/Decal");
+    INIT(ParticleEffect, "Editor/ViewportIcons/ParticleEffect");
+    INIT(SceneAnimationPlayer, "Editor/ViewportIcons/SceneAnimationPlayer");
 #undef INIT
 #define MAP_TYPE(type, iconType) ActorTypeToIconType.Add(type::TypeInitializer, IconTypes::iconType)
     MAP_TYPE(PointLight, PointLight);
