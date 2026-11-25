@@ -156,6 +156,20 @@ namespace FlaxEditor.GUI
             return AddChild(new ToolStripSeparator(ItemsHeight));
         }
 
+        /// <summary>
+        /// Gets a button with specific icon.
+        /// </summary>
+        /// <param name="sprite">The icon of the button to get.</param>
+        public ToolStripButton GetButton(SpriteHandle sprite)
+        {
+            for (int i = Children.Count - 1; i >= 0; i--)
+            {
+                if (Children[i] is ToolStripButton button && button.Icon == sprite)
+                    return button;
+            }
+            return null;
+        }
+
         internal void OnButtonClicked(ToolStripButton button)
         {
             ButtonClicked?.Invoke(button);

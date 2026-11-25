@@ -14,7 +14,7 @@ namespace FlaxEditor.Content
     /// A <see cref="SpriteAtlas"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
-    public sealed class SpriteAtlasProxy : BinaryAssetProxy
+    public class SpriteAtlasProxy : BinaryAssetProxy
     {
         private SimpleSpriteAtlasPreview _preview;
 
@@ -83,5 +83,50 @@ namespace FlaxEditor.Content
 
             base.Dispose();
         }
+    }
+
+    /// <summary>
+    /// A <see cref="SpriteAtlasPacker"/> asset proxy object.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.BinaryAssetProxy" />
+    [ContentContextMenu("New/Sprite Atlas Packer")]
+    public sealed class SpriteAtlasPackerProxy : SpriteAtlasProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "Sprite Atlas Packer";
+
+        /// <inheritdoc />
+        public override bool CanReimport(ContentItem item)
+        {
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override EditorWindow Open(Editor editor, ContentItem item)
+        {
+            return new SpriteAtlasPackerWindow(editor, (AssetItem)item);
+        }
+
+        /// <inheritdoc />
+        public override bool CanCreate(ContentFolder targetLocation)
+        {
+            return targetLocation.CanHaveAssets;
+        }
+
+        /// <inheritdoc />
+        public override void Create(string outputPath, object arg)
+        {
+            var asset = FlaxEngine.Content.CreateVirtualAsset<SpriteAtlasPacker>();
+            bool failed = asset.Save(outputPath);
+            FlaxEngine.Content.DeleteAsset(asset);
+            if (failed)
+                throw new Exception("Failed to create new asset.");
+        }
+
+        /// <inheritdoc />
+        public override Color AccentColor => Color.FromRGB(0x042953);
+
+        /// <inheritdoc />
+        public override Type AssetType => typeof(SpriteAtlasPacker);
     }
 }

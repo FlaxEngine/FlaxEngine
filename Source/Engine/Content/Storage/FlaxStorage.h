@@ -414,6 +414,11 @@ public:
     FlaxChunk* AllocateChunk();
 
     /// <summary>
+    /// Removes the chunk from a storage container.
+    /// </summary>
+    void FreeChunk(FlaxChunk* chunk);
+
+    /// <summary>
     /// Closes the file handles (it can be modified from the outside).
     /// </summary>
     bool CloseFileHandles();

@@ -223,6 +223,12 @@ public:
     void ReleaseChunk(int32 index) const;
 
     /// <summary>
+    /// Removes the chunk.
+    /// </summary>
+    /// <param name="index">The chunk index.</param>
+    void DeleteChunk(int32 index);
+
+    /// <summary>
     /// Requests the chunk data asynchronously (creates task that will gather chunk data or null if already here).
     /// </summary>
     /// <param name="index">The chunk index.</param>

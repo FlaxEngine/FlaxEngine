@@ -24,7 +24,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="SpriteAtlas" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed class SpriteAtlasWindow : TextureBaseWindow
+    public class SpriteAtlasWindow : TextureBaseWindow
     {
         private sealed class EditSpritesAction : IUndoAction
         {
@@ -142,7 +142,7 @@ namespace FlaxEditor.Windows.Assets
                     // Clear widgets to collect them during drawing
                     _widgets.Clear();
                 }
-                if (_window._selection.Count > 0)
+                if (_window._selection.Count > 0 && _window._canEditSprites)
                 {
                     if (_widgets == null)
                         _widgets = new List<UIEditorRoot.Widget>();
@@ -219,7 +219,7 @@ namespace FlaxEditor.Windows.Assets
                             }
                         }
                     }
-                    if (HitTestSprite(ref location, out var spriteIndex))
+                    if (_window._canEditSprites && HitTestSprite(ref location, out var spriteIndex))
                     {
                         // Start moving selection
                         _mouseStartLocation = GetAtlasPixelsLocation(location);
@@ -560,6 +560,11 @@ namespace FlaxEditor.Windows.Assets
                     var sprites = (SpriteEntry[])Values[0];
                     if (sprites == null)
                         return;
+                    if (sprites.Length == 0)
+                    {
+                        layout.Label("No sprites", TextAlignment.Center);
+                        return;
+                    }
                     var window = (SpriteAtlasWindow)((SpritePropertiesProxy)ParentEditor.Values[0])._window;
                     var atlas = (SpriteAtlas)window.Asset;
                     window._spritesListConatiner = layout;
@@ -658,16 +663,7 @@ namespace FlaxEditor.Windows.Assets
                 var atlas = (SpriteAtlas)_window.Asset;
                 Sprites = new SpriteEntry[atlas.SpritesCount];
                 for (int i = 0; i < Sprites.Length; i++)
-                {
                     Sprites[i] = new SpriteEntry(atlas, i);
-                }
-            }
-
-            /// <summary>
-            /// On discard changes
-            /// </summary>
-            public void DiscardChanges()
-            {
             }
 
             public override void OnLoad(TextureBaseWindow window)
@@ -689,22 +685,27 @@ namespace FlaxEditor.Windows.Assets
         private class SpritesTab : Tab
         {
             public SpritesTab(SpriteAtlasWindow window)
-            : base("Sprites", window, true, window._undo)
+            : base("Sprites", window, window._canEditSprites, window._undo)
             {
                 Proxy = new SpritePropertiesProxy();
+                Presenter.ReadOnly = !window._canEditSprites;
                 Presenter.Select(Proxy);
             }
         }
 
-        private Undo _undo;
+        /// <summary>
+        /// Undo/redo container for asset actions.
+        /// </summary>
+        protected Undo _undo;
         private ToolStripButton _undoButton, _redoButton;
         private SpritesTab _spritesTab;
         private Sprite[] _savedSprites;
         private List<int> _selection = new();
         private LayoutElementsContainer _spritesListConatiner;
+        private bool _canEditSprites;
 
         /// <inheritdoc />
-        public SpriteAtlasWindow(Editor editor, AssetItem item)
+        public SpriteAtlasWindow(Editor editor, AssetItem item, bool canEditSprites = true)
         : base(editor, item, new AtlasView())
         {
             // Undo
@@ -713,7 +714,8 @@ namespace FlaxEditor.Windows.Assets
             _undo.RedoDone += OnUndoRedo;
             _undo.ActionDone += OnUndoRedo;
 
-            // Sprotes editing
+            // Sprites editing
+            _canEditSprites = canEditSprites;
             ((AtlasView)_preview)._window = this;
             _spritesTab = _tabs.AddTab(new SpritesTab(this));
             _spritesTab.IndexInParent -= 2;
@@ -724,9 +726,12 @@ namespace FlaxEditor.Windows.Assets
             var inputOptions = editor.Options.Options.Input;
             _undoButton = _toolstrip.AddButton(editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo..", ref inputOptions.Undo);
             _redoButton = _toolstrip.AddButton(editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo.", ref inputOptions.Redo);
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.ShipIt64, ExportSprites).LinkTooltip("Export all sprites into separate textures.");
-            _toolstrip.AddButton(editor.Icons.AddFile64, AddSprite).LinkTooltip("Add a new sprite.");
+            if (canEditSprites)
+            {
+                _toolstrip.AddSeparator();
+                _toolstrip.AddButton(editor.Icons.ShipIt64, ExportSprites).LinkTooltip("Export all sprites into separate textures.");
+                _toolstrip.AddButton(editor.Icons.AddFile64, AddSprite).LinkTooltip("Add a new sprite.");
+            }
 
             // Inputs
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
@@ -976,7 +981,10 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
-        private void OnSpritesEdited()
+        /// <summary>
+        /// Pulls the sprites list from the asset and refreshes UI.
+        /// </summary>
+        protected void OnSpritesEdited()
         {
             ((SpritePropertiesProxy)_spritesTab.Proxy).UpdateSprites();
             _spritesTab.Presenter.BuildLayout();

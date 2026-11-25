@@ -897,6 +897,19 @@ FlaxChunk* FlaxStorage::AllocateChunk()
     return nullptr;
 }
 
+void FlaxStorage::FreeChunk(FlaxChunk* chunk)
+{
+    if (!chunk)
+        return;
+    chunk->Data.Release();
+    if (!IsReadOnly())
+    {
+        chunk->Flags = FlaxChunkFlags::None;
+        _chunks.Remove(chunk);
+        Delete(chunk);
+    }
+}
+
 #if USE_EDITOR
 
 bool FlaxStorage::Create(const StringView& path, Span<AssetInitData> assets, bool silentMode, const CustomData* customData)

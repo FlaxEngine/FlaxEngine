@@ -1156,6 +1156,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new MaterialInstanceProxy());
             Proxy.Add(new MaterialFunctionProxy());
             Proxy.Add(new SpriteAtlasProxy());
+            Proxy.Add(new SpriteAtlasPackerProxy());
             Proxy.Add(new CubeTextureProxy());
             Proxy.Add(new PreviewsCacheProxy());
             Proxy.Add(new FontProxy());

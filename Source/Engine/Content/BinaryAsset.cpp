@@ -238,6 +238,16 @@ void BinaryAsset::ReleaseChunk(int32 index) const
         chunk->Data.Release();
 }
 
+void BinaryAsset::DeleteChunk(int32 index)
+{
+    auto chunk = _header.Chunks[index];
+    if (chunk)
+    {
+        _header.Chunks[index] = nullptr;
+        Storage->FreeChunk(chunk);
+    }
+}
+
 ContentLoadTask* BinaryAsset::RequestChunkDataAsync(int32 index)
 {
     auto chunk = GetChunk(index);

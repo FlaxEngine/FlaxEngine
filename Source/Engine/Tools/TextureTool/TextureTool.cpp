@@ -743,7 +743,7 @@ bool TextureTool::UpdateTexture(GPUContext* context, GPUTexture* texture, int32 
     }
 
     // Update texture
-    CHECK_RETURN_DEBUG(data.Length() >= slicePitch, true);
+    CHECK_RETURN_DEBUG((uint32)data.Length() >= slicePitch, true);
     context->UpdateTexture(texture, arrayIndex, mipIndex, data.Get(), rowPitch, slicePitch);
     return false;
 }
