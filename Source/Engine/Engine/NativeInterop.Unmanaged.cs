@@ -1114,7 +1114,7 @@ namespace FlaxEngine.Interop
                 static void InvokeClear(object instance)
                 {
                     Type type = instance.GetType();
-                    Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
+                    Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "CollectibleKeyConcurrentHashtable`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
                     type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")?.Invoke(instance, Array.Empty<object>());
                 }
             }
