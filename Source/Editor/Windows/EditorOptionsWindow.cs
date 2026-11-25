@@ -51,7 +51,7 @@ namespace FlaxEditor.Windows
             _saveButton.Enabled = false;
 
             // Header panel for search
-            CustomEditorsUtil.BuildSearchBar(this, out _searchBox);
+            CustomEditorsUtil.BuildSearchBar(this, out _searchBox, toolstrip.Bottom);
             _searchBox.TextChanged += ApplySearchFilter;
 
             _tabs = new Tabs
