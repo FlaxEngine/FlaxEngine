@@ -37,6 +37,7 @@ namespace Flax.Build
             {
                 // Setup
                 CommandLine.Configure(typeof(Configuration));
+                CommandLine.Configure(typeof(AndroidConfiguration));
                 foreach (var option in CommandLine.GetOptions())
                 {
                     if (option.Name.Length > 1 && option.Name[0] == 'D')

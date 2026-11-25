@@ -1,0 +1,24 @@
+{
+	"ID": "f1a2b3c4d5e6478890a1b2c3d4e5f601",
+	"TypeName": "FlaxEngine.SceneAsset",
+	"EngineBuild": 7015,
+	"Data": [
+		{
+			"ID": "f1a2b3c4d5e6478890a1b2c3d4e5f601",
+			"TypeName": "FlaxEngine.Scene",
+			"Name": "Main"
+		},
+		{
+			"ID": "a1b2c3d4e5f6478890a1b2c3d4e5f602",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "f1a2b3c4d5e6478890a1b2c3d4e5f601",
+			"Name": "Root"
+		},
+		{
+			"ID": "b2c3d4e5f6a1478890a1b2c3d4e5f603",
+			"TypeName": "Game",
+			"ParentID": "a1b2c3d4e5f6478890a1b2c3d4e5f602",
+			"V": {}
+		}
+	]
+}
