@@ -348,6 +348,12 @@ public:
     /// <summary>
     /// Unloads given scene. Done in the background.
     /// </summary>
+    /// <param name="id">Scene ID</param>
+    API_FUNCTION() static void UnloadSceneAsync(const Guid& id);
+
+    /// <summary>
+    /// Unloads given scene. Done in the background.
+    /// </summary>
     /// <param name="scene">Scene</param>
     API_FUNCTION() static void UnloadSceneAsync(Scene* scene);
 

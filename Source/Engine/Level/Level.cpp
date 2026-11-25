@@ -571,9 +571,9 @@ class UnloadSceneAction : public SceneAction
 public:
     Guid TargetScene;
 
-    UnloadSceneAction(Scene* scene)
+    UnloadSceneAction(Guid targetScene)
     {
-        TargetScene = scene->GetID();
+        TargetScene = targetScene;
     }
 
     SceneResult Do(Context& context) override
@@ -1930,11 +1930,17 @@ bool Level::UnloadScene(Scene* scene)
     return unloadScene(scene);
 }
 
+void Level::UnloadSceneAsync(const Guid& id)
+{
+    ScopeLock lock(_sceneActionsLocker);
+    _sceneActions.Enqueue(New<UnloadSceneAction>(id));
+}
+
 void Level::UnloadSceneAsync(Scene* scene)
 {
     CHECK(scene);
     ScopeLock lock(_sceneActionsLocker);
-    _sceneActions.Enqueue(New<UnloadSceneAction>(scene));
+    _sceneActions.Enqueue(New<UnloadSceneAction>(scene->GetID()));
 }
 
 bool Level::UnloadAllScenes()
