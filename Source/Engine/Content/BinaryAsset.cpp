@@ -647,8 +647,6 @@ void BinaryAsset::onRename(const StringView& newPath)
     Storage->OnRename(newPath);
 }
 
-#endif
-
 BinaryAsset::SaveContext::SaveContext(BinaryAsset* asset)
     : Asset(asset)
     , ChunksLock(asset->Storage ? asset->Storage->Lock() : FlaxStorage::LockData())
@@ -691,7 +689,7 @@ void BinaryAsset::SaveContext::LinkChunk(int32 index, Span<byte> data)
 
 bool BinaryAsset::SaveContext::Save(const StringView& path, AssetInitData& data)
 {
-    // TODO: this could could be simplified
+    // TODO: this could be simplified
     if (Asset->IsVirtual())
         Platform::MemoryCopy(Asset->_header.Chunks, VirtualChunks, sizeof(Asset->_header.Chunks));
     const bool failed = path.HasChars() ? Asset->SaveAsset(path, data) : Asset->SaveAsset(data, true);
@@ -713,3 +711,5 @@ bool BinaryAsset::SaveContext::Save(const StringView& path, AssetInitData& data)
     }
     return failed;
 }
+
+#endif

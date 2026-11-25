@@ -8,6 +8,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Content/Upgraders/TextureAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -205,6 +206,7 @@ RETRY:
         sprite.Area.Size.Y = (float)slot.Node->Height / size.Y;
     }
 
+#if USE_EDITOR
     // Update asset dependencies
     ClearDependencies();
     if (EnumHasAllFlags(Options.Flags, PackFlags::AutoPack))
@@ -212,6 +214,7 @@ RETRY:
         for (auto& slot : slots)
             AddDependency(slot.Texture);
     }
+#endif
 
     // Create texture data
     TextureData textureData;
