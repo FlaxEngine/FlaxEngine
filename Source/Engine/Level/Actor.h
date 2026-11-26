@@ -130,7 +130,7 @@ public:
     /// <summary>
     /// Gets the light layers this actor receives lighting from.
     /// </summary>
-    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\", \"Received Light Layers\"), EditorOrder(-70), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.LightLayersMaskEditor\")")
+    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\", \"Light Layers\"), EditorOrder(-70), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.LightLayersMaskEditor\")")
     FORCE_INLINE uint32 GetReceivedLightLayers() const
     {
         return _receivedLightLayers;
