@@ -9,6 +9,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Networking/NetworkInternal.h"
+#include "Engine/Threading/Threading.h"
 
 ProfilingTools::MainStats ProfilingTools::Stats;
 Array<ProfilingTools::ThreadStats, InlinedAllocation<64>> ProfilingTools::EventsCPU;
@@ -24,14 +25,13 @@ public:
         Platform::MemoryClear(&ProfilingTools::Stats, sizeof(ProfilingTools::MainStats));
     }
 
-    void Update() override;
     void Dispose() override;
 };
 
 ProfilingToolsService ProfilingToolsServiceInstance;
 double LastInputLatency = 0;
 
-void ProfilingToolsService::Update()
+void ProfilingTools::EndFrame(double frameBegin)
 {
     ZoneScoped;
     PROFILE_MEM(Profiler);
@@ -45,6 +45,11 @@ void ProfilingToolsService::Update()
         stats.MemoryGPU.Total = GPUDevice::Instance->TotalGraphicsMemory;
         stats.MemoryGPU.Used = GPUDevice::Instance->GetMemoryUsage();
         stats.FPS = Engine::GetFramesPerSecond();
+        stats.FrameIndex = Engine::FrameCount;
+        static double lastFrameEnd = 0;
+        const double frameEnd = Time::Draw.LastEnd;
+        stats.FrameTimeMs = static_cast<float>((frameEnd - (lastFrameEnd > 0 ? lastFrameEnd : frameBegin)) * 1000.0);
+        lastFrameEnd = frameEnd;
 
         stats.UpdateTimeMs = static_cast<float>(Time::Update.LastLength * 1000.0);
         stats.PhysicsTimeMs = static_cast<float>(Time::Physics.LastLength * 1000.0);
@@ -52,15 +57,17 @@ void ProfilingToolsService::Update()
 
         float presentTime;
         ProfilerGPU::GetLastFrameData(stats.DrawGPUTimeMs, presentTime, stats.DrawStats);
-        stats.DrawCPUTimeMs = Math::Max(stats.DrawCPUTimeMs - presentTime, 0.0f); // Remove swapchain present wait time to exclude from drawing on CPU
+        stats.DrawCPUTimeMs = Math::Max(stats.DrawCPUTimeMs - ProfilerGPU::GetLastPresentTime(), 0.0f); // Remove swapchain present wait time to exclude from drawing on CPU
 
         stats.InputLatencyMs = (float)(LastInputLatency * 1000.0);
     }
 
     // Extract CPU profiler events
-    Platform::MemoryBarrier();
-    const auto& threads = ProfilerCPU::Threads;
-    Platform::MemoryBarrier();
+    Array<ProfilerCPU::Thread*, InlinedAllocation<64>> threads;
+    {
+        ScopeLock lock(ProfilerCPU::ThreadsLocker);
+        threads = ProfilerCPU::Threads;
+    }
     for (auto& pt : ProfilingTools::EventsCPU)
         pt.Events.Clear();
     ProfilingTools::EventsCPU.EnsureCapacity(threads.Count());
@@ -72,7 +79,7 @@ void ProfilingToolsService::Update()
         ProfilingTools::ThreadStats* pt = nullptr;
         for (auto& e : ProfilingTools::EventsCPU)
         {
-            if (e.Name == thread->GetName())
+            if (e.ID == thread->ID)
             {
                 pt = &e;
                 break;
@@ -82,6 +89,7 @@ void ProfilingToolsService::Update()
         {
             pt = &ProfilingTools::EventsCPU.AddOne();
             pt->Name = thread->GetName();
+            pt->ID = thread->ID;
         }
 
         thread->Buffer.Extract(pt->Events, true);
@@ -123,6 +131,7 @@ void ProfilingToolsService::Update()
             maxFrameIndex = i;
         }
     }
+    ProfilingTools::Stats.GPUFrameIndex = maxFrame;
     if (maxFrameIndex != -1)
     {
         auto& frame = frames[maxFrameIndex];

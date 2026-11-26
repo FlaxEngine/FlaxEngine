@@ -110,7 +110,7 @@ namespace FlaxEditor.Windows.Profiler
 
                 var style = Style.Current;
                 var bounds = new Rectangle(Float2.Zero, Size);
-                Color color = _color;
+                Color color = EnabledInHierarchy ? _color : _color * 0.35f;
                 if (IsMouseOver)
                     color *= 1.1f;
 
@@ -123,7 +123,7 @@ namespace FlaxEditor.Windows.Profiler
                 if (_nameLength < bounds.Width + 4)
                 {
                     Render2D.PushClip(bounds);
-                    Render2D.DrawText(style.FontMedium, _name, bounds, Style.Current.Foreground, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontMedium, _name, bounds, EnabledInHierarchy ? style.Foreground : style.ForegroundGrey, TextAlignment.Center, TextAlignment.Center);
                     Render2D.PopClip();
                 }
             }
@@ -188,6 +188,21 @@ namespace FlaxEditor.Windows.Profiler
                 base.OnMouseLeave();
             }
 
+            /// <summary>Captured duration used to build the tooltip only when it is requested.</summary>
+            public double DurationMilliseconds = double.NaN;
+
+            /// <inheritdoc />
+            protected override bool ShowTooltip => !double.IsNaN(DurationMilliseconds) || base.ShowTooltip;
+
+            /// <inheritdoc />
+            public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
+            {
+                bool show = base.OnShowTooltip(out text, out location, out area);
+                if (!double.IsNaN(DurationMilliseconds))
+                    text = Enabled ? string.Format("{0}, {1:0.###} ms", Name, DurationMilliseconds) : "Unused entry retained from a recent capture.";
+                return show;
+            }
+
             private Rectangle InteractBounds => new Rectangle(Float2.Zero, Mathf.Max(Width, 4), Height);
         }
 
@@ -210,9 +225,47 @@ namespace FlaxEditor.Windows.Profiler
                 var style = Style.Current;
                 var rect = new Rectangle(Float2.Zero, Size);
                 Render2D.PushClip(rect);
-                Render2D.DrawText(style.FontMedium, Name, rect, Style.Current.Foreground, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapChars);
+                Render2D.DrawText(style.FontMedium, Name, rect, EnabledInHierarchy ? style.Foreground : style.ForegroundGrey, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapChars);
                 Render2D.PopClip();
             }
+        }
+
+        /// <summary>Horizontal time scale used by profiler samples.</summary>
+        public float PixelsPerMillisecond { get; private set; } = 100;
+
+        /// <summary>Width reserved for thread labels.</summary>
+        public float LabelWidth;
+
+        /// <summary>Called when samples must be repositioned after zooming.</summary>
+        public event Action ScaleChanged;
+
+        /// <inheritdoc />
+        protected override bool ShouldDrawChild(Control child, ref Rectangle bounds, ref Rectangle clipping)
+        {
+            // Subpixel samples stay in the capture and can be inspected by zooming in.
+            return base.ShouldDrawChild(child, ref bounds, ref clipping) && (!(child is Event) || bounds.Width >= 0.75f);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseWheel(Float2 location, float delta)
+        {
+            if (Input.GetKey(KeyboardKeys.Control))
+            {
+                Zoom(delta, location.X);
+                return true;
+            }
+            return base.OnMouseWheel(location, delta);
+        }
+
+        private void Zoom(float delta, float position)
+        {
+            float time = (position - ViewOffset.X - LabelWidth) / PixelsPerMillisecond;
+            PixelsPerMillisecond = Mathf.Clamp(PixelsPerMillisecond * Mathf.Pow(1.25f, delta), 1, 65536);
+            ScaleChanged?.Invoke();
+            float scroll = time * PixelsPerMillisecond + LabelWidth - position;
+            scroll = HScrollBar != null && HScrollBar.Enabled ? Mathf.Clamp(scroll, HScrollBar.Minimum, HScrollBar.Maximum) : 0;
+            ViewOffset = new Float2(-scroll, ViewOffset.Y);
+            FastScroll();
         }
 
         /// <summary>
@@ -226,6 +279,10 @@ namespace FlaxEditor.Windows.Profiler
         public Timeline()
         : base(ScrollBars.Both)
         {
+            // Parent mouse-enter runs after the event's handler. A tooltip on the
+            // timeline would replace the event's lazily generated name and duration.
+            if (HScrollBar != null)
+                HScrollBar.TooltipText = "Ctrl + mouse wheel to zoom. Subpixel samples remain recorded and appear when zoomed in.";
         }
     }
 }

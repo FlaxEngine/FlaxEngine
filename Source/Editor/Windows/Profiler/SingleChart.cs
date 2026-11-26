@@ -37,7 +37,7 @@ namespace FlaxEditor.Windows.Profiler
                 if (_selectedSampleIndex != value)
                 {
                     _selectedSampleIndex = value;
-                    _sample = _samples.Count == 0 ? string.Empty : FormatSample(_samples.Get(_selectedSampleIndex));
+                    _sample = _samples.Count == 0 ? string.Empty : FormatSelectedSample(_samples.Get(_selectedSampleIndex));
 
                     SelectedSampleChanged?.Invoke(_selectedSampleIndex);
                 }
@@ -80,6 +80,7 @@ namespace FlaxEditor.Windows.Profiler
         public void Clear()
         {
             _samples.Clear();
+            _selectedSampleIndex = -1;
             _sample = string.Empty;
         }
 
@@ -90,7 +91,12 @@ namespace FlaxEditor.Windows.Profiler
         public void AddSample(float value)
         {
             _samples.Add(value);
-            _sample = FormatSample(value);
+            _sample = FormatSelectedSample(SelectedSample);
+        }
+
+        private string FormatSelectedSample(float value)
+        {
+            return float.IsNaN(value) ? "Not recorded (inactive tab)" : FormatSample(value);
         }
 
         /// <inheritdoc />
@@ -113,26 +119,33 @@ namespace FlaxEditor.Windows.Profiler
                     Render2D.DrawLine(new Float2(selectedX, 0), new Float2(selectedX, chartHeight), style.Foreground, 1.5f);
                 }
 
-                int samplesInViewCount = Math.Min((int)(Width / PointsOffset), _samples.Count) - 1;
-                float maxValue = _samples[_samples.Count - 1];
-                for (int i = 2; i < samplesInViewCount; i++)
+                int samplesInViewCount = Math.Min((int)(Width / PointsOffset) + 1, _samples.Count);
+                float maxValue = 0;
+                for (int i = 0; i < samplesInViewCount; i++)
                 {
-                    maxValue = Mathf.Max(maxValue, _samples[_samples.Count - i]);
+                    float sample = _samples[_samples.Count - i - 1];
+                    if (!float.IsNaN(sample)) maxValue = Mathf.Max(maxValue, sample);
                 }
 
                 Color chartColor = style.BackgroundSelected;
                 var chartRoot = chartRect.BottomRight;
-                float samplesRange = maxValue * 1.1f;
+                float samplesRange = Mathf.Max(maxValue * 1.1f, 0.001f);
                 float samplesCoeff = -chartHeight / samplesRange;
                 var posPrev = chartRoot + new Float2(0, _samples.Last * samplesCoeff);
                 float posX = 0;
+                bool hasPrevious = !float.IsNaN(_samples.Last);
 
-                for (int i = _samples.Count - 1; i >= 0; i--)
+                for (int i = _samples.Count - 1; i >= 0 && posX >= -Width; i--)
                 {
                     float sample = _samples[i];
-                    var pos = chartRoot + new Float2(posX, sample * samplesCoeff);
-                    Render2D.DrawLine(posPrev, pos, chartColor);
-                    posPrev = pos;
+                    bool valid = !float.IsNaN(sample);
+                    if (valid)
+                    {
+                        var pos = chartRoot + new Float2(posX, sample * samplesCoeff);
+                        if (hasPrevious) Render2D.DrawLine(posPrev, pos, chartColor);
+                        posPrev = pos;
+                    }
+                    hasPrevious = valid;
                     posX -= PointsOffset;
                 }
 
@@ -149,8 +162,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private void OnClick(ref Float2 location)
         {
-            float samplesWidth = _samples.Count * PointsOffset;
-            SelectedSampleIndex = (int)((samplesWidth - Width + location.X) / PointsOffset);
+            SelectedSampleIndex = Mathf.RoundToInt((_samples.Count - 1) + (location.X - Width) / PointsOffset);
         }
 
         /// <inheritdoc />

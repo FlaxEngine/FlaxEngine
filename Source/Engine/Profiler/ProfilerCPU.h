@@ -4,6 +4,7 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/NonCopyable.h"
+#include "Engine/Platform/CriticalSection.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Array.h"
@@ -55,16 +56,16 @@ public:
     };
 
     /// <summary>
-    /// Implements simple profiling events ring-buffer.
+    /// Reusable append storage for profiling events. Grows without overwriting an active frame.
     /// </summary>
     class EventBuffer : public NonCopyable
     {
     private:
         Event* _data;
         int32 _capacity;
-        int32 _capacityMask;
-        int32 _head;
-        int32 _count;
+        volatile int32 _head;
+        volatile int32 _read;
+        CriticalSection _storageLock;
 
     public:
         EventBuffer();
@@ -76,7 +77,7 @@ public:
         /// </summary>
         FORCE_INLINE int32 GetCount() const
         {
-            return _count;
+            return Platform::AtomicRead(&_head) - Platform::AtomicRead(&_read);
         }
 
         /// <summary>
@@ -94,13 +95,13 @@ public:
         /// Adds new event to the buffer.
         /// </summary>
         /// <returns>The event index.</returns>
-        int32 Add()
-        {
-            const int32 index = _head;
-            _head = (_head + 1) & _capacityMask;
-            _count = Math::Min(_count + 1, _capacity);
-            return index;
-        }
+        int32 Add();
+
+        /// <summary>Publishes an event completion after all its data is written.</summary>
+        void EndEvent(int32 index, double time);
+
+        /// <summary>Reads the event completion used to publish immutable records.</summary>
+        static double ReadEnd(const Event& event);
 
         /// <summary>
         /// Extracts the buffer data (only ended events starting from the root level with depth=0).
@@ -111,7 +112,7 @@ public:
 
     public:
         /// <summary>
-        /// Ring buffer iterator
+        /// Profiling events iterator
         /// </summary>
         struct Iterator
         {
@@ -188,27 +189,27 @@ public:
         public:
             FORCE_INLINE Iterator& operator++()
             {
-                _index = (_index + 1) & _buffer->_capacityMask;
+                _index = _index + 1;
                 return *this;
             }
 
             FORCE_INLINE Iterator operator++(int)
             {
                 Iterator temp = *this;
-                _index = (_index + 1) & _buffer->_capacityMask;
+                _index = _index + 1;
                 return temp;
             }
 
             FORCE_INLINE Iterator& operator--()
             {
-                _index = (_index - 1) & _buffer->_capacityMask;
+                _index = _index - 1;
                 return *this;
             }
 
             FORCE_INLINE Iterator operator--(int)
             {
                 Iterator temp = *this;
-                _index = (_index - 1) & _buffer->_capacityMask;
+                _index = _index - 1;
                 return temp;
             }
         };
@@ -216,13 +217,13 @@ public:
     public:
         FORCE_INLINE Iterator Begin()
         {
-            return Iterator(this, (_head - _count) & _capacityMask);
+            return Iterator(this, Platform::AtomicRead(&_read));
         }
 
         FORCE_INLINE Iterator Last()
         {
-            ASSERT(_count > 0);
-            return Iterator(this, (_head - 1) & _capacityMask);
+            ASSERT(GetCount() > 0);
+            return Iterator(this, Platform::AtomicRead(&_head) - 1);
         }
 
         FORCE_INLINE Iterator End()
@@ -238,7 +239,7 @@ public:
     {
     private:
         String _name;
-        int32 _depth = 0;
+        Array<int32, InlinedAllocation<64>> _activeEvents;
 
     public:
         Thread(const Char* name)
@@ -271,6 +272,15 @@ public:
         /// </summary>
         EventBuffer Buffer;
 
+        /// <summary>Stable profiler identity independent of thread display names.</summary>
+        uint64 ID = 0;
+
+        /// <summary>Gets the currently executing scope for allocation attribution.</summary>
+        Event* GetCurrentEvent()
+        {
+            return _activeEvents.HasItems() ? &Buffer.Get(_activeEvents.Last()) : nullptr;
+        }
+
     public:
         /// <summary>
         /// Begins the event running on a this thread. Call EndEvent with index parameter equal to the returned value by BeginEvent function.
@@ -295,6 +305,7 @@ public:
     /// The registered threads.
     /// </summary>
     static Array<Thread*, InlinedAllocation<64>> Threads;
+    static CriticalSection ThreadsLocker;
 
     /// <summary>
     /// The profiling tools usage flag. Can be used to disable profiler. Engine turns it down before the exit and before platform startup.

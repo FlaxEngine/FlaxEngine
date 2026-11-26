@@ -182,8 +182,11 @@ void ProfilerGPU::OnPresent()
     buffer.EndAllQueries();
 }
 
+float ProfilerGPU::LastPresentTime = 0;
+
 void ProfilerGPU::OnPresentTime(float time)
 {
+    LastPresentTime = time;
     auto& buffer = Buffers[CurrentBuffer];
     buffer.PresentTime += time;
 }
@@ -237,7 +240,7 @@ struct GraphicsDumping
 {
     struct Item
     {
-        StringView Name;
+        String Name;
         StringView FullName;
         uint16 Count;
         uint16 Depth;

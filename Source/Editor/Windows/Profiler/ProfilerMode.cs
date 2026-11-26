@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Windows.Profiler
 {
@@ -128,6 +129,12 @@ namespace FlaxEditor.Windows.Profiler
         {
         }
 
+        /// <summary>Records lightweight charts without taking an expensive resource inventory for an inactive tab.</summary>
+        public virtual void UpdateInactive(ref SharedUpdateData sharedData)
+        {
+            Update(ref sharedData);
+        }
+
         /// <summary>
         /// Updates the mode view. Called after init and on selected frame changed.
         /// </summary>
@@ -144,6 +151,15 @@ namespace FlaxEditor.Windows.Profiler
         protected virtual void OnSelectedSampleChanged(int frameIndex)
         {
             SelectedSampleChanged?.Invoke(frameIndex);
+        }
+
+        /// <summary>Retains unused pooled controls briefly without including them in the active capture.</summary>
+        protected static void RetainUnused(Control control, bool retain)
+        {
+            control.Enabled = false;
+            control.TooltipText = "Unused entry retained from a recent capture.";
+            if (!retain)
+                control.Visible = false;
         }
 
         /// <summary>

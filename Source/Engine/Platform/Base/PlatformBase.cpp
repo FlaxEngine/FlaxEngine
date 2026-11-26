@@ -243,14 +243,9 @@ void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
 
     // Register allocation during the current CPU event
     auto thread = ProfilerCPU::GetCurrentThread();
-    if (thread != nullptr && thread->Buffer.GetCount() != 0)
-    {
-        auto& activeEvent = thread->Buffer.Last().Event();
-        if (activeEvent.End < ZeroTolerance)
-        {
-            activeEvent.NativeMemoryAllocation += (int32)size;
-        }
-    }
+    if (thread != nullptr)
+        if (auto* activeEvent = thread->GetCurrentEvent())
+            activeEvent->NativeMemoryAllocation += (int32)size;
 }
 
 void PlatformBase::OnMemoryFree(void* ptr)

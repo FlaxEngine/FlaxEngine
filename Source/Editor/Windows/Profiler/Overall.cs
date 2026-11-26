@@ -13,6 +13,7 @@ namespace FlaxEditor.Windows.Profiler
     internal sealed class Overall : ProfilerMode
     {
         private readonly SingleChart _fpsChart;
+        private readonly SingleChart _frameTimeChart;
         private readonly SingleChart _updateTimeChart;
         private readonly SingleChart _drawTimeCPUChart;
         private readonly SingleChart _drawTimeGPUChart;
@@ -45,6 +46,14 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = layout,
             };
             _fpsChart.SelectedSampleChanged += OnSelectedSampleChanged;
+            _frameTimeChart = new SingleChart
+            {
+                Title = "Frame interval",
+                TooltipText = "Elapsed wall-clock time between completed frames, including idle and present waits.",
+                FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
+                Parent = layout,
+            };
+            _frameTimeChart.SelectedSampleChanged += OnSelectedSampleChanged;
             _updateTimeChart = new SingleChart
             {
                 Title = "Update Time",
@@ -86,6 +95,7 @@ namespace FlaxEditor.Windows.Profiler
         public override void Clear()
         {
             _fpsChart.Clear();
+            _frameTimeChart.Clear();
             _updateTimeChart.Clear();
             _drawTimeCPUChart.Clear();
             _drawTimeGPUChart.Clear();
@@ -97,6 +107,7 @@ namespace FlaxEditor.Windows.Profiler
         public override void Update(ref SharedUpdateData sharedData)
         {
             _fpsChart.AddSample(sharedData.Stats.FPS);
+            _frameTimeChart.AddSample(sharedData.Stats.FrameTimeMs);
             _updateTimeChart.AddSample(sharedData.Stats.UpdateTimeMs);
             _drawTimeCPUChart.AddSample(sharedData.Stats.DrawCPUTimeMs);
             _drawTimeGPUChart.AddSample(sharedData.Stats.DrawGPUTimeMs);
@@ -108,6 +119,7 @@ namespace FlaxEditor.Windows.Profiler
         public override void UpdateView(int selectedFrame, bool showOnlyLastUpdateEvents)
         {
             _fpsChart.SelectedSampleIndex = selectedFrame;
+            _frameTimeChart.SelectedSampleIndex = selectedFrame;
             _updateTimeChart.SelectedSampleIndex = selectedFrame;
             _drawTimeCPUChart.SelectedSampleIndex = selectedFrame;
             _drawTimeGPUChart.SelectedSampleIndex = selectedFrame;

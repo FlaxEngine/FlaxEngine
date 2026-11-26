@@ -36,8 +36,24 @@ namespace FlaxEditor.Windows.Profiler
         private readonly Timeline _timeline;
         private readonly Table _table;
         private SamplesBuffer<ProfilerGPU.Event[]> _events;
-        private List<Timeline.Event> _timelineEventsCache;
-        private List<Row> _tableRowsCache;
+        private sealed class GPUEvent : Timeline.Event
+        {
+            public ProfilerGPU.Event Capture;
+            public ulong LastUsedCapture;
+        }
+        private sealed class GPURow : ClickableRow
+        {
+            public ProfilerGPU.Event Capture;
+            public ulong LastUsedCapture, ScopeKey;
+        }
+        private List<GPUEvent> _timelineEvents;
+        private List<GPURow> _tableRows;
+        private int _timelineEventCount, _tableRowCount;
+        private ulong _captureNumber;
+        private bool _keepUnused;
+        private readonly List<ulong> _scopeStack = new List<ulong>();
+        private readonly List<bool> _visibleStack = new List<bool>();
+        private readonly Dictionary<ulong, bool> _expandedScopes = new Dictionary<ulong, bool>();
 
         public GPU()
         : base("GPU")
@@ -92,6 +108,8 @@ namespace FlaxEditor.Windows.Profiler
                 Height = 340,
                 Parent = layout,
             };
+
+            _timeline.ScaleChanged += () => UpdateView(_drawTimeCPU.SelectedSampleIndex, false);
 
             // Table
             var style = Style.Current;
@@ -171,11 +189,13 @@ namespace FlaxEditor.Windows.Profiler
             _drawTimeCPU.Clear();
             _drawTimeGPU.Clear();
             _events?.Clear();
+            _expandedScopes.Clear();
         }
 
         /// <inheritdoc />
         public override void Update(ref SharedUpdateData sharedData)
         {
+            _captureNumber++;
             // Gather GPU events
             var data = sharedData.GetEventsGPU();
             if (_events == null)
@@ -190,15 +210,16 @@ namespace FlaxEditor.Windows.Profiler
         /// <inheritdoc />
         public override void UpdateView(int selectedFrame, bool showOnlyLastUpdateEvents)
         {
+            _keepUnused = selectedFrame == -1;
             _drawTimeCPU.SelectedSampleIndex = selectedFrame;
             _drawTimeGPU.SelectedSampleIndex = selectedFrame;
 
             if (_events == null)
                 return;
-            if (_timelineEventsCache == null)
-                _timelineEventsCache = new List<Timeline.Event>();
-            if (_tableRowsCache == null)
-                _tableRowsCache = new List<Row>();
+            if (_timelineEvents == null)
+                _timelineEvents = new List<GPUEvent>();
+            if (_tableRows == null)
+                _tableRows = new List<GPURow>();
 
             UpdateTimeline();
             UpdateTable();
@@ -207,8 +228,8 @@ namespace FlaxEditor.Windows.Profiler
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            _timelineEventsCache?.Clear();
-            _tableRowsCache?.Clear();
+            _timelineEvents?.Clear();
+            _tableRows?.Clear();
 
             base.OnDestroy();
         }
@@ -217,27 +238,25 @@ namespace FlaxEditor.Windows.Profiler
         {
             ref ProfilerGPU.Event e = ref events[index];
 
-            double scale = 100.0;
+            double scale = _timeline.PixelsPerMillisecond;
             float width = (float)(e.Time * scale);
-            string name = new string(e.Name);
+            string name = e.Name ?? string.Empty;
 
-            Timeline.Event control;
-            if (_timelineEventsCache.Count != 0)
-            {
-                var last = _timelineEventsCache.Count - 1;
-                control = _timelineEventsCache[last];
-                _timelineEventsCache.RemoveAt(last);
-            }
+            GPUEvent control;
+            if (_timelineEventCount < _timelineEvents.Count)
+                control = _timelineEvents[_timelineEventCount];
             else
             {
-                control = new Timeline.Event();
+                control = new GPUEvent { Parent = parent, EventDoubleClick = OnEventDoubleClick };
+                _timelineEvents.Add(control);
             }
+            _timelineEventCount++;
             control.Bounds = new Rectangle(x, e.Depth * Timeline.Event.DefaultHeight, width, Timeline.Event.DefaultHeight - 1);
-            control.Name = name;
-            control.Tag = e;
-            control.EventDoubleClick = OnEventDoubleClick;
-            control.TooltipText = string.Format("{0}, {1} ms", name, ((int)(e.Time * 10000.0) / 10000.0f));
-            control.Parent = parent;
+            if (control.Name != name) control.Name = name;
+            control.DurationMilliseconds = e.Time;
+            control.Capture = e;
+            control.LastUsedCapture = _captureNumber;
+            control.Enabled = control.Visible = true;
 
             // Spawn sub events
             int childrenDepth = e.Depth + 1;
@@ -284,24 +303,18 @@ namespace FlaxEditor.Windows.Profiler
             var container = _timeline.EventsContainer;
 
             container.IsLayoutLocked = true;
-            int idx = 0;
-            while (container.Children.Count > idx)
-            {
-                var child = container.Children[idx];
-                if (child is Timeline.Event e)
-                {
-                    _timelineEventsCache.Add(e);
-                    child.Parent = null;
-                }
-                else
-                {
-                    idx++;
-                }
-            }
+            _timelineEventCount = 0;
 
             container.LockChildrenRecursive();
 
-            _timeline.Height = UpdateTimelineInner();
+            float height = UpdateTimelineInner();
+            for (int i = _timelineEventCount; i < _timelineEvents.Count; i++)
+            {
+                var item = _timelineEvents[i];
+                RetainUnused(item, _keepUnused && _captureNumber - item.LastUsedCapture <= 2);
+                if (item.Visible) height = Mathf.Max(height, item.Bottom);
+            }
+            _timeline.Height = height;
 
             container.UnlockChildrenRecursive();
             container.PerformLayout();
@@ -341,9 +354,14 @@ namespace FlaxEditor.Windows.Profiler
         private void UpdateTable()
         {
             _table.IsLayoutLocked = true;
-            RecycleTableRows(_table, _tableRowsCache);
+            _tableRowCount = 0;
 
             UpdateTableInner();
+            for (int i = _tableRowCount; i < _tableRows.Count; i++)
+            {
+                var item = _tableRows[i];
+                RetainUnused(item, _keepUnused && _captureNumber - item.LastUsedCapture <= 2);
+            }
 
             _table.UnlockChildrenRecursive();
             _table.PerformLayout();
@@ -359,21 +377,29 @@ namespace FlaxEditor.Windows.Profiler
             float totalTimeMs = _drawTimeGPU.SelectedSample;
 
             // Add rows
+            _scopeStack.Clear();
+            _visibleStack.Clear();
             for (int i = 0; i < data.Length; i++)
             {
                 var e = data[i];
-                string name = new string(e.Name);
+                string name = e.Name ?? string.Empty;
+                while (_scopeStack.Count > e.Depth) { _scopeStack.RemoveAt(_scopeStack.Count - 1); _visibleStack.RemoveAt(_visibleStack.Count - 1); }
+                while (_scopeStack.Count < e.Depth) { _scopeStack.Add(0); _visibleStack.Add(true); }
+                ulong key = e.Depth > 0 ? _scopeStack[e.Depth - 1] : 14695981039346656037;
+                foreach (char character in name) key = unchecked((key ^ character) * 1099511628211);
+                bool visible = e.Depth == 0 || _visibleStack[e.Depth - 1];
+                bool expanded = _expandedScopes.TryGetValue(key, out bool saved) ? saved : e.Depth < 2;
+                _scopeStack.Add(key);
+                _visibleStack.Add(visible && expanded);
 
-                Row row;
-                if (_tableRowsCache.Count != 0)
+                GPURow row;
+                if (_tableRowCount < _tableRows.Count)
                 {
-                    var last = _tableRowsCache.Count - 1;
-                    row = _tableRowsCache[last];
-                    _tableRowsCache.RemoveAt(last);
+                    row = _tableRows[_tableRowCount];
                 }
                 else
                 {
-                    row = new ClickableRow
+                    row = new GPURow
                     {
                         Values = new object[6],
                         BackgroundColors = new Color[6],
@@ -381,41 +407,65 @@ namespace FlaxEditor.Windows.Profiler
                     };
                     for (int k = 0; k < row.BackgroundColors.Length; k++)
                         row.BackgroundColors[k] = Color.Transparent;
+                    row.Parent = _table;
+                    row.ExpansionChanged += OnRowExpansionChanged;
+                    _tableRows.Add(row);
                 }
+                _tableRowCount++;
+                row.LastUsedCapture = _captureNumber;
+                row.ScopeKey = key;
+                if (!row.Enabled) row.TooltipText = null;
+                row.Enabled = true;
                 {
                     // Event
                     row.Values[0] = name;
 
                     // Total (%)
-                    float rowTimePerc = (float)(e.Time / totalTimeMs);
-                    row.Values[1] = (int)(rowTimePerc * 1000.0f) / 10.0f;
+                    float rowTimePerc = totalTimeMs > 0 ? e.Time / totalTimeMs : 0;
+                    SetFloat(row, 1, (int)(rowTimePerc * 1000.0f) / 10.0f);
                     row.BackgroundColors[1] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowTimePerc) * 0.5f);
 
                     // GPU ms
-                    row.Values[2] = (e.Time * 10000.0f) / 10000.0f;
+                    SetFloat(row, 2, e.Time);
 
                     // Draw Calls
-                    row.Values[3] = e.Stats.DrawCalls + e.Stats.DispatchCalls;
+                    SetLong(row, 3, e.Stats.DrawCalls + e.Stats.DispatchCalls);
 
                     // Triangles
-                    row.Values[4] = e.Stats.Triangles;
+                    SetLong(row, 4, e.Stats.Triangles);
 
                     // Vertices
-                    row.Values[5] = e.Stats.Vertices;
+                    SetLong(row, 5, e.Stats.Vertices);
                 }
                 row.Depth = e.Depth;
                 row.Width = _table.Width;
-                row.Visible = e.Depth < 3;
-                row.Parent = _table;
-                row.Tag = e;
+                row.Visible = visible;
+                row.Capture = e;
             }
+        }
+
+        private static void SetFloat(Row row, int index, float value)
+        {
+            if (!(row.Values[index] is float previous) || previous != value)
+                row.Values[index] = value;
+        }
+
+        private static void SetLong(Row row, int index, long value)
+        {
+            if (!(row.Values[index] is long previous) || previous != value)
+                row.Values[index] = value;
+        }
+
+        private void OnRowExpansionChanged(Row row, bool expanded)
+        {
+            _expandedScopes[((GPURow)row).ScopeKey] = expanded;
         }
 
         private void OnEventDoubleClick(Timeline.Event control)
         {
             if (ProfilerGPU.OpenEventEditor != null)
             {
-                var e = (ProfilerGPU.Event)control.Tag;
+                var e = ((GPUEvent)control).Capture;
                 ProfilerGPU.OpenEventEditor(ref e);
             }
         }
@@ -424,7 +474,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             if (ProfilerGPU.OpenEventEditor != null)
             {
-                var e = (ProfilerGPU.Event)row.Tag;
+                var e = ((GPURow)row).Capture;
                 ProfilerGPU.OpenEventEditor(ref e);
             }
         }
