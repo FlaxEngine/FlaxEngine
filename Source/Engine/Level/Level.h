@@ -562,6 +562,11 @@ public:
     /// The layers names.
     /// </summary>
     static String Layers[32];
+    
+    /// <summary>
+    /// The light layers names.
+    /// </summary>
+    static String LightLayers[32];
 
     /// <summary>
     /// Gets the amount of non empty layer names (from the beginning, trims the last ones).

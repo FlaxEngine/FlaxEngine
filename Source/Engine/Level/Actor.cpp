@@ -118,6 +118,7 @@ Actor::Actor(const SpawnParams& params)
     , _isEnabled(false)
     , _isHierarchyDirty(false)
     , _layer(0)
+    , _receivedLightLayers(1u)
     , _staticFlags(StaticFlags::FullyStatic)
     , _localTransform(Transform::Identity)
     , _transform(Transform::Identity)
@@ -604,6 +605,21 @@ void Actor::SetLayerNameRecursive(const StringView& value)
         }
     }
     LOG(Warning, "Unknown layer name '{0}'", value);
+}
+
+void Actor::SetReceivedLightLayers(uint32 mask)
+{
+    if (_receivedLightLayers == mask)
+        return;
+    _receivedLightLayers = mask;
+    OnLightLayerChanged();
+}
+
+void Actor::SetReceivedLightLayersRecursive(uint32 mask)
+{
+    for (const auto& child : Children)
+        child->SetReceivedLightLayersRecursive(mask);
+    SetReceivedLightLayers(mask);
 }
 
 bool Actor::HasTag() const
@@ -1130,6 +1146,7 @@ void Actor::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(StaticFlags, _staticFlags);
     SERIALIZE(HideFlags);
     SERIALIZE_MEMBER(Layer, _layer);
+    SERIALIZE_MEMBER(ReceivedLightLayers, _receivedLightLayers);
     if (!other || Tags != other->Tags)
     {
         if (Tags.Count() == 1)
@@ -1200,6 +1217,7 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(StaticFlags, _staticFlags);
     DESERIALIZE(HideFlags);
     DESERIALIZE_MEMBER(Layer, _layer);
+    DESERIALIZE_MEMBER(ReceivedLightLayers, _receivedLightLayers);
     DESERIALIZE_MEMBER(Name, _name);
     DESERIALIZE_MEMBER(Transform, _localTransform);
 
@@ -1423,6 +1441,10 @@ void Actor::OnStaticFlagsChanged()
 }
 
 void Actor::OnLayerChanged()
+{
+}
+
+void Actor::OnLightLayerChanged()
 {
 }
 

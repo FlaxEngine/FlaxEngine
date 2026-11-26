@@ -33,6 +33,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(35), Limit(0, float.MaxValue, 10.0f), EditorDisplay(\"Light\"), ValueCategory(Utils.ValueCategory.Distance)")
     float ViewDistance = 0.0f;
+    
+    /// <summary>
+    /// The light layers that receive illumination from this light
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(36), EditorDisplay(\"Light\", \"Affected Light Layers\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.LightLayersMaskEditor\")")
+    uint32 LightLayerMask = MAX_uint32;
 
     /// <summary>
     /// Controls how much this light will contribute indirect lighting. When set to 0, there is no GI from the light. The default value is 1.

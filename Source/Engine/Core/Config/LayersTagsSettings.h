@@ -23,6 +23,11 @@ public:
     /// The layer names.
     /// </summary>
     String Layers[32];
+    
+    /// <summary>
+    /// The light layer names.
+    /// </summary>
+    String LightLayers[32];
 
 public:
     /// <summary>
