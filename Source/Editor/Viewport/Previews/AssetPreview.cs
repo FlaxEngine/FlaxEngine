@@ -159,6 +159,7 @@ namespace FlaxEditor.Viewport.Previews
         : base(Object.New<SceneRenderTask>(), camera, useWidgets)
         {
             Task.ViewFlags = ViewFlags.DefaultAssetPreview;
+            Task.RenderLocation = RenderLocations.AssetPreview; // Explicit because the view flags can be changed by the user in the viewport
             Task.AllowGlobalCustomPostFx = false;
 
             Real orbitRadius = 200.0f;
