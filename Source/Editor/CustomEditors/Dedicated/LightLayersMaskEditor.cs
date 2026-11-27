@@ -86,6 +86,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _picker = menu;
 
             var names = LayersAndTagsSettings.GetCurrentLightLayers();
+            var checkBoxes = new List<CheckBox>(names.Length);
             uint changedBits = 0;
             uint enabledBits = 0;
 
@@ -105,6 +106,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     Parent = node,
                 };
                 node.Addons.Add(checkBox);
+                checkBoxes.Add(checkBox);
 
                 bool enabled = ((uint)Values[0] & bit) != 0;
                 checkBox.Checked = enabled;
@@ -127,7 +129,29 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         enabledBits &= ~bit;
                 };
             }
+            void SetAllLayers(bool enabled)
+            {
+                foreach (var checkBox in checkBoxes)
+                    checkBox.Checked = enabled;
 
+                changedBits = uint.MaxValue;
+                enabledBits = enabled ? uint.MaxValue : 0u;
+            }
+
+            var selectAll = new Button(2, 2, 90, 22)
+            {
+                Text = "Select All",
+                Parent = menu,
+            };
+            selectAll.Clicked += () => SetAllLayers(true);
+
+            var deselectAll = new Button(94, 2, 100, 22)
+            {
+                Text = "Deselect All",
+                Parent = menu,
+            };
+            deselectAll.Clicked += () => SetAllLayers(false);
+            
             var apply = new Button(menu.Width - 66, 2, 64, 22)
             {
                 Text = "Apply",

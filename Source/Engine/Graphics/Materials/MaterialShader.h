@@ -19,7 +19,8 @@ class MemoryReadStream;
 
 // Draw pipeline constant buffer (with per-draw constants at slot 2)
 GPU_CB_STRUCT(MaterialShaderDataPerDraw {
-    Float3 DrawPadding;
+    uint32 DrawReceivedLightLayers;
+    Float2 DrawPadding;
     uint32 DrawObjectIndex;
     });
 

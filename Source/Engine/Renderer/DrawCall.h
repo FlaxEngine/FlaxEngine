@@ -148,6 +148,11 @@ struct DrawCall
     /// The amount of instances of the geometry to draw. Set to 0 if use indirect draw arguments buffer.
     /// </summary>
     int32 InstanceCount;
+    
+    /// <summary>
+    /// The layers bitmask this draw will receive light on
+    /// </summary>
+    uint32 ReceivedLightLayers;
 
     enum class SkinningMode
     {
@@ -304,6 +309,7 @@ struct DrawCall
     FORCE_INLINE DrawCall()
     {
         Platform::MemoryClear(this, sizeof(DrawCall));
+        ReceivedLightLayers = 1u;
     }
 
     // Packs object layer into the stencil bits.

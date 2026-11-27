@@ -17,6 +17,8 @@
 GPU_CB_STRUCT(PerLight {
     ShaderLightData Light;
     Matrix WVP;
+    uint32 LightLayerMask;
+    Float3 LightLayerPadding;
     });
 
 GPU_CB_STRUCT(PerFrame {
@@ -202,7 +204,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     }
 
     // Temporary data
-    PerLight perLight;
+    PerLight perLight{};
     PerFrame perFrame;
     auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
 
@@ -222,6 +224,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     context->BindSR(2, renderContext.Buffers->GBuffer2);
     context->BindSR(3, depthBuffer.SRV);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
+    context->BindSR(8, renderContext.Buffers->LightLayerMaskBuffer);
 
     // Fullscreen shadow mask buffer
     GPUTexture* shadowMask = nullptr;
@@ -259,6 +262,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
         // Pack light properties buffer
         light.SetShaderData(perLight.Light, light.HasShadow);
+        perLight.LightLayerMask = light.LightLayerMask;
         Matrix::Transpose(wvp, perLight.WVP);
         if (useIES)
         {
@@ -307,6 +311,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
         // Pack light properties buffer
         light.SetShaderData(perLight.Light, light.HasShadow);
+        perLight.LightLayerMask = light.LightLayerMask;
         Matrix::Transpose(wvp, perLight.WVP);
         if (useIES)
         {
@@ -348,6 +353,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
         // Pack light properties buffer
         light.SetShaderData(perLight.Light, light.HasShadow);
+        perLight.LightLayerMask = light.LightLayerMask;
 
         // Calculate lighting
         if (_depthBounds)
@@ -375,6 +381,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
 
         // Pack light properties buffer
         light.SetShaderData(perLight.Light, false);
+        perLight.LightLayerMask = light.LightLayerMask;
         Matrix::Transpose(wvp, perLight.WVP);
 
         // Bind source image
@@ -468,7 +475,7 @@ void LightPass::RenderDebug(RenderContext& renderContext, GPUContext* context, G
 
 void LightPass::RenderDebugSphere(RenderContext& renderContext, GPUContext* context, const RenderLightData& light, float radius) const
 {
-    PerLight perLight;
+    PerLight perLight{};
     Matrix world, wvp;
     bool isViewInside;
     RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, radius, world, isViewInside);

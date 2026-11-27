@@ -415,6 +415,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.SortOrder = _sortOrder;
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
     draw.SetStencilValue(_layer);
+    draw.ReceivedLightLayers = GetReceivedLightLayers();
 #if GPU_ENABLE_DEVELOPMENT
     if (HasStaticFlag(StaticFlags::Lightmap))
         draw.LightmapScale = _scaleInLightmap;

@@ -355,6 +355,7 @@ public:
         /// The instance deformation utility.
         /// </summary>
         MeshDeformation* Deformation;
+        
 
         union
         {
@@ -427,6 +428,11 @@ public:
         /// The object sorting key.
         /// </summary>
         int8 SortOrder;
+        
+        /// <summary>
+        /// The light layer culling bitmask
+        /// </summary>
+        uint32 ReceivedLightLayers;
 
 #if GPU_ENABLE_DEVELOPMENT
         float LightmapScale;
@@ -436,6 +442,7 @@ public:
         FORCE_INLINE DrawInfo()
         {
             Platform::MemoryClear(this, sizeof(DrawInfo));
+            ReceivedLightLayers = 1u;
             ForcedLOD = -1;
 #if GPU_ENABLE_DEVELOPMENT
             LightmapScale = -1;

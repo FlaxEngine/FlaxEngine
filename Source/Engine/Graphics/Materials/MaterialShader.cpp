@@ -110,7 +110,8 @@ void IMaterial::BindParameters::BindDrawData()
 
     // Setup data
     MaterialShaderDataPerDraw perDraw;
-    perDraw.DrawPadding = Float3::Zero;
+    perDraw.DrawReceivedLightLayers = DrawCall->ReceivedLightLayers;
+    perDraw.DrawPadding = Float2::Zero;
     perDraw.DrawObjectIndex = 0;
 
     // Update constants

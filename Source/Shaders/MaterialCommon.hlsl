@@ -192,7 +192,8 @@ cbuffer ViewData : register(b1)
 #if USE_PER_DRAW_CONSTANTS
 cbuffer DrawData : register(b2)
 {
-    float3 DrawPadding;
+    uint DrawReceivedLightLayers;
+    float2 DrawPadding;
     uint DrawObjectIndex;
 };
 #endif

@@ -51,6 +51,8 @@ struct RenderLightData
     uint8 IsPointLight : 1;
     uint8 IsSpotLight : 1;
     uint8 IsSkyLight : 1;
+    
+    uint32 LightLayerMask;
 
     float VolumetricScatteringIntensity;
     float ContactShadowsLength;
