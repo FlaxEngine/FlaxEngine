@@ -3200,6 +3200,13 @@ namespace Flax.Build.Bindings
                             else
                                 header.AppendFormat(wrapper, "value." + fieldInfo.Name);
                             header.Append(';').AppendLine();
+                            if (fieldInfo.Type.Type == "Variant")
+                            {
+                                // An aggregate owns its boxed references until the managed marshaller frees them.
+                                header.AppendLine("#if USE_NETCORE");
+                                header.AppendFormat("    if (result.{0}) result.{0} = MCore::GCHandle::GetTarget(MCore::GCHandle::New(result.{0}));", fieldInfo.Name).AppendLine();
+                                header.AppendLine("#endif");
+                            }
                         }
                         header.Append("    return result;").AppendLine();
                         header.Append('}').AppendLine();
