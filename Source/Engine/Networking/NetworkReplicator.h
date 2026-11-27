@@ -44,6 +44,16 @@ public:
 #endif
 
     /// <summary>
+    /// Event called when network object is spawned
+    /// </summary>
+    API_EVENT() static Delegate<ScriptingObject*, Guid> ObjectNetworkSpawn;
+
+    /// <summary>
+    /// Event called when network object is despawned
+    /// </summary>
+    API_EVENT() static Delegate<ScriptingObject*> ObjectNetworkDespawn;
+
+    /// <summary>
     /// Gets the network replication hierarchy.
     /// </summary>
     API_PROPERTY() static NetworkReplicationHierarchy* GetHierarchy();
