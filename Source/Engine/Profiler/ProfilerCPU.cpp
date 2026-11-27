@@ -6,18 +6,19 @@
 #include "ProfilerMemory.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Threading/ThreadRegistry.h"
+#include "Engine/Threading/Threading.h"
 
 THREADLOCAL ProfilerCPU::Thread* ProfilerCPU::Thread::Current = nullptr;
 Array<ProfilerCPU::Thread*, InlinedAllocation<64>> ProfilerCPU::Threads;
 bool ProfilerCPU::Enabled = false;
+CriticalSection ProfilerCPU::ThreadsLocker;
 
 ProfilerCPU::EventBuffer::EventBuffer()
 {
     _capacity = 8192;
-    _capacityMask = _capacity - 1;
     _data = NewArray<Event>(_capacity);
     _head = 0;
-    _count = 0;
+    _read = 0;
 }
 
 ProfilerCPU::EventBuffer::~EventBuffer()
@@ -25,120 +26,99 @@ ProfilerCPU::EventBuffer::~EventBuffer()
     DeleteArray(_data, _capacity);
 }
 
+int32 ProfilerCPU::EventBuffer::Add()
+{
+    // Keep indices stable while a scope is open. Only reuse storage after extraction drains it.
+    if (_head == Platform::AtomicRead(&_read) || _head == _capacity)
+    {
+        ScopeLock lock(_storageLock);
+        if (_head == _read)
+        {
+            Platform::AtomicStore(&_read, 0);
+            Platform::AtomicStore(&_head, 0);
+        }
+        if (_head == _capacity)
+        {
+            const int32 capacity = _capacity * 2;
+            auto* data = NewArray<Event>(capacity);
+            Platform::MemoryCopy(data, _data, _head * sizeof(Event));
+            auto* previous = _data;
+            const int32 previousCapacity = _capacity;
+            _data = data;
+            _capacity = capacity;
+            DeleteArray(previous, previousCapacity);
+        }
+    }
+    const int32 index = _head;
+    auto& event = _data[index];
+    event.Start = event.End = 0;
+    event.Depth = 0;
+    event.Name[0] = 0;
+    event.NativeMemoryAllocation = event.ManagedMemoryAllocation = 0;
+    Platform::AtomicStore(&_head, index + 1);
+    return index;
+}
+
+void ProfilerCPU::EventBuffer::EndEvent(int32 index, double time)
+{
+    union { double Time; int64 Bits; } value;
+    value.Time = time;
+    Platform::AtomicStore(reinterpret_cast<volatile int64*>(&_data[index].End), value.Bits);
+}
+
+double ProfilerCPU::EventBuffer::ReadEnd(const Event& event)
+{
+    union { double Time; int64 Bits; } value;
+    value.Bits = Platform::AtomicRead(reinterpret_cast<const volatile int64*>(&event.End));
+    return value.Time;
+}
+
 void ProfilerCPU::EventBuffer::Extract(Array<Event>& data, bool withRemoval)
 {
+    ScopeLock lock(_storageLock);
     data.Clear();
-
-    // Peek ring buffer state
-    int32 count = _count;
-    const int32 capacity = _capacity;
-
-    // Skip if empty
-    if (count == 0)
-        return;
-
-    // Fix iterators when buffer is full (begin == end)
-    if (count == capacity)
+    const int32 head = Platform::AtomicRead(&_head);
+    int32 first = Platform::AtomicRead(&_read);
+    while (first < head && _data[first].Depth != 0) first++;
+    if (first == head) return;
+    int32 lastRoot = head - 1;
+    while (lastRoot >= first)
     {
-        _count--;
-        count--;
+        // Completion is the publication point for the record and its finished children.
+        if (ReadEnd(_data[lastRoot]) > 0 && _data[lastRoot].Depth == 0) break;
+        lastRoot--;
     }
-
-    // Find the first item (skip non-root events)
-    Iterator firstEvent = Begin();
-    for (auto i = firstEvent; i.IsNotEnd(); ++i)
-    {
-        if (i.Event().Depth == 0)
-        {
-            firstEvent = i;
-            break;
-        }
-    }
-
-    // Skip if no root event found inside the buffer
-    if (firstEvent.IsEnd())
-        return;
-
-    // Find the last item (last event in ended root event)
-    Iterator lastEndedRoot = End();
-    for (auto i = Last(); i != firstEvent; --i)
-    {
-        if (i.Event().Depth == 0 && i.Event().End > 0)
-        {
-            lastEndedRoot = i;
-            break;
-        }
-    }
-
-    // Skip if no finished root event found inside the buffer
-    if (lastEndedRoot.IsEnd())
-        return;
-
-    // Find the last non-root event in last root event
-    Iterator lastEvent = lastEndedRoot;
-    const double lastRootEventEndTime = lastEndedRoot.Event().End;
-    for (auto i = --End(); i != lastEndedRoot; --i)
-    {
-        if (i.Event().End > 0 && i.Event().End <= lastRootEventEndTime)
-        {
-            lastEvent = i;
-            break;
-        }
-    }
-
-    if (withRemoval)
-    {
-        // Remove all the events between [Begin(), lastEvent]
-        _count -= (lastEvent.Index() - Begin().Index()) & _capacityMask;
-    }
-
-    // Extract all the events between [firstEvent, lastEvent]
-    const int32 head = (lastEvent.Index() + 1) & _capacityMask;
-    count = (lastEvent.Index() - firstEvent.Index() + 1) & _capacityMask;
-    data.Resize(count, false);
-    const int32 tail = (head - count) & _capacityMask;
-    const int32 spaceLeft = capacity - tail;
-    const int32 spaceLeftCount = Math::Min(spaceLeft, count);
-    const int32 overflow = count - spaceLeft;
-    Platform::MemoryCopy(data.Get(), &_data[tail], spaceLeftCount * sizeof(Event));
-    if (overflow > 0)
-        Platform::MemoryCopy(data.Get() + spaceLeftCount, &_data[0], overflow * sizeof(Event));
+    if (lastRoot < first) return;
+    // The root can finish after the first head snapshot. Include every child it published.
+    const int32 completedHead = Platform::AtomicRead(&_head);
+    int32 end = lastRoot + 1;
+    while (end < completedHead && _data[end].Depth != 0) end++;
+    data.Resize(end - first, false);
+    Platform::MemoryCopy(data.Get(), _data + first, (end - first) * sizeof(Event));
+    if (withRemoval) Platform::AtomicStore(&_read, end);
 }
 
 int32 ProfilerCPU::Thread::BeginEvent()
 {
-    const double time = Platform::GetTimeSeconds() * 1000.0;
     const auto index = Buffer.Add();
-    Event& e = Buffer.Get(index);
-    e.Start = time;
-    e.End = 0;
-    e.Depth = _depth++;
-    e.NativeMemoryAllocation = 0;
-    e.ManagedMemoryAllocation = 0;
+    auto& event = Buffer.Get(index);
+    event.Start = Platform::GetTimeSeconds() * 1000.0;
+    event.Depth = _activeEvents.Count();
+    _activeEvents.Add(index);
     return index;
 }
 
 void ProfilerCPU::Thread::EndEvent(int32 index)
 {
-    const double time = Platform::GetTimeSeconds() * 1000.0;
-    _depth--;
-    Event& e = Buffer.Get(index);
-    e.End = time;
+    if (_activeEvents.IsEmpty()) return;
+    ASSERT(_activeEvents.Last() == index);
+    _activeEvents.RemoveLast();
+    Buffer.EndEvent(index, Platform::GetTimeSeconds() * 1000.0);
 }
 
 void ProfilerCPU::Thread::EndEvent()
 {
-    const double time = Platform::GetTimeSeconds() * 1000.0;
-    _depth--;
-    for (auto i = Buffer.Last(); i != Buffer.Begin(); --i)
-    {
-        Event& e = i.Event();
-        if (e.End <= 0)
-        {
-            e.End = time;
-            break;
-        }
-    }
+    if (_activeEvents.HasItems()) EndEvent(_activeEvents.Last());
 }
 
 bool ProfilerCPU::IsProfilingCurrentThread()
@@ -166,9 +146,11 @@ int32 ProfilerCPU::BeginEvent()
         else if (id == Globals::MainThreadID)
             thread = New<Thread>(TEXT("Main"));
         else
-            thread = New<Thread>(TEXT("Thread"));
+            thread = New<Thread>(String::Format(TEXT("Thread {0}"), id));
 
         Thread::Current = thread;
+        ScopeLock lock(ThreadsLocker);
+        thread->ID = Threads.Count() + 1;
         Threads.Add(thread);
     }
     return thread->BeginEvent();
@@ -179,6 +161,7 @@ int32 ProfilerCPU::BeginEvent(const Char* name)
     if (!Enabled)
         return -1;
     const auto index = BeginEvent();
+    if (index < 0) return index;
     const auto thread = Thread::Current;
     auto& e = thread->Buffer.Get(index);
     auto dst = e.Name;
@@ -198,6 +181,7 @@ int32 ProfilerCPU::BeginEvent(const char* name)
     if (!Enabled)
         return -1;
     const auto index = BeginEvent();
+    if (index < 0) return index;
     const auto thread = Thread::Current;
     auto& e = thread->Buffer.Get(index);
     auto dst = e.Name;

@@ -186,6 +186,14 @@ namespace FlaxEditor.Windows.Profiler
         }
 
         /// <inheritdoc />
+        public override void UpdateInactive(ref SharedUpdateData sharedData)
+        {
+            _memoryUsageChart.AddSample(float.NaN);
+            if (_resources == null) _resources = new SamplesBuffer<Resource[]>();
+            _resources.Add(Array.Empty<Resource>());
+        }
+
+        /// <inheritdoc />
         public override void UpdateView(int selectedFrame, bool showOnlyLastUpdateEvents)
         {
             _memoryUsageChart.SelectedSampleIndex = selectedFrame;

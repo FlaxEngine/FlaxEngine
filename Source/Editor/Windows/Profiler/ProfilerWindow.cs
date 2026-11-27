@@ -1,6 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Diagnostics;
+using System.Xml;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
@@ -17,6 +20,10 @@ namespace FlaxEditor.Windows.Profiler
 #if USE_PROFILER
         private readonly ToolStripButton _liveRecordingButton;
         private readonly ToolStripButton _clearButton;
+        private readonly ToolStripButton _liveDetailsButton;
+        private readonly Label _detailsFrameLabel;
+        private readonly IntValueBox _refreshRateBox;
+        private readonly SamplesBuffer<(ulong CPU, ulong GPU)> _frameIds = new SamplesBuffer<(ulong, ulong)>();
         private readonly ToolStripButton _prevFrameButton;
         private readonly ToolStripButton _nextFrameButton;
         private readonly ToolStripButton _lastFrameButton;
@@ -24,7 +31,9 @@ namespace FlaxEditor.Windows.Profiler
         private readonly Tabs _tabs;
         private int _frameIndex = -1;
         private int _framesCount;
-        private bool _showOnlyLastUpdateEvents = true;
+        private bool _showOnlyLastUpdateEvents;
+        private ulong _lastRecordedFrame = ulong.MaxValue;
+        private long _nextDetailsRefresh;
         private long _lastManagedMemory = 0;
         private long _lastManagedMemoryProfiler = 0;
 
@@ -42,6 +51,13 @@ namespace FlaxEditor.Windows.Profiler
                     OnLiveRecordingChanged();
                 }
             }
+        }
+
+        /// <summary>Gets or sets the live details refresh rate in Hz. Frame recording is independent.</summary>
+        public int RefreshRateHz
+        {
+            get => _refreshRateBox.Value;
+            set { _refreshRateBox.Value = Mathf.Clamp(value, 1, 120); _nextDetailsRefresh = 0; }
         }
 
         /// <summary>
@@ -110,6 +126,15 @@ namespace FlaxEditor.Windows.Profiler
             toolstrip.AddSeparator();
             _showOnlyLastUpdateEventsButton = toolstrip.AddButton(editor.Icons.CenterView64, () => ShowOnlyLastUpdateEvents = !ShowOnlyLastUpdateEvents);
             _showOnlyLastUpdateEventsButton.LinkTooltip("Show only last update events and hide events from the other callbacks (e.g. draw or fixed update)");
+            _liveDetailsButton = toolstrip.AddButton("Live details", () => { _nextDetailsRefresh = 0; if (_liveDetailsButton.Checked) UpdateView(); });
+            _liveDetailsButton.AutoCheck = true;
+            _liveDetailsButton.Checked = true;
+            new Label { Text = "UI Hz", Width = 38, HorizontalAlignment = TextAlignment.Near, Parent = toolstrip };
+            _refreshRateBox = new IntValueBox(10, width: 56, min: 1, max: 120) { Parent = toolstrip };
+            _refreshRateBox.ValueChanged += () => _nextDetailsRefresh = 0;
+            _refreshRateBox.LinkTooltip("Live details updates per second (1–120). Recording still captures every completed frame.");
+            _detailsFrameLabel = new Label { Text = "No capture", Width = 180, HorizontalAlignment = TextAlignment.Near, Parent = toolstrip };
+            _liveDetailsButton.LinkTooltip("Refresh live details at the selected UI Hz rate. Turn off to read the current details while frame recording continues. Asset/resource inventories are captured only while their tab is active.");
 
             _tabs = new Tabs
             {
@@ -132,6 +157,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             _liveRecordingButton.Icon = LiveRecording ? Editor.Icons.Stop64 : Editor.Icons.Play64;
             ProfilingTools.Enabled = LiveRecording;
+            _lastRecordedFrame = ulong.MaxValue;
         }
 
         /// <summary>
@@ -163,13 +189,15 @@ namespace FlaxEditor.Windows.Profiler
             _frameIndex = -1;
             _framesCount = 0;
             _lastManagedMemory = 0;
+            _lastRecordedFrame = ulong.MaxValue;
+            _frameIds.Clear();
             for (int i = 0; i < _tabs.ChildrenCount; i++)
             {
                 if (_tabs.Children[i] is ProfilerMode mode)
                 {
                     mode.Clear();
                     FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
-                    mode.UpdateView(ViewFrameIndex, _showOnlyLastUpdateEvents);
+                    RenderDetails(mode);
                     FlaxEngine.Profiler.EndEvent();
                 }
             }
@@ -182,9 +210,16 @@ namespace FlaxEditor.Windows.Profiler
             if (tabs.SelectedTab is ProfilerMode mode)
             {
                 FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
-                mode.UpdateView(ViewFrameIndex, _showOnlyLastUpdateEvents);
+                RenderDetails(mode);
                 FlaxEngine.Profiler.EndEvent();
             }
+        }
+
+        private void RenderDetails(ProfilerMode mode)
+        {
+            mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+            var ids = _frameIds.Get(_frameIndex);
+            _detailsFrameLabel.Text = ids.CPU == 0 ? "No capture" : mode is GPU ? $"GPU {ids.GPU} / CPU {ids.CPU}" : $"Frame {ids.CPU}";
         }
 
         private void UpdateButtons()
@@ -201,7 +236,7 @@ namespace FlaxEditor.Windows.Profiler
             if (_tabs.SelectedTab is ProfilerMode mode)
             {
                 FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
-                mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+                RenderDetails(mode);
                 FlaxEngine.Profiler.EndEvent();
             }
         }
@@ -224,7 +259,7 @@ namespace FlaxEditor.Windows.Profiler
             for (int i = 0; i < _tabs.ChildrenCount; i++)
             {
                 if (_tabs.Children[i] is ProfilerMode mode)
-                    mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+                    RenderDetails(mode);
             }
 
             UpdateButtons();
@@ -241,7 +276,8 @@ namespace FlaxEditor.Windows.Profiler
                     mode.UpdateStats();
             }
 
-            if (LiveRecording)
+            ulong completedFrame = ProfilingTools.Stats.FrameIndex;
+            if (LiveRecording && completedFrame != 0 && completedFrame != _lastRecordedFrame)
             {
                 FlaxEngine.Profiler.BeginEvent("ProfilerWindow.OnUpdate");
 
@@ -254,21 +290,26 @@ namespace FlaxEditor.Windows.Profiler
 
                 ProfilerMode.SharedUpdateData sharedData = new ProfilerMode.SharedUpdateData();
                 sharedData.Begin();
+                _lastRecordedFrame = sharedData.Stats.FrameIndex;
+                _frameIds.Add((sharedData.Stats.FrameIndex, sharedData.Stats.GPUFrameIndex));
                 sharedData.ManagedMemoryAllocation = (int)managedAllocs;
                 for (int i = 0; i < _tabs.ChildrenCount; i++)
                 {
                     if (_tabs.Children[i] is ProfilerMode mode)
                     {
                         FlaxEngine.Profiler.BeginEvent(mode.GetType().FullName);
-                        mode.Update(ref sharedData);
+                        if (mode == _tabs.SelectedTab) mode.Update(ref sharedData);
+                        else mode.UpdateInactive(ref sharedData);
                         FlaxEngine.Profiler.EndEvent();
                     }
                 }
                 {
-                    if (_tabs.SelectedTab is ProfilerMode mode)
+                    long now = Stopwatch.GetTimestamp();
+                    if (_liveDetailsButton.Checked && now >= _nextDetailsRefresh && _tabs.SelectedTab is ProfilerMode mode)
                     {
+                        _nextDetailsRefresh = now + Stopwatch.Frequency / RefreshRateHz;
                         FlaxEngine.Profiler.BeginEvent("ProfilerWindow.UpdateView");
-                        mode.UpdateView(_frameIndex, _showOnlyLastUpdateEvents);
+                        RenderDetails(mode);
                         FlaxEngine.Profiler.EndEvent();
                     }
                 }
@@ -283,6 +324,27 @@ namespace FlaxEditor.Windows.Profiler
 
                 FlaxEngine.Profiler.EndEvent();
             }
+        }
+
+        /// <inheritdoc />
+        public override bool UseLayoutData => true;
+
+        /// <inheritdoc />
+        public override void OnLayoutSerialize(XmlWriter writer)
+        {
+            writer.WriteAttributeString("RefreshRateHz", RefreshRateHz.ToString());
+        }
+
+        /// <inheritdoc />
+        public override void OnLayoutDeserialize(XmlElement node)
+        {
+            if (int.TryParse(node.GetAttribute("RefreshRateHz"), out int rate)) RefreshRateHz = rate;
+        }
+
+        /// <inheritdoc />
+        public override void OnLayoutDeserialize()
+        {
+            RefreshRateHz = 10;
         }
 
         /// <inheritdoc />

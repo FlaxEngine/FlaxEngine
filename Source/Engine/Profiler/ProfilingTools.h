@@ -61,6 +61,15 @@ public:
         /// </summary>
         API_FIELD() int32 FPS;
 
+        /// <summary>The completed engine draw frame represented by the CPU snapshot.</summary>
+        API_FIELD() uint64 FrameIndex;
+
+        /// <summary>The resolved GPU frame represented by GPU timings. May lag behind FrameIndex.</summary>
+        API_FIELD() uint64 GPUFrameIndex;
+
+        /// <summary>Wall-clock interval between completed frames, including idle and present waits, in milliseconds.</summary>
+        API_FIELD() float FrameTimeMs;
+
         /// <summary>
         /// The update time on CPU (in milliseconds).
         /// </summary>
@@ -104,6 +113,9 @@ public:
         /// </summary>
         API_FIELD() String Name;
 
+        /// <summary>Stable identity of this profiler thread, even if names are shared.</summary>
+        API_FIELD() uint64 ID;
+
         /// <summary>
         /// The events list.
         /// </summary>
@@ -138,6 +150,9 @@ public:
     /// Controls the engine profiler (CPU, GPU, etc.) usage.
     /// </summary>
     API_PROPERTY() static void SetEnabled(bool enabled);
+
+    /// <summary>Captures the completed frame after all update, physics and draw callbacks.</summary>
+    static void EndFrame(double frameBegin);
 
     /// <summary>
     /// The current collected main stats by the profiler from the local session. Updated every frame.

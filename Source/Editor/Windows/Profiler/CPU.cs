@@ -25,6 +25,28 @@ namespace FlaxEngine
                 }
             }
 
+            internal unsafe ulong NameHash()
+            {
+                ulong hash = 14695981039346656037;
+                fixed (short* name = Name0)
+                    for (int i = 0; i < 100 && name[i] != 0; i++)
+                        hash = unchecked((hash ^ (ushort)name[i]) * 1099511628211);
+                return hash;
+            }
+
+            internal unsafe bool NameEquals(string value)
+            {
+                if (value.Length >= 100)
+                    return false;
+                fixed (short* name = Name0)
+                {
+                    for (int i = 0; i < value.Length; i++)
+                        if ((char)name[i] != value[i])
+                            return false;
+                    return name[value.Length] == 0;
+                }
+            }
+
             internal unsafe bool NameStartsWith(string prefix)
             {
                 fixed (short* name = Name0)
@@ -49,9 +71,35 @@ namespace FlaxEditor.Windows.Profiler
         private readonly Timeline _timeline;
         private readonly Table _table;
         private SamplesBuffer<ProfilingTools.ThreadStats[]> _events;
-        private List<Timeline.TrackLabel> _timelineLabelsCache;
-        private List<Timeline.Event> _timelineEventsCache;
-        private List<Row> _tableRowsCache;
+        private sealed class CPULabel : Timeline.TrackLabel { public ulong LastUsedCapture; }
+        private sealed class CPURow : Row { public ulong LastUsedCapture, ScopeKey; }
+        private List<CPULabel> _timelineLabels;
+        private sealed class CPUEvent : Timeline.Event
+        {
+            public ulong LastUsedCapture;
+        }
+
+        private List<CPUEvent> _timelineEvents;
+        private int _timelineEventCount, _timelineLabelCount, _tableRowCount;
+        private readonly Dictionary<ulong, (string Raw, string Display)> _eventNames = new Dictionary<ulong, (string, string)>();
+        private List<CPURow> _tableRows;
+        private ulong _captureNumber;
+        private bool _keepUnused;
+        private readonly Dictionary<(ulong ID, string Name), int> _threadDepths = new Dictionary<(ulong, string), int>();
+        private sealed class Aggregate
+        {
+            public string Name;
+            public ulong ScopeKey;
+            public int Parent, Depth, Calls;
+            public double Total, Self;
+            public long Memory;
+            public readonly List<int> Children = new List<int>();
+        }
+        private readonly Dictionary<(int Parent, string Name), int> _aggregateIndices = new Dictionary<(int, string), int>();
+        private readonly List<Aggregate> _aggregates = new List<Aggregate>();
+        private readonly List<int> _aggregateRoots = new List<int>(), _aggregateStack = new List<int>();
+        private int _aggregateCount;
+        private readonly Dictionary<ulong, bool> _expandedScopes = new Dictionary<ulong, bool>();
         private bool _showOnlyLastUpdateEvents;
 
         public CPU()
@@ -68,7 +116,8 @@ namespace FlaxEditor.Windows.Profiler
             // Chart
             _mainChart = new SingleChart
             {
-                Title = "Update",
+                Title = "Frame interval",
+                TooltipText = "Elapsed wall-clock time between completed frames, including idle and present waits.",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = Margin.Zero,
                 Height = SingleChart.DefaultHeight,
@@ -99,6 +148,9 @@ namespace FlaxEditor.Windows.Profiler
                 Height = 340,
                 Parent = layout,
             };
+
+            _timeline.ScaleChanged += () => UpdateView(_mainChart.SelectedSampleIndex, _showOnlyLastUpdateEvents);
+            _timeline.LabelWidth = 90;
 
             // Table
             var style = Style.Current;
@@ -153,12 +205,19 @@ namespace FlaxEditor.Windows.Profiler
                         FormatValue = FormatCellBytes,
                         TitleColor = textColor,
                     },
+                    new ColumnDefinition
+                    {
+                        Title = "Calls",
+                        TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
+                    },
                 },
                 Parent = layout,
             };
             _table.Splits = new[]
             {
-                0.5f,
+                0.4f,
+                0.1f,
                 0.1f,
                 0.1f,
                 0.1f,
@@ -187,12 +246,15 @@ namespace FlaxEditor.Windows.Profiler
         {
             _mainChart.Clear();
             _events?.Clear();
+            _threadDepths.Clear();
+            _expandedScopes.Clear();
         }
 
         /// <inheritdoc />
         public override void Update(ref SharedUpdateData sharedData)
         {
-            _mainChart.AddSample(sharedData.Stats.UpdateTimeMs);
+            _captureNumber++;
+            _mainChart.AddSample(sharedData.Stats.FrameTimeMs);
 
             // Gather CPU events
             var events = sharedData.GetEventsCPU();
@@ -205,18 +267,19 @@ namespace FlaxEditor.Windows.Profiler
         public override void UpdateView(int selectedFrame, bool showOnlyLastUpdateEvents)
         {
             _showOnlyLastUpdateEvents = showOnlyLastUpdateEvents;
+            _keepUnused = selectedFrame == -1 && !showOnlyLastUpdateEvents;
             _mainChart.SelectedSampleIndex = selectedFrame;
 
             if (_events == null)
                 return;
-            if (_timelineLabelsCache == null)
-                _timelineLabelsCache = new List<Timeline.TrackLabel>();
-            if (_timelineEventsCache == null)
-                _timelineEventsCache = new List<Timeline.Event>();
-            if (_tableRowsCache == null)
-                _tableRowsCache = new List<Row>();
+            if (_timelineLabels == null)
+                _timelineLabels = new List<CPULabel>();
+            if (_timelineEvents == null)
+                _timelineEvents = new List<CPUEvent>();
+            if (_tableRows == null)
+                _tableRows = new List<CPURow>();
 
-            var viewRange = _showOnlyLastUpdateEvents ? GetMainThreadUpdateRange() : ViewRange.Full;
+            var viewRange = GetViewRange(_showOnlyLastUpdateEvents);
             UpdateTimeline(ref viewRange);
             UpdateTable(ref viewRange);
         }
@@ -224,11 +287,33 @@ namespace FlaxEditor.Windows.Profiler
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            _timelineLabelsCache?.Clear();
-            _timelineEventsCache?.Clear();
-            _tableRowsCache?.Clear();
+            _timelineLabels?.Clear();
+            _timelineEvents?.Clear();
+            _tableRows?.Clear();
+            _eventNames.Clear();
 
             base.OnDestroy();
+        }
+
+        private string GetEventName(ref ProfilerCPU.Event e) => GetEventNameData(ref e).Display;
+
+        private (string Raw, string Display) GetEventNameData(ref ProfilerCPU.Event e)
+        {
+            ulong hash = e.NameHash();
+            if (_eventNames.TryGetValue(hash, out var cached) && e.NameEquals(cached.Raw))
+                return cached;
+            string raw = e.Name;
+            string display = raw.Replace("::", ".");
+            if (_eventNames.Count >= 8192)
+                _eventNames.Clear();
+            _eventNames[hash] = (raw, display);
+            return (raw, display);
+        }
+
+        private static void SetFloat(Row row, int index, float value)
+        {
+            if (!(row.Values[index] is float previous) || previous != value)
+                row.Values[index] = value;
         }
 
         private struct ViewRange
@@ -236,73 +321,88 @@ namespace FlaxEditor.Windows.Profiler
             public double Start;
             public double End;
 
-            public static ViewRange Full = new ViewRange
-            {
-                Start = float.MinValue,
-                End = float.MaxValue
-            };
-
             public ViewRange(ref ProfilerCPU.Event e)
             {
-                Start = e.Start - MinEventTimeMs;
-                End = e.End + MinEventTimeMs;
+                Start = e.Start;
+                End = e.End;
             }
 
             public bool SkipEvent(ref ProfilerCPU.Event e)
             {
-                return e.Start < Start || e.Start > End;
+                return e.End <= e.Start || e.End <= Start || e.Start >= End;
             }
         }
 
-        private ViewRange GetMainThreadUpdateRange()
+        private ViewRange GetViewRange(bool updateOnly)
         {
-            if (_events != null && _events.Count != 0)
+            var threads = _events?.Get(_mainChart.SelectedSampleIndex);
+            if (threads == null)
+                return new ViewRange();
+            var range = new ViewRange { Start = double.MaxValue, End = double.MinValue };
+            foreach (var thread in threads)
             {
-                var threads = _events.Get(_mainChart.SelectedSampleIndex);
-                if (threads != null)
+                if (thread.Name != "Main" || thread.Events == null)
+                    continue;
+                // The last Update is the one selected when several updates preceded this draw.
+                for (int i = thread.Events.Length - 1; i >= 0; i--)
                 {
-                    for (int j = 0; j < threads.Length; j++)
+                    ref var e = ref thread.Events[i];
+                    if (e.Depth != 0 || e.End <= e.Start)
+                        continue;
+                    if (updateOnly)
                     {
-                        var thread = threads[j];
-                        if (thread.Name != "Main" || thread.Events == null)
-                            continue;
-                        for (int i = 0; i < thread.Events.Length; i++)
-                        {
-                            ref var e = ref thread.Events[i];
-                            if (e.Depth == 0 && e.Name == "Update")
-                                return new ViewRange(ref e);
-                        }
+                        if (e.NameEquals("Update"))
+                            return new ViewRange(ref e);
+                    }
+                    else
+                    {
+                        range.Start = Math.Min(range.Start, e.Start);
+                        range.End = Math.Max(range.End, e.End);
                     }
                 }
             }
-            return ViewRange.Full;
+            if (!updateOnly && range.End > range.Start)
+                return range;
+            if (updateOnly)
+                return new ViewRange();
+            // Support captures made without a main-thread event (for example a worker-only capture).
+            foreach (var thread in threads)
+                if (thread.Events != null)
+                    foreach (var e in thread.Events)
+                        if (e.Depth == 0 && e.End > e.Start)
+                        {
+                            range.Start = Math.Min(range.Start, e.Start);
+                            range.End = Math.Max(range.End, e.End);
+                        }
+            return range.End > range.Start ? range : new ViewRange();
         }
 
-        private void AddEvent(double startTime, int maxDepth, float xOffset, int depthOffset, int index, ProfilerCPU.Event[] events, ContainerControl parent)
+        private void AddEvent(ViewRange range, int maxDepth, float xOffset, int depthOffset, int index, ProfilerCPU.Event[] events, ContainerControl parent)
         {
             ref ProfilerCPU.Event e = ref events[index];
 
-            double length = e.End - e.Start;
+            double start = Math.Max(e.Start, range.Start);
+            double length = Math.Min(e.End, range.End) - start;
             if (length <= 0.0)
                 return;
-            double scale = 100.0;
-            float x = (float)((e.Start - startTime) * scale);
+            double scale = _timeline.PixelsPerMillisecond;
+            float x = (float)((start - range.Start) * scale);
             float width = (float)(length * scale);
-            Timeline.Event control;
-            if (_timelineEventsCache.Count != 0)
-            {
-                var last = _timelineEventsCache.Count - 1;
-                control = _timelineEventsCache[last];
-                _timelineEventsCache.RemoveAt(last);
-            }
+            CPUEvent control;
+            if (_timelineEventCount < _timelineEvents.Count)
+                control = _timelineEvents[_timelineEventCount];
             else
             {
-                control = new Timeline.Event();
+                control = new CPUEvent { Parent = parent };
+                _timelineEvents.Add(control);
             }
+            _timelineEventCount++;
             control.Bounds = new Rectangle(x + xOffset, (e.Depth + depthOffset) * Timeline.Event.DefaultHeight, width, Timeline.Event.DefaultHeight - 1);
-            control.Name = e.Name.Replace("::", ".");
-            control.TooltipText = string.Format("{0}, {1} ms", control.Name, ((int)(length * 1000.0) / 1000.0f));
-            control.Parent = parent;
+            string name = GetEventName(ref e);
+            if (control.Name != name) control.Name = name;
+            control.DurationMilliseconds = length;
+            control.LastUsedCapture = _captureNumber;
+            control.Enabled = control.Visible = true;
 
             // Spawn sub events
             int childrenDepth = e.Depth + 1;
@@ -315,7 +415,7 @@ namespace FlaxEditor.Windows.Profiler
                         break;
                     if (subDepth == childrenDepth)
                     {
-                        AddEvent(startTime, maxDepth, xOffset, depthOffset, index, events, parent);
+                        AddEvent(range, maxDepth, xOffset, depthOffset, index, events, parent);
                     }
                 }
             }
@@ -326,27 +426,22 @@ namespace FlaxEditor.Windows.Profiler
             var container = _timeline.EventsContainer;
 
             container.IsLayoutLocked = true;
-            int idx = 0;
-            while (container.Children.Count > idx)
-            {
-                var child = container.Children[idx];
-                if (child is Timeline.Event e)
-                {
-                    _timelineEventsCache.Add(e);
-                    child.Parent = null;
-                }
-                else if (child is Timeline.TrackLabel l)
-                {
-                    _timelineLabelsCache.Add(l);
-                    child.Parent = null;
-                }
-                else
-                {
-                    idx++;
-                }
-            }
+            _timelineEventCount = _timelineLabelCount = 0;
 
-            _timeline.Height = UpdateTimelineInner(ref viewRange);
+            float height = UpdateTimelineInner(ref viewRange);
+            for (int i = _timelineEventCount; i < _timelineEvents.Count; i++)
+            {
+                var item = _timelineEvents[i];
+                RetainUnused(item, _keepUnused && _captureNumber - item.LastUsedCapture <= 2);
+                if (item.Visible) height = Mathf.Max(height, item.Bottom);
+            }
+            for (int i = _timelineLabelCount; i < _timelineLabels.Count; i++)
+            {
+                var item = _timelineLabels[i];
+                RetainUnused(item, _keepUnused && _captureNumber - item.LastUsedCapture <= 2);
+                if (item.Visible) height = Mathf.Max(height, item.Bottom);
+            }
+            _timeline.Height = height;
 
             container.UnlockChildrenRecursive();
             container.PerformLayout();
@@ -360,30 +455,8 @@ namespace FlaxEditor.Windows.Profiler
             if (data == null || data.Length == 0)
                 return 0;
 
-            // Find the first event start time (for the timeline start time)
-            double startTime = double.MaxValue;
-            if (viewRange.Start > 0)
-            {
-                startTime = viewRange.Start;
-            }
-            else
-            {
-                var r = GetMainThreadUpdateRange();
-                if (r.Start > 0)
-                {
-                    startTime = r.Start;
-                }
-                else
-                {
-                    for (int i = 0; i < data.Length; i++)
-                    {
-                        if (data[i].Events != null && data[i].Events.Length != 0)
-                            startTime = Math.Min(startTime, data[i].Events[0].Start);
-                    }
-                    if (startTime >= double.MaxValue)
-                        return 0;
-                }
-            }
+            if (viewRange.End <= viewRange.Start)
+                return 0;
 
             var container = _timeline.EventsContainer;
 
@@ -391,9 +464,7 @@ namespace FlaxEditor.Windows.Profiler
             int depthOffset = 0;
             for (int i = 0; i < data.Length; i++)
             {
-                var events = data[i].Events;
-                if (events == null)
-                    continue;
+                var events = data[i].Events ?? Array.Empty<ProfilerCPU.Event>();
 
                 // Check maximum depth
                 int maxDepth = -1;
@@ -405,27 +476,35 @@ namespace FlaxEditor.Windows.Profiler
                     maxDepth = Mathf.Max(maxDepth, e.Depth);
                 }
 
-                // Skip empty tracks
-                if (maxDepth == -1)
+                bool hasSamples = maxDepth >= 0;
+                if (_keepUnused)
+                {
+                    // Reserve live thread lanes so missing worker samples do not move every following track.
+                    if (_threadDepths.TryGetValue((data[i].ID, data[i].Name), out int previousDepth))
+                        maxDepth = Math.Max(maxDepth, previousDepth);
+                    maxDepth = Math.Max(maxDepth, 0);
+                    _threadDepths[(data[i].ID, data[i].Name)] = maxDepth;
+                }
+                else if (!hasSamples)
                     continue;
 
                 // Add thread label
                 float xOffset = 90;
-                Timeline.TrackLabel trackLabel;
-                if (_timelineLabelsCache.Count != 0)
-                {
-                    var last = _timelineLabelsCache.Count - 1;
-                    trackLabel = _timelineLabelsCache[last];
-                    _timelineLabelsCache.RemoveAt(last);
-                }
+                CPULabel trackLabel;
+                if (_timelineLabelCount < _timelineLabels.Count)
+                    trackLabel = _timelineLabels[_timelineLabelCount];
                 else
                 {
-                    trackLabel = new Timeline.TrackLabel();
+                    trackLabel = new CPULabel { Parent = container, BackgroundColor = Style.Current.Background * 1.1f };
+                    _timelineLabels.Add(trackLabel);
                 }
+                _timelineLabelCount++;
                 trackLabel.Bounds = new Rectangle(0, depthOffset * Timeline.Event.DefaultHeight, xOffset, (maxDepth + 2) * Timeline.Event.DefaultHeight);
                 trackLabel.Name = data[i].Name;
-                trackLabel.BackgroundColor = Style.Current.Background * 1.1f;
-                trackLabel.Parent = container;
+                trackLabel.LastUsedCapture = _captureNumber;
+                if (!trackLabel.Enabled) trackLabel.TooltipText = null;
+                trackLabel.Enabled = hasSamples;
+                trackLabel.Visible = true;
 
                 // Add events
                 for (int j = 0; j < events.Length; j++)
@@ -435,7 +514,7 @@ namespace FlaxEditor.Windows.Profiler
                     {
                         if (viewRange.SkipEvent(ref e))
                             continue;
-                        AddEvent(startTime, maxDepth, xOffset, depthOffset, j, events, container);
+                        AddEvent(viewRange, maxDepth, xOffset, depthOffset, j, events, container);
                     }
                 }
 
@@ -449,8 +528,13 @@ namespace FlaxEditor.Windows.Profiler
         {
             _table.IsLayoutLocked = true;
 
-            RecycleTableRows(_table, _tableRowsCache);
+            _tableRowCount = 0;
             UpdateTableInner(ref viewRange);
+            for (int i = _tableRowCount; i < _tableRows.Count; i++)
+            {
+                var item = _tableRows[i];
+                RetainUnused(item, _keepUnused && _captureNumber - item.LastUsedCapture <= 2);
+            }
 
             _table.UnlockChildrenRecursive();
             _table.PerformLayout();
@@ -463,87 +547,101 @@ namespace FlaxEditor.Windows.Profiler
             var data = _events.Get(_mainChart.SelectedSampleIndex);
             if (data == null || data.Length == 0)
                 return;
-            float totalTimeMs = _mainChart.SelectedSample;
-
-            // Add rows
-            for (int j = 0; j < data.Length; j++)
+            _aggregateIndices.Clear();
+            _aggregateRoots.Clear();
+            _aggregateCount = 0;
+            for (int thread = 0; thread < data.Length; thread++)
             {
-                var events = data[j].Events;
-                if (events == null)
-                    continue;
-
+                var events = data[thread].Events;
+                if (events == null) continue;
+                _aggregateStack.Clear();
+                ulong threadKey = 14695981039346656037 ^ data[thread].ID;
+                foreach (char character in data[thread].Name) threadKey = unchecked((threadKey ^ character) * 1099511628211);
                 for (int i = 0; i < events.Length; i++)
                 {
-                    var e = events[i];
-                    var time = Math.Max(e.End - e.Start, MinEventTimeMs);
-                    if (e.End <= 0.0f || viewRange.SkipEvent(ref e))
+                    ref var e = ref events[i];
+                    int depth = Math.Max(e.Depth, 0);
+                    while (_aggregateStack.Count > depth) _aggregateStack.RemoveAt(_aggregateStack.Count - 1);
+                    while (_aggregateStack.Count < depth) _aggregateStack.Add(-1);
+                    if (viewRange.SkipEvent(ref e))
+                    {
+                        _aggregateStack.Add(-1);
                         continue;
-
-                    // Count sub-events time
-                    double subEventsTimeTotal = 0;
-                    int subEventsMemoryTotal = e.ManagedMemoryAllocation + e.NativeMemoryAllocation;
-                    for (int k = i + 1; k < events.Length; k++)
-                    {
-                        var sub = events[k];
-                        if (sub.Depth == e.Depth + 1 && e.End > 0.0f)
-                        {
-                            subEventsTimeTotal += Math.Max(sub.End - sub.Start, MinEventTimeMs);
-                        }
-                        else if (sub.Depth <= e.Depth)
-                        {
-                            break;
-                        }
-                        subEventsMemoryTotal += sub.ManagedMemoryAllocation + sub.NativeMemoryAllocation;
                     }
-
-                    string name = e.Name.Replace("::", ".");
-
-                    Row row;
-                    if (_tableRowsCache.Count != 0)
+                    int parent = depth > 0 ? _aggregateStack[depth - 1] : -1;
+                    var names = GetEventNameData(ref e);
+                    var key = (parent >= 0 ? parent : -thread - 1, names.Raw);
+                    if (!_aggregateIndices.TryGetValue(key, out int index))
                     {
-                        var last = _tableRowsCache.Count - 1;
-                        row = _tableRowsCache[last];
-                        _tableRowsCache.RemoveAt(last);
+                        index = _aggregateCount++;
+                        if (index == _aggregates.Count) _aggregates.Add(new Aggregate());
+                        var fresh = _aggregates[index];
+                        fresh.Name = names.Display;
+                        fresh.ScopeKey = unchecked(((parent >= 0 ? _aggregates[parent].ScopeKey : threadKey) * 1099511628211) ^ e.NameHash());
+                        fresh.Parent = parent;
+                        fresh.Depth = depth;
+                        fresh.Calls = 0;
+                        fresh.Total = fresh.Self = 0;
+                        fresh.Memory = 0;
+                        fresh.Children.Clear();
+                        _aggregateIndices.Add(key, index);
+                        if (parent >= 0) _aggregates[parent].Children.Add(index);
+                        else _aggregateRoots.Add(index);
                     }
-                    else
-                    {
-                        row = new Row
-                        {
-                            Values = new object[6],
-                            BackgroundColors = new Color[6],
-                        };
-                        for (int k = 0; k < row.BackgroundColors.Length; k++)
-                            row.BackgroundColors[k] = Color.Transparent;
-                    }
-                    {
-                        // Event
-                        row.Values[0] = name;
-
-                        // Total (%)
-                        float rowTotalTimePerc = (float)(time / totalTimeMs);
-                        row.Values[1] = (int)(rowTotalTimePerc * 1000.0f) / 10.0f;
-                        row.BackgroundColors[1] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowTotalTimePerc) * 0.5f);
-
-                        // Self (%)
-                        float rowSelfTimePerc = (float)((time - subEventsTimeTotal) / totalTimeMs);
-                        row.Values[2] = (int)(rowSelfTimePerc * 1000.0f) / 10.0f;
-                        row.BackgroundColors[2] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowSelfTimePerc) * 0.5f);
-
-                        // Time ms
-                        row.Values[3] = (float)((time * 10000.0f) / 10000.0f);
-
-                        // Self ms
-                        row.Values[4] = (float)(((time - subEventsTimeTotal) * 10000.0f) / 10000.0f);
-
-                        // Memory Alloc
-                        row.Values[5] = subEventsMemoryTotal;
-                    }
-                    row.Depth = e.Depth;
-                    row.Width = _table.Width;
-                    row.Visible = e.Depth < 2;
-                    row.Parent = _table;
+                    double duration = Math.Min(e.End, viewRange.End) - Math.Max(e.Start, viewRange.Start);
+                    var node = _aggregates[index];
+                    node.Calls++;
+                    node.Total += duration;
+                    node.Self += duration;
+                    node.Memory += (long)e.NativeMemoryAllocation + e.ManagedMemoryAllocation;
+                    if (parent >= 0) _aggregates[parent].Self -= duration;
+                    _aggregateStack.Add(index);
                 }
             }
+            // Parents are allocated before their children, including repeated call stacks.
+            for (int i = _aggregateCount - 1; i >= 0; i--)
+                if (_aggregates[i].Parent >= 0)
+                    _aggregates[_aggregates[i].Parent].Memory += _aggregates[i].Memory;
+            double span = Math.Max(viewRange.End - viewRange.Start, MinEventTimeMs);
+            foreach (int root in _aggregateRoots) AddAggregateRow(root, span, true);
+        }
+
+        private void OnRowExpansionChanged(Row row, bool expanded)
+        {
+            _expandedScopes[((CPURow)row).ScopeKey] = expanded;
+        }
+
+        private void AddAggregateRow(int index, double span, bool visible)
+        {
+            var node = _aggregates[index];
+            CPURow row;
+            if (_tableRowCount < _tableRows.Count) row = _tableRows[_tableRowCount];
+            else
+            {
+                row = new CPURow { Values = new object[7], BackgroundColors = new Color[7], Parent = _table };
+                row.ExpansionChanged += OnRowExpansionChanged;
+                _tableRows.Add(row);
+            }
+            _tableRowCount++;
+            row.LastUsedCapture = _captureNumber;
+            if (!row.Enabled) row.TooltipText = null;
+            row.Enabled = true;
+            row.ScopeKey = node.ScopeKey;
+            row.Values[0] = node.Name;
+            float total = (float)(node.Total / span), self = (float)(Math.Max(node.Self, 0) / span);
+            SetFloat(row, 1, (int)(total * 1000) / 10.0f);
+            SetFloat(row, 2, (int)(self * 1000) / 10.0f);
+            SetFloat(row, 3, (float)node.Total);
+            SetFloat(row, 4, (float)Math.Max(node.Self, 0));
+            if (!(row.Values[5] is long memory) || memory != node.Memory) row.Values[5] = node.Memory;
+            if (!(row.Values[6] is int calls) || calls != node.Calls) row.Values[6] = node.Calls;
+            row.BackgroundColors[1] = Color.Red.AlphaMultiplied(Mathf.Min(1, total) * 0.5f);
+            row.BackgroundColors[2] = Color.Red.AlphaMultiplied(Mathf.Min(1, self) * 0.5f);
+            row.Depth = node.Depth;
+            row.Width = _table.Width;
+            row.Visible = visible;
+            bool expanded = _expandedScopes.TryGetValue(node.ScopeKey, out bool saved) ? saved : node.Depth == 0;
+            foreach (int child in node.Children) AddAggregateRow(child, span, visible && expanded);
         }
     }
 }

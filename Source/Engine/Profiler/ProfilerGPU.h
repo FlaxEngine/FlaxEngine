@@ -4,6 +4,7 @@
 
 #include "Engine/Core/NonCopyable.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Types/String.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "RenderStats.h"
 
@@ -22,16 +23,16 @@ API_CLASS(Static) class FLAXENGINE_API ProfilerGPU
     friend class GPUDevice;
 public:
     /// <summary>
-    /// Represents single CPU profiling event data.
+    /// Represents single GPU profiling event data.
     /// </summary>
     API_STRUCT(NoDefault) struct Event
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(Event);
 
         /// <summary>
-        /// The name of the event.
+        /// The owned event name, retained while GPU queries and captured frames are consumed.
         /// </summary>
-        API_FIELD() const Char* Name;
+        API_FIELD() String Name;
 
         /// <summary>
         /// The timer query used to get the exact event time on a GPU. Assigned and managed by the internal profiler layer.
@@ -179,6 +180,9 @@ public:
     /// <returns>True if got the data, otherwise false.</returns>
     API_FUNCTION() static bool GetLastFrameData(float& drawTimeMs, float& presentTimeMs, RenderStatsData& statsData);
 
+    /// <summary>Gets CPU present wait for the latest draw without waiting for GPU query results.</summary>
+    static float GetLastPresentTime() { return LastPresentTime; }
+
     /// <summary>
     /// Profiles next frame(s) rendering performance and dumps the results to the log (as a hierarchy structure). When using more than 1 frame, the results are averaged for more accurate profiling (especially for A/B testing).
     /// </summary>
@@ -189,6 +193,9 @@ private:
     static void BeginFrame();
     static void OnPresent();
     static void OnPresentTime(float time);
+
+    /// <summary>CPU present wait from the latest completed draw, independent of delayed GPU query resolution.</summary>
+    static float LastPresentTime;
     static void EndFrame();
     static void Dispose();
 };
@@ -209,12 +216,6 @@ struct ScopeProfileBlockGPU
     {
         ProfilerGPU::EndEvent(Index);
     }
-};
-
-template<>
-struct TIsPODType<ProfilerGPU::Event>
-{
-    enum { Value = true };
 };
 
 // Shortcut macro for profiling rendering on GPU

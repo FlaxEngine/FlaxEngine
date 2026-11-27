@@ -39,6 +39,9 @@ namespace FlaxEditor.GUI
         /// </summary>
         public int Depth { get; set; }
 
+        /// <summary>Called after the user expands or collapses this row.</summary>
+        public event Action<Row, bool> ExpansionChanged;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Row"/> class.
         /// </summary>
@@ -115,8 +118,8 @@ namespace FlaxEditor.GUI
 
                     Render2D.PushClip(rect);
                     if (backgroundColors != null && backgroundColors[i].A > 0)
-                        Render2D.FillRectangle(rect, backgroundColors[i]);
-                    Render2D.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
+                        Render2D.FillRectangle(rect, EnabledInHierarchy ? backgroundColors[i] : backgroundColors[i] * 0.35f);
+                    Render2D.DrawText(style.FontMedium, text, rect, EnabledInHierarchy ? style.Foreground : style.ForegroundGrey, column.CellAlignment, TextAlignment.Center);
                     Render2D.PopClip();
 
                     x += width;
@@ -158,7 +161,9 @@ namespace FlaxEditor.GUI
                                 if (arrowRect.Contains(location))
                                 {
                                     // Collapse/expand
-                                    SetSubRowsVisible(!GetSubRowsVisible());
+                                    bool expanded = !GetSubRowsVisible();
+                                    SetSubRowsVisible(expanded);
+                                    ExpansionChanged?.Invoke(this, expanded);
                                     return true;
                                 }
                             }
