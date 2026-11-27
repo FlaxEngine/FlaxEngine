@@ -140,6 +140,31 @@ namespace Flax.Build.Platforms
                 args.Add(string.Format("/D \"PRODUCT_NAME=\\\"{0}\\\"\"", options.Target.ProjectName + " " + options.Target.ConfigurationName));
                 args.Add(string.Format("/D \"PRODUCT_NAME_INTERNAL=\\\"{0}\\\"\"", options.Target.Name));
 
+                if (options.Target is ProjectTarget projectTarget && projectTarget.Project != null)
+                {
+                    var proj = projectTarget.Project;
+                    if (!string.IsNullOrEmpty(proj.Name))
+                    {
+                        args.Add(string.Format("/D \"PRODUCT_NAME_STRING=\\\"{0}\\\"\"", proj.Name));
+                        args.Add(string.Format("/D \"FILE_DESCRIPTION=\\\"{0}\\\"\"", proj.Name));
+                    }
+                    if (!string.IsNullOrEmpty(proj.Company))
+                        args.Add(string.Format("/D \"COMPANY_NAME=\\\"{0}\\\"\"", proj.Company));
+                    if (!string.IsNullOrEmpty(proj.Copyright))
+                        args.Add(string.Format("/D \"LEGAL_COPYRIGHT=\\\"{0}\\\"\"", proj.Copyright));
+                    if (proj.Version != null)
+                    {
+                        args.Add(string.Format("/D \"PRODUCT_VERSION_TEXT=\\\"{0}\\\"\"", proj.Version));
+                        args.Add(string.Format("/D \"FILE_VERSION_TEXT=\\\"{0}\\\"\"", proj.Version));
+                        args.Add(string.Format("/D \"PRODUCT_VERSION_MAJOR={0}\"", proj.Version.Major));
+                        args.Add(string.Format("/D \"PRODUCT_VERSION_MINOR={0}\"", proj.Version.Minor));
+                        args.Add(string.Format("/D \"PRODUCT_VERSION_BUILD={0}\"", Math.Max(proj.Version.Build, 0)));
+                        args.Add(string.Format("/D \"FILE_VERSION_MAJOR={0}\"", proj.Version.Major));
+                        args.Add(string.Format("/D \"FILE_VERSION_MINOR={0}\"", proj.Version.Minor));
+                        args.Add(string.Format("/D \"FILE_VERSION_BUILD={0}\"", Math.Max(proj.Version.Build, 0)));
+                    }
+                }
+
                 // Add include paths
                 foreach (var includePath in options.CompileEnv.IncludePaths)
                     AddIncludePath(args, includePath);
