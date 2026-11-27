@@ -17,6 +17,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
         private ClickableLabel _label;
         private ContextMenuBase _picker;
+        private uint[] _pendingMasks;
 
         public override DisplayStyle Style => DisplayStyle.Inline;
 
@@ -43,6 +44,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             base.Refresh();
             _label.Text = GetSummary();
+            _pendingMasks = null;
         }
 
         /// <inheritdoc />
@@ -51,6 +53,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _picker?.Dispose();
             _picker = null;
             _label = null;
+            _pendingMasks = null;
             base.Deinitialize();
         }
         
@@ -78,6 +81,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
                    : $"{selected.Count} layers";
         }
         
+        private void SetLayerBits(uint bits, bool enabled)
+        {
+            var updated = new uint[Values.Count];
+            for (int i = 0; i < updated.Length; i++)
+            {
+                uint current = _pendingMasks != null ? _pendingMasks[i] : (uint)Values[i];
+                updated[i] = enabled ? current | bits : current & ~bits;
+            }
+
+            _pendingMasks = updated;
+            if (updated.Length == 1)
+                SetValue(updated[0]);
+            else
+                SetValue(updated);
+        }
+        
         private void ShowPicker()
         {
             _picker?.Dispose();
@@ -87,8 +106,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var names = LayersAndTagsSettings.GetCurrentLightLayers();
             var checkBoxes = new List<CheckBox>(names.Length);
-            uint changedBits = 0;
-            uint enabledBits = 0;
+            bool updatingCheckBoxes = false;
 
             for (int slot = 0; slot < names.Length; slot++)
             {
@@ -122,20 +140,25 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 checkBox.StateChanged += box =>
                 {
-                    changedBits |= bit;
-                    if (box.Checked)
-                        enabledBits |= bit;
-                    else
-                        enabledBits &= ~bit;
+                    if (!updatingCheckBoxes)
+                        SetLayerBits(bit, box.Checked);
                 };
             }
+            
             void SetAllLayers(bool enabled)
             {
-                foreach (var checkBox in checkBoxes)
-                    checkBox.Checked = enabled;
+                updatingCheckBoxes = true;
+                try
+                {
+                    foreach (var checkBox in checkBoxes)
+                        checkBox.Checked = enabled;
+                }
+                finally
+                {
+                    updatingCheckBoxes = false;
+                }
 
-                changedBits = uint.MaxValue;
-                enabledBits = enabled ? uint.MaxValue : 0u;
+                SetLayerBits(uint.MaxValue, enabled);
             }
 
             var selectAll = new Button(2, 2, 90, 22)
@@ -151,36 +174,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Parent = menu,
             };
             deselectAll.Clicked += () => SetAllLayers(false);
-            
-            var apply = new Button(menu.Width - 66, 2, 64, 22)
-            {
-                Text = "Apply",
-                Parent = menu,
-            };
-            apply.Clicked += () =>
-            {
-                if (changedBits != 0)
-                {
-                    if (Values.Count == 1)
-                    {
-                        uint current = (uint)Values[0];
-                        SetValue((current & ~changedBits) | enabledBits);
-                    }
-                    else
-                    {
-                        var updated = new uint[Values.Count];
-                        for (int i = 0; i < updated.Length; i++)
-                        {
-                            uint current = (uint)Values[i];
-                            updated[i] = (current & ~changedBits) | enabledBits;
-                        }
-
-                        SetValue(updated);
-                    }
-                }
-
-                menu.Hide();
-            };
 
             menu.Show(_label, new Float2(0, _label.Height));
         }        
