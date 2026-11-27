@@ -64,6 +64,7 @@ void Light::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(IndirectLightingIntensity);
     SERIALIZE(VolumetricScatteringIntensity);
     SERIALIZE(CastVolumetricShadow);
+    SERIALIZE(LightLayerMask);
 }
 
 void Light::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -77,6 +78,7 @@ void Light::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE(IndirectLightingIntensity);
     DESERIALIZE(VolumetricScatteringIntensity);
     DESERIALIZE(CastVolumetricShadow);
+    DESERIALIZE(LightLayerMask);
 }
 
 LightWithShadow::LightWithShadow(const SpawnParams& params)

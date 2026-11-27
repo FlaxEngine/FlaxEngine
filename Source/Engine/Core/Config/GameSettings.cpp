@@ -322,6 +322,12 @@ void LayersAndTagsSettings::Serialize(SerializeStream& stream, const void* other
     for (const String& e : Layers)
         stream.String(e);
     stream.EndArray();
+    
+    stream.JKEY("LightLayers");
+    stream.StartArray();
+    for (const String& e : LightLayers)
+        stream.String(e);
+    stream.EndArray();
 }
 
 #endif
@@ -357,6 +363,24 @@ void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeMod
         for (uint32 i = layersArray.Size(); i < ARRAY_COUNT(Layers); i++)
         {
             Layers[i].Clear();
+        }
+    }
+    
+    const auto lightLayers = stream.FindMember("LightLayers");
+    if (lightLayers != stream.MemberEnd() && lightLayers->value.IsArray())
+    {
+        auto& lightLayersArray = lightLayers->value;
+        for (uint32 i = 0; i < lightLayersArray.Size() && i < ARRAY_COUNT(LightLayers); i++)
+        {
+            auto& v = lightLayersArray[i];
+            if (v.IsString())
+                LightLayers[i] = v.GetText();
+            else
+                LightLayers[i].Clear();
+        }
+        for (uint32 i = lightLayersArray.Size(); i < ARRAY_COUNT(LightLayers); i++)
+        {
+            LightLayers[i].Clear();
         }
     }
 }

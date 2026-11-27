@@ -344,6 +344,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
+    drawCall.ReceivedLightLayers = info.ReceivedLightLayers;
 #if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
@@ -407,6 +408,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.LODDitherFactor = (int8)(lodDitherFactor * 127);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
     drawCall.StencilValue = info.StencilValue;
+    drawCall.ReceivedLightLayers = info.ReceivedLightLayers;
 #if GPU_ENABLE_DEVELOPMENT
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)

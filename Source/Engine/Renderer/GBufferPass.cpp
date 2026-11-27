@@ -157,16 +157,18 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
     // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-    GPUTextureView* targetBuffers[5] =
+    GPUTextureView* targetBuffers[6] =
     {
         lightBuffer->View(),
         renderContext.Buffers->GBuffer0->View(),
         renderContext.Buffers->GBuffer1->View(),
         renderContext.Buffers->GBuffer2->View(),
         renderContext.Buffers->GBuffer3->View(),
+        renderContext.Buffers->LightLayerMaskBuffer->View(),
     };
-    GPUDrawPassAction targetActions[5] =
+    GPUDrawPassAction targetActions[6] =
     {
+        GPUDrawPassAction::ClearStore,
         GPUDrawPassAction::ClearStore,
         GPUDrawPassAction::ClearStore,
         GPUDrawPassAction::ClearStore,
@@ -184,6 +186,7 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
         context->Clear(renderContext.Buffers->GBuffer1->View(), Color::Transparent);
         context->Clear(renderContext.Buffers->GBuffer2->View(), Color(1, 0, 0, 0));
         context->Clear(renderContext.Buffers->GBuffer3->View(), Color::Transparent);
+        context->Clear(renderContext.Buffers->LightLayerMaskBuffer->View(), Color::Transparent);
     }
 
     // Skip when resources are not loaded yet

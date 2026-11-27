@@ -106,6 +106,8 @@ public:
 
         GPUTexture* GBuffer[4];
     };
+    
+    GPUTexture* LightLayerMaskBuffer;
 
     // Helper target for the eye adaptation
     float LastEyeAdaptationTime = 0.0f;

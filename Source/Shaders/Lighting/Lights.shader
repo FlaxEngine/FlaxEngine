@@ -14,6 +14,8 @@
 META_CB_BEGIN(0, PerLight)
 LightData Light;
 float4x4 WVP;
+uint LightLayerMask;
+float3 LightLayerPadding;
 META_CB_END
 
 // Per frame data
@@ -27,6 +29,14 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 Texture2D Shadow : register(t5);
 Texture2D IESTexture : register(t6);
 TextureCube CubeImage : register(t7);
+
+Texture2D<uint> ReceiverLightLayers : register(t8);
+
+bool MatchesLightLayers(float2 pixelPosition)
+{
+    uint receiverMask = ReceiverLightLayers.Load(int3(int2(pixelPosition), 0));
+    return (receiverMask & LightLayerMask) != 0u;
+}
 
 // Vertex Shader for models rendering
 META_VS(true, FEATURE_LEVEL_ES2)
@@ -46,6 +56,8 @@ META_PERMUTATION_1(LIGHTING_NO_SPECULAR=1)
 void PS_Directional(Quad_VS2PS input, out float4 output : SV_Target0)
 {
 	output = 0;
+    if (!MatchesLightLayers(input.Position.xy))
+        return;
 
 	// Sample GBuffer
 	GBufferData gBufferData = GetGBufferData();
@@ -79,6 +91,8 @@ META_PERMUTATION_2(LIGHTING_NO_SPECULAR=1, USE_IES_PROFILE=1)
 void PS_LocalLight(Model_VS2PS input, out float4 output : SV_Target0)
 {
 	output = 0;
+    if (!MatchesLightLayers(input.Position.xy))
+        return;
 
 	// Sample GBuffer
 	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);
@@ -114,6 +128,8 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Sky(Model_VS2PS input) : SV_Target0
 {
 	float4 output = 0;
+    if (!MatchesLightLayers(input.Position.xy))
+        return output;
 
 	// Sample GBuffer
 	float2 uv = ProjectClipToUV(input.ScreenPos.xy / input.ScreenPos.w);

@@ -140,6 +140,7 @@ void SkyLight::Draw(RenderContextBatch& renderContextBatch)
             data.CubemapImageMip = (float)image->StreamingTexture()->TotalMipLevels() - 2.0f;
         }
         data.StaticFlags = GetStaticFlags();
+        data.LightLayerMask = LightLayerMask;
         data.ID = GetID();
         data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
         renderContext.List->SkyLights.Add(data);

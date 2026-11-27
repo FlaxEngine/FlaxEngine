@@ -27,6 +27,7 @@ RenderBuffers::RenderBuffers(const SpawnParams& params)
     CREATE_TEXTURE(GBuffer1);
     CREATE_TEXTURE(GBuffer2);
     CREATE_TEXTURE(GBuffer3);
+    CREATE_TEXTURE(LightLayerMaskBuffer);
 #undef CREATE_TEXTURE
 }
 
@@ -264,6 +265,11 @@ bool RenderBuffers::Init(int32 width, int32 height)
     desc.Format = GBUFFER3_FORMAT;
     desc.DefaultClearColor = Color::Transparent;
     result |= GBuffer3->Init(desc);
+    
+    // Light layer buffer
+    desc.Format = PixelFormat::R32_UInt;
+    desc.DefaultClearColor = Color::Transparent;
+    result |= LightLayerMaskBuffer->Init(desc);
 
     // Cache data
     _width = width;

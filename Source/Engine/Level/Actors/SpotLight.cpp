@@ -173,6 +173,7 @@ void SpotLight::Draw(RenderContextBatch& renderContextBatch)
         Float3::Transform(Float3::Up, GetOrientation(), data.UpVector);
         data.OuterConeAngle = outerConeAngle;
         data.StaticFlags = GetStaticFlags();
+        data.LightLayerMask = LightLayerMask;
         data.ID = GetID();
         data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
         uint32 cullingId = 0;

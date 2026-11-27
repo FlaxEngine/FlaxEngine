@@ -903,6 +903,9 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         Platform::MemoryCopy(list.Indices.Get(), resultIndices, sizeof(int32) * listSize);
 
     // Perform draw calls batching
+    const bool compareLightLayers =
+        listType == DrawCallsListType::GBuffer ||
+        listType == DrawCallsListType::GBufferNoDecals;
     list.Batches.Clear();
     for (int32 i = 0; i < listSize;)
     {
@@ -921,7 +924,8 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
                         other.InstanceCount != 0 &&
                         drawCallHandler.CanBatch == otherHandler.CanBatch &&
                         drawCallHandler.CanBatch(drawCall, other, pass) &&
-                        drawCall.StencilValue == other.StencilValue;
+                        drawCall.StencilValue == other.StencilValue &&
+                            (!compareLightLayers || drawCall.ReceivedLightLayers == other.ReceivedLightLayers);
                 if (!canBatch)
                     break;
                 batchSize++;
@@ -1056,14 +1060,23 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     bindParams.ObjectBuffer = drawCallsList->ObjectBuffer.GetBuffer()->View();
     bindParams.Input = input;
     bindParams.BindViewData();
-    MaterialShaderDataPerDraw perDraw;
-    perDraw.DrawPadding = Float3::Zero;
+    MaterialShaderDataPerDraw perDraw{};
+    perDraw.DrawReceivedLightLayers = 1u;
     GPUConstantBuffer* perDrawCB = IMaterial::BindParameters::PerDrawConstants;
     context->BindCB(2, perDrawCB); // TODO: use rootSignature/pushConstants on D3D12/Vulkan
     constexpr int32 vbMax = ARRAY_COUNT(DrawCall::Geometry.VertexBuffers);
     if (useInstancing)
     {
         context->UpdateCB(perDrawCB, &perDraw);
+        const auto uploadInstancedLightLayers = [&](const DrawCall& drawCall)
+        {
+            if (renderContext.View.Pass == DrawPass::GBuffer &&
+                perDraw.DrawReceivedLightLayers != drawCall.ReceivedLightLayers)
+            {
+                perDraw.DrawReceivedLightLayers = drawCall.ReceivedLightLayers;
+                context->UpdateCB(perDrawCB, &perDraw);
+            }
+        };
         GPUBuffer* vb[vbMax + 1];
         uint32 vbOffsets[vbMax + 1];
         vb[3] = _instanceBuffer.GetBuffer(); // Pass object index in a vertex stream at slot 3 (used by VS in Surface.shader)
@@ -1081,6 +1094,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
 
             if (bindParams.Instanced)
             {
+                uploadInstancedLightLayers(drawCall);
                 // One or more draw calls per batch
                 const DrawCall* activeDraw = &drawCall;
                 int32 activeCount = 1;
@@ -1110,6 +1124,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             {
                 // Pass object index in constant buffer
                 perDraw.DrawObjectIndex = drawCallIndex;
+                perDraw.DrawReceivedLightLayers = drawCall.ReceivedLightLayers;
                 context->UpdateCB(perDrawCB, &perDraw);
 
                 // Single-draw call batch
@@ -1133,6 +1148,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             bindParams.Instanced = true;
             bindParams.DrawCall = &drawCall;
             bindParams.DrawCall->Material->Bind(bindParams);
+            uploadInstancedLightLayers(drawCall);
 
             Platform::MemoryCopy(vb, drawCall.Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
             Platform::MemoryCopy(vbOffsets, drawCall.Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
@@ -1163,9 +1179,11 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             for (int32 j = 0; j < batch.BatchSize; j++)
             {
                 perDraw.DrawObjectIndex = listData[batch.StartIndex + j];
-                context->UpdateCB(perDrawCB, &perDraw);
-
+                
                 const DrawCall& drawCall = drawCallsData[perDraw.DrawObjectIndex];
+                perDraw.DrawReceivedLightLayers = drawCall.ReceivedLightLayers;
+                
+                context->UpdateCB(perDrawCB, &perDraw);
                 context->BindIB(drawCall.Geometry.IndexBuffer);
                 context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
@@ -1190,6 +1208,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             context->BindIB(drawCall.Geometry.IndexBuffer);
             context->BindVB(GetVB(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
+            perDraw.DrawReceivedLightLayers = drawCall.ReceivedLightLayers;
             for (int32 j = 0; j < batch.Instances.Count(); j++)
             {
                 perDraw.DrawObjectIndex = batch.ObjectsStartIndex + j;
@@ -1205,9 +1224,10 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             for (int32 j = 0; j < list.Indices.Count(); j++)
             {
                 perDraw.DrawObjectIndex = listData[j];
-                context->UpdateCB(perDrawCB, &perDraw);
-
                 const DrawCall& drawCall = drawCallsData[perDraw.DrawObjectIndex];
+                perDraw.DrawReceivedLightLayers = drawCall.ReceivedLightLayers;
+                context->UpdateCB(perDrawCB, &perDraw);
+                
                 bindParams.DrawCall = &drawCall;
                 drawCall.Material->Bind(bindParams);
 

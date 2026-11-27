@@ -22,6 +22,7 @@ void PS_GBuffer(
 #if USE_GBUFFER_CUSTOM_DATA
 		,out float4 RT3   : SV_Target4
 #endif
+		,out uint ReceiverLightLayers : SV_Target5
 #endif
 	)
 {
@@ -56,6 +57,12 @@ void PS_GBuffer(
 	RT0 = float4(material.Color, material.AO);
 	RT1 = float4(material.WorldNormal * 0.5 + 0.5, MATERIAL_SHADING_MODEL * (1.0 / 3.0));
 	RT2 = float4(material.Roughness, material.Metalness, material.Specular, 0);
+    
+#if USE_PER_DRAW_CONSTANTS
+    ReceiverLightLayers = DrawReceivedLightLayers;
+#else
+    ReceiverLightLayers = 1u;
+#endif
 
 	// Custom data
 #if USE_GBUFFER_CUSTOM_DATA

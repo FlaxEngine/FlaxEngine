@@ -42,6 +42,7 @@ protected:
     uint16 _drawNoCulling : 1;
     uint16 _drawCategory : 4;
     byte _layer;
+    uint32 _receivedLightLayers;
     StaticFlags _staticFlags;
     Transform _localTransform;
     Transform _transform;
@@ -126,6 +127,25 @@ public:
     /// </summary>
     API_FUNCTION() void SetLayerNameRecursive(const StringView& value);
 
+    /// <summary>
+    /// Gets the light layers this actor receives lighting from.
+    /// </summary>
+    API_PROPERTY(Attributes="NoAnimate, EditorDisplay(\"General\", \"Light Layers\"), EditorOrder(-70), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.LightLayersMaskEditor\")")
+    FORCE_INLINE uint32 GetReceivedLightLayers() const
+    {
+        return _receivedLightLayers;
+    }
+
+    /// <summary>
+    /// Sets the light layers this actor receives lighting from.
+    /// </summary>
+    API_PROPERTY() void SetReceivedLightLayers(uint32 mask);
+
+    /// <summary>
+    /// Sets the received light layers on this actor and all its children.
+    /// </summary>
+    API_FUNCTION() void SetReceivedLightLayersRecursive(uint32 mask);
+    
     /// <summary>
     /// Determines whether this actor has any tag assigned.
     /// </summary>
@@ -1113,6 +1133,8 @@ public:
     /// </summary>
     API_FUNCTION(Attributes="NoAnimate") virtual void OnLayerChanged();
 
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnLightLayerChanged();
+    
     /// <summary>
     /// Called when adding object to the game.
     /// </summary>

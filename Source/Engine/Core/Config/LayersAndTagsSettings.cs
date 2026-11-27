@@ -29,6 +29,32 @@ namespace FlaxEditor.Content.Settings
         {
             return GetCurrentLayers(out int _);
         }
+        
+        /// <summary>
+        /// The light layer names.
+        /// </summary>
+        [EditorOrder(10), EditorDisplay("Light Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = false, Display = CollectionAttribute.DisplayType.Inline)]
+        public string[] LightLayers = new string[32];
+
+        /// <summary>
+        /// Gets the current light layer names. Returns "Layer" + index for layers without a name.
+        /// </summary>
+        /// <returns>The light layer names.</returns>
+        public static string[] GetCurrentLightLayers()
+        {
+#if FLAX_TESTS
+    return System.Array.Empty<string>();
+#else      
+            var settings = GameSettings.Load<LayersAndTagsSettings>();
+            var layerNames = (string[])settings.LightLayers.Clone();
+            for (int i = 0; i < layerNames.Length; i++)
+            {
+                if (string.IsNullOrEmpty(layerNames[i]))
+                    layerNames[i] = $"Layer {i}";
+            }
+            return layerNames;
+#endif
+        }
 
         /// <summary>
         /// The layer names.

@@ -318,6 +318,7 @@ Action Level::ScriptsReloaded;
 Action Level::ScriptsReloadEnd;
 #endif
 String Level::Layers[32];
+String Level::LightLayers[32];
 
 bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
 {
@@ -388,6 +389,13 @@ void LayersAndTagsSettings::Apply()
     {
         const auto& src = Layers[i];
         auto& dst = Level::Layers[i];
+        if (dst.IsEmpty() || !src.IsEmpty())
+            dst = src;
+    }
+    for (int32 i = 0; i < ARRAY_COUNT(Level::LightLayers); i++)
+    {
+        const auto& src = LightLayers[i];
+        auto& dst = Level::LightLayers[i];
         if (dst.IsEmpty() || !src.IsEmpty())
             dst = src;
     }
