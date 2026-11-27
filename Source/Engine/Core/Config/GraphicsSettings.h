@@ -54,6 +54,33 @@ public:
     API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\", \"Use V-Sync\")")
     bool UseVSync = false;
 
+    /// <summary>
+    /// Experimental asynchronous synchronized presentation for Windows DirectX 11 and DirectX 12. Requires an engine restart after saving. Other backends ignore this option.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(21), EditorDisplay(\"General\", \"Async Presentation (Experimental)\")")
+    bool UseAsyncPresentation = false;
+
+    /// <summary>
+    /// Graphics backends selectable for the editor. Unavailable backends fall back to the platform default.
+    /// </summary>
+    API_ENUM() enum class EditorGraphicsBackends
+    {
+        /// <summary>Let the engine choose the graphics backend.</summary>
+        Auto = 0,
+        /// <summary>Prefer DirectX 11 when available.</summary>
+        DirectX11,
+        /// <summary>Prefer DirectX 12 when available.</summary>
+        DirectX12,
+        /// <summary>Prefer Vulkan when available.</summary>
+        Vulkan,
+    };
+
+    /// <summary>
+    /// Preferred graphics backend for the editor. Save and restart to apply. Command-line backend switches override this preference. Does not affect packaged games.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(22), EditorDisplay(\"General\", \"Editor Graphics Backend\")")
+    EditorGraphicsBackends EditorGraphicsBackend = EditorGraphicsBackends::Auto;
+
 public:
     /// <summary>
     /// Anti Aliasing quality setting.
