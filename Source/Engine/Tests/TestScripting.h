@@ -7,6 +7,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/ScriptingObjectInterfaceReference.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
 #include "Engine/Scripting/SoftTypeReference.h"
@@ -251,4 +252,56 @@ API_CLASS() class FLAXENGINE_API TestDebugCommand2 : public ScriptingObject
 
     // Static method to test.
     API_FUNCTION(Attributes="DebugCommand") static void Exec();
+};
+
+// Test script that counts its lifecycle events (in static counters: the script is deleted before the test checks them).
+API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptLifecycle : public Script
+{
+    DECLARE_SCRIPTING_TYPE(TestScriptLifecycle);
+
+    static int32 AwakeCount;
+    static int32 StartCount;
+    static int32 EnableCount;
+    static int32 DestroyCount;
+
+    static void ResetCounts()
+    {
+        AwakeCount = StartCount = EnableCount = DestroyCount = 0;
+    }
+
+    void OnAwake() override
+    {
+        AwakeCount++;
+    }
+
+    void OnStart() override
+    {
+        StartCount++;
+    }
+
+    void OnEnable() override
+    {
+        EnableCount++;
+    }
+
+    void OnDestroy() override
+    {
+        DestroyCount++;
+    }
+};
+
+// Test script that adds a TestScriptLifecycle script to its actor in OnAwake (as a script that sets up its actor while the scene loads).
+API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptAddingScript : public Script
+{
+    DECLARE_SCRIPTING_TYPE(TestScriptAddingScript);
+
+    void OnAwake() override;
+};
+
+// Test script that creates an actor in OnAwake, parents it to its own actor and adds a TestScriptLifecycle script to it.
+API_CLASS(Attributes="ExecuteInEditMode") class FLAXENGINE_API TestScriptSpawningActor : public Script
+{
+    DECLARE_SCRIPTING_TYPE(TestScriptSpawningActor);
+
+    void OnAwake() override;
 };
